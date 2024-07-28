@@ -1,22 +1,23 @@
 package main
 
 import (
-	"fmt"
-
-	auth "github.com/dionv/spogo/internal"
-	"github.com/fatih/color"
+	"github.com/dionv/spogo/internal/auth"
+	"github.com/joho/godotenv"
+	// "github.com/fatih/color"
 )
 
-const lOGINSUCCESSMSG = `
-Login Success!
-`
-
 func main() {
-	code := auth.Authenticate()
+	godotenv.Load()
 
-	tok, _ := auth.ExchangeToken(code)
+	token, refreshToken, err := auth.GetTokens()
+	if err != nil {
+		code := auth.Authenticate()
+		token, refreshToken = auth.ExchangeToken(code)
+		auth.SaveToken(token, refreshToken)
+	}
 
-	fmt.Print(tok)
-
-	color.Green(lOGINSUCCESSMSG)
+	token, valid := auth.EnsureValidTokens(token, refreshToken)
+	if !valid {
+		auth.SaveToken(token, refreshToken)
+	}
 }

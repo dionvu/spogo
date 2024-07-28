@@ -1,6 +1,10 @@
+// Deal with everything up until recieving an authentication code
+// and exchanging for a token.
+
 package auth
 
 import (
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -39,6 +43,39 @@ func Authenticate() string {
 	code := <-ch
 
 	return code
+}
+
+// Exchanges authentication code for an access token and refresh token
+func ExchangeToken(code string) (string, string) {
+	clientID := os.Getenv("SPOTIFY_ID")
+	spotifySecret := os.Getenv("SPOTIFY_SECRET")
+
+	url := getTokenUrl(code)
+
+	req, err := http.NewRequest(http.MethodPost, url, nil)
+	if err != nil {
+		utils.LogError("Failed to get token URL", err)
+	}
+
+	// Encodes in base64 and formates in required format
+	a := base64.StdEncoding.EncodeToString([]byte(clientID + ":" + spotifySecret))
+	a = "Basic " + a
+
+	// Add required headers
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("Authorization", a)
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		utils.LogError("Failed to get token URL", err)
+	}
+	if res.StatusCode != 200 {
+		utils.LogError("Failed to get token URL", nil)
+	}
+
+	data := utils.ParseJsonResponse(res)
+
+	return data["access_token"].(string), data["refresh_token"].(string)
 }
 
 // Does some wacky shit lmao

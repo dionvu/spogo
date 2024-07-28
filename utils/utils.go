@@ -1,12 +1,30 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"runtime"
 )
+
+func ParseJsonResponse(res *http.Response) map[string]interface{} {
+	data := map[string]interface{}{}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		LogError("Failed to read response", err)
+	}
+
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		LogError("Failed to unmarshal json", err)
+	}
+
+	return data
+}
 
 // Opens a url depending on user's system?
 // Maybe lol, haven't tested with windows or mac.
