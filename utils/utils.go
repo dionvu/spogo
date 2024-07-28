@@ -9,21 +9,23 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+
+	"github.com/dionv/spogo/errors"
 )
 
-func ParseJsonResponse(res *http.Response) map[string]interface{} {
+func ParseJsonResponse(res *http.Response) (map[string]interface{}, error) {
 	data := map[string]interface{}{}
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		LogError("Failed to read response", err)
+		return nil, errors.FileError.Wrap(err, "Failed to read response body")
 	}
 
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		LogError("Failed to unmarshal json", err)
+		return nil, errors.JSONError.Wrap(err, "Failed to unmarshal response body")
 	}
 
-	return data
+	return data, nil
 }
 
 // Opens a url depending on user's system?
@@ -53,7 +55,7 @@ func OpenURL(url string) {
 		log.Fatal("Failed to open browser: ", err)
 	}
 
-	fmt.Println("Opened browser?")
+	fmt.Println("Opening browser to -> ", url)
 }
 
 // Custom log.Fatal w/o datatime & w/ file & line #.
@@ -70,13 +72,13 @@ func LogError(msg string, err error) {
 
 	if fileAndLine {
 		if err == nil {
-			fmt.Printf("%s%s (file: %s, line: %d)\n%s\n", ERR, msg, file, line, err)
+			fmt.Printf("%s%s (file: %s, line: %d)", ERR, msg, file, line)
 		} else {
 			fmt.Printf("%s%s (file: %s, line: %d)\n%s\n", ERR, msg, file, line, err)
 		}
 	} else {
 		if err == nil {
-			fmt.Printf("%s%s\n%s\n", ERR, msg, err)
+			fmt.Printf("%s%s", ERR, msg)
 		} else {
 			fmt.Printf("%s%s\n%s\n", ERR, msg, err)
 		}

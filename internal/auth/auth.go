@@ -6,10 +6,13 @@ package auth
 import (
 	"encoding/base64"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
 
+	"github.com/dionv/spogo/errors"
+	"github.com/dionv/spogo/internal/auth/tokens"
 	"github.com/dionv/spogo/utils"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
@@ -28,7 +31,7 @@ var (
 
 // Sets up & redirects to a Spotify authentication URL.
 // Returns an authentication code to exchange for an access token.
-func Authenticate() string {
+func GetAuthCode() string {
 	godotenv.Load()
 
 	http.HandleFunc("/", startAuthentication)
@@ -46,7 +49,7 @@ func Authenticate() string {
 }
 
 // Exchanges authentication code for an access token and refresh token
-func ExchangeToken(code string) (string, string) {
+func ExchangeForToken(code string) (string, string, error) {
 	clientID := os.Getenv("SPOTIFY_ID")
 	spotifySecret := os.Getenv("SPOTIFY_SECRET")
 
@@ -54,33 +57,26 @@ func ExchangeToken(code string) (string, string) {
 
 	req, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
-		utils.LogError("Failed to get token URL", err)
+		return "", "", errors.HTTPRequestError.Wrap(err, "Unable to create new http request")
 	}
 
-	// Encodes in base64 and formates in required format
-	a := base64.StdEncoding.EncodeToString([]byte(clientID + ":" + spotifySecret))
-	a = "Basic " + a
-
-	// Add required headers
+	encodedImportantStuff := base64.StdEncoding.EncodeToString([]byte(clientID + ":" + spotifySecret))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Add("Authorization", a)
+	req.Header.Add("Authorization", "Basic "+encodedImportantStuff)
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		utils.LogError("Failed to get token URL", err)
+		return "", "", errors.HTTPRequestError.Wrap(err, "Unable to get http response")
 	}
 	if res.StatusCode != 200 {
-		utils.LogError("Failed to get token URL", nil)
+		return "", "", errors.ReauthenticationError.Wrap(err, "Bad authentication code")
 	}
 
-	data := utils.ParseJsonResponse(res)
+	data, err := utils.ParseJsonResponse(res)
 
-	return data["access_token"].(string), data["refresh_token"].(string)
+	return data["access_token"].(string), data["refresh_token"].(string), nil
 }
 
-// Does some wacky shit lmao
-// lol fsafdsfadsfdsa fdafdsaafsdj;kjl fdsallf;dsajfdsa fdsljkafdjs;al;dsf
-// fsdafadsfds fdsafdssdfds fdafdsafdsaj; fdsasfdas
 func startAuthentication(w http.ResponseWriter, r *http.Request) {
 	state = uuid.New().String()
 
@@ -89,13 +85,15 @@ func startAuthentication(w http.ResponseWriter, r *http.Request) {
 	// Sends our authentication url
 	req, err := http.NewRequest(http.MethodGet, authUrl, nil)
 	if err != nil {
-		utils.LogError("Creating request", nil)
+		err = errors.HTTPRequestError.Wrap(err, "Unable to create new http request")
+		log.Fatal(err)
 	}
 
 	// Spotify sets up the authentication url
 	_, err = http.DefaultClient.Do(req)
 	if err != nil {
-		utils.LogError("Unable to setup spotify auth url", err)
+		err = errors.HTTPRequestError.Wrap(err, "Unable to do http request")
+		log.Fatal(err)
 	}
 
 	// Redirects user to authentication url then to callback
@@ -110,10 +108,11 @@ func completeAuthentication(w http.ResponseWriter, r *http.Request) {
 	err := r.URL.Query().Get("error")
 
 	if responseState != state {
-		utils.LogError("Invalid state.", nil)
+		log.Println("Invalid state")
+		os.Exit(1)
 	}
 	if err != "" {
-		utils.LogError("Failed to complete authentication", fmt.Errorf(err))
+		log.Fatal("Failed to complete authentication")
 	}
 
 	fmt.Fprintln(w, "Login success!")
@@ -136,4 +135,62 @@ func getAuthUrl() string {
 	query.Add("state", state)
 
 	return fmt.Sprintf("%s?%s", SPOTIFYAUTHURL, query.Encode())
+}
+
+func getTokenUrl(code string) string {
+	redirectUri := os.Getenv("REDIRECT_URI")
+	query := url.Values{}
+	query.Add("grant_type", "authorization_code")
+	query.Add("code", code)
+	query.Add("redirect_uri", redirectUri)
+
+	return SPOTIFYTOKENURL + "?" + query.Encode()
+}
+
+func AuthenticateUser() error {
+	accessToken, accessErr := tokens.GetAccessToken()
+	refreshToken, refreshErr := tokens.GetRefreshToken()
+
+	// Able to access both tokens
+	if accessErr == nil && refreshErr == nil {
+
+		isValidToken, err := tokens.EnsureValidAccessToken(accessToken)
+		if err != nil {
+			return err
+		}
+
+		// If access token is still valid we leave
+		if isValidToken {
+			return nil
+		}
+
+		// If access token is not valid, try to get a new one using the refresh token
+		newAccessToken, err := tokens.GetNewToken(refreshToken)
+		// If getting a new token with the refresh token fails, reauthenticate
+		// Likely due to bad refresh token
+		if err != nil {
+			return reauthenticate()
+		}
+
+		return tokens.SaveToken(newAccessToken)
+
+	} else {
+		// If tokens are not available or errors occurred, reauthenticate
+		// Likely due to first time user
+		return reauthenticate()
+	}
+}
+
+func reauthenticate() error {
+	code := GetAuthCode()
+	newToken, newRefreshToken, err := ExchangeForToken(code)
+	if err != nil {
+		return err
+	}
+
+	if err = tokens.SaveToken(newToken); err != nil {
+		return err
+	}
+
+	return tokens.SetRefreshToken(newRefreshToken)
 }
