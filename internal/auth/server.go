@@ -1,10 +1,9 @@
 package auth
 
 import (
+	"log"
 	"net/http"
 	"os"
-
-	"github.com/dionv/spogo/utils"
 )
 
 func startServer() {
@@ -13,7 +12,7 @@ func startServer() {
 	go func() {
 		err := http.ListenAndServe(":"+port, nil)
 		if err != nil {
-			utils.LogError("Failed to starting server", err)
+			log.Fatalf("Failed to start server on port: %v", port)
 		}
 	}()
 }
