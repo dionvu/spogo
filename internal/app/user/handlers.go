@@ -1,31 +1,27 @@
-package auth
+package user
 
 import (
 	"fmt"
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 
 	"github.com/dionv/spogo/errors"
 	"github.com/google/uuid"
 )
 
-func startAuthentication(w http.ResponseWriter, r *http.Request) {
-	state = uuid.New().String()
+func startAuth(w http.ResponseWriter, r *http.Request) {
+	state = uuid.NewString()
 
-	// Addes required query parameters to the /authorize endpoint.
 	authUrl := func() string {
 		spotifyauthurl := "https://accounts.spotify.com/authorize"
 
 		scope := "user-read-private user-read-email"
-		clientID := os.Getenv("SPOTIFY_ID")
-		redirectUri := os.Getenv("REDIRECT_URI")
 
 		query := url.Values{}
 		query.Add("client_id", clientID)
 		query.Add("response_type", "code")
-		query.Add("redirect_uri", redirectUri)
+		query.Add("redirect_uri", REDIRECT_URI)
 		query.Add("scope", scope)
 		query.Add("state", state)
 
@@ -50,14 +46,13 @@ func startAuthentication(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, authUrl, http.StatusTemporaryRedirect)
 }
 
-func completeAuthentication(w http.ResponseWriter, r *http.Request) {
+func completeAuth(w http.ResponseWriter, r *http.Request) {
 	code := r.URL.Query().Get("code")
 	responseState := r.URL.Query().Get("state")
 	err := r.URL.Query().Get("error")
 
 	if responseState != state {
-		log.Println("Invalid state")
-		os.Exit(1)
+		log.Fatal("Invalid state")
 	}
 	if err != "" {
 		log.Fatal("Failed to complete authentication")
