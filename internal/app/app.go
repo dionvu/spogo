@@ -1,9 +1,8 @@
 package app
 
 import (
-	"github.com/dionv/spogo/internal/app/config"
-	"github.com/dionv/spogo/internal/app/user"
-	"github.com/dionv/spogo/internal/app/user/tokens"
+	"github.com/dionv/spogo/internal/config"
+	"github.com/dionv/spogo/internal/user"
 )
 
 type App struct {
@@ -15,17 +14,9 @@ func (a *App) User() *user.User {
 	return a.user
 }
 
-func New() (*App, error) {
-	c, err := config.New()
-	if err != nil {
-		return nil, err
-	}
-
+func New(c *config.Config, u *user.User) *App {
 	return &App{
 		Config: c,
-		user: &user.User{
-			AccessToken:  &tokens.AccessToken{},
-			RefreshToken: &tokens.RefreshToken{},
-		},
-	}, nil
+		user:   u,
+	}
 }

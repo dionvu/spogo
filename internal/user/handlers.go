@@ -19,11 +19,11 @@ func startAuth(w http.ResponseWriter, r *http.Request) {
 		scope := "user-read-private user-read-email"
 
 		query := url.Values{}
-		query.Add("client_id", clientID)
-		query.Add("response_type", "code")
-		query.Add("redirect_uri", REDIRECT_URI)
-		query.Add("scope", scope)
-		query.Add("state", state)
+		query.Set("client_id", clientID)
+		query.Set("response_type", "code")
+		query.Set("redirect_uri", REDIRECT_URI)
+		query.Set("scope", scope)
+		query.Set("state", state)
 
 		return fmt.Sprintf("%s?%s", spotifyauthurl, query.Encode())
 	}()
@@ -44,6 +44,8 @@ func startAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, authUrl, http.StatusTemporaryRedirect)
+
+	fmt.Fprintln(w, "Login success!")
 }
 
 func completeAuth(w http.ResponseWriter, r *http.Request) {
