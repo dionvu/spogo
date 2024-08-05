@@ -1,10 +1,11 @@
-package user
+package session
 
 import (
 	"log"
 	"net/http"
 )
 
+// Starts the fucking server :DD.
 func startServer() {
 	go func() {
 		err := http.ListenAndServe(":"+PORT, nil)

@@ -1,7 +1,6 @@
 package tokens
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -17,14 +16,14 @@ import (
 )
 
 type AccessToken struct {
-	Token       string    `json:"access_token"`
-	TimeCreated time.Time `json:"time_created"`
+	Token  string    `json:"access_token"`
+	Expiry time.Time `json:"time_created"`
 }
 
-func NewAccessToken(tok string) *AccessToken {
+func NewAccessToken(str string) *AccessToken {
 	return &AccessToken{
-		Token:       tok,
-		TimeCreated: time.Now(),
+		Token:  str,
+		Expiry: time.Now().Add(time.Hour),
 	}
 }
 
@@ -46,7 +45,6 @@ func (t *AccessToken) Load(path string) error {
 		return errors.FileError.Wrap(err, fmt.Sprintf("Failed to read token file: %v", path))
 	}
 
-	// var data map[string]string
 	err = json.Unmarshal(b, t)
 	if err != nil {
 		return errors.JSONError.Wrap(err, "Failed to unmarshal token")
@@ -56,28 +54,24 @@ func (t *AccessToken) Load(path string) error {
 }
 
 // Refreshes the access token via valid refresh token.
-func (tok *AccessToken) Refresh(refreshToken *RefreshToken, c *config.Config) error {
-	id := c.Spotify.ClientID()
-	secret := c.Spotify.ClientSecret()
-
-	spotifyUrl := "https://accounts.spotify.com/api/token"
+// Then updates the token string and token file.
+func (t *AccessToken) Refresh(refreshToken *RefreshToken, c *config.Config) error {
 	query := url.Values{}
 	query.Set("grant_type", "refresh_token")
 	query.Set("refresh_token", refreshToken.String())
 
-	req, err := http.NewRequest(http.MethodPost, spotifyUrl, strings.NewReader(query.Encode()))
+	ep := "https://accounts.spotify.com/api/token"
+	req, err := http.NewRequest(http.MethodPost, ep, strings.NewReader(query.Encode()))
 	if err != nil {
 		return errors.HTTPRequestError.Wrap(err, "Failed to make a request for new access token")
 	}
 
-	encodedImportantStuff := base64.StdEncoding.EncodeToString([]byte(id + ":" + secret))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Authorization", "Basic "+encodedImportantStuff)
+	req.SetBasicAuth(c.Spotify.ClientID(), c.Spotify.ClientSecret())
 
 	res, err := http.DefaultClient.Do(req)
 	if res.StatusCode != 200 || err != nil {
-		return errors.ReauthenticationError.Wrap(err,
-			"Failed to get response for new access token, bad refresh token")
+		return errors.ReauthenticationError.Wrap(err, "Bad refresh token")
 	}
 
 	body, err := io.ReadAll(res.Body)
@@ -85,70 +79,36 @@ func (tok *AccessToken) Refresh(refreshToken *RefreshToken, c *config.Config) er
 		return errors.FileError.Wrap(err, "Failed to read response body")
 	}
 
-	// data := &struct {
-	// 	Access_token string
-	// }{}
-	err = json.Unmarshal(body, tok)
-	if err != nil {
+	if err = json.Unmarshal(body, t); err != nil {
 		return errors.JSONError.Wrap(err, "Failed to unmarshal response body")
 	}
 
-	tok.Update(tok.String(), time.Now(), c)
+	t.Update(t.String(), c)
 
 	return nil
 }
 
-// Tests validity of the token by making a request.
-func (tok *AccessToken) IsValid() (bool, error) {
-	req, err := http.NewRequest(http.MethodGet, "https://api.spotify.com/v1/me", nil)
-	if err != nil {
-		return false, errors.HTTPRequestError.Wrap(err, "Failed to create new http request")
-	}
-	req.Header.Set("Authorization", "Bearer "+tok.String())
+// Update Updates the token value, and replaces the contents of the token
+// file with the new token and an updated expiry time.
+func (t *AccessToken) Update(tok string, c *config.Config) error {
+	t.Token = tok
+	t.Expiry = time.Now().Add(time.Hour)
 
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return false, errors.HTTPRequestError.Wrap(err, "Failed to get http result")
-	}
-
-	if res.StatusCode != 200 {
-		return false, nil
-	}
-
-	return true, nil
-}
-
-// Updates token file and sets new token.
-func (t *AccessToken) Update(tok string, timeCreated time.Time, c *config.Config) error {
-	path, err := os.UserConfigDir()
-	if err != nil {
-		return errors.FileError.Wrap(err, "Failed to get user's config dir")
-	}
-
-	path = filepath.Join(c.Path(), config.TOKENSDIRECTORY)
-
+	path := filepath.Join(c.Path(), config.TOKENSDIRECTORY)
 	os.MkdirAll(path, os.ModePerm)
 
-	path = filepath.Join(path, config.ACCESSTOKENFILE)
-
-	t.TimeCreated = timeCreated
-
-	return t.saveToFile(path)
-}
-
-func (t *AccessToken) saveToFile(path string) error {
-	file, err := os.Create(path)
+	file, err := os.Create(filepath.Join(path, config.ACCESSTOKENFILE))
 	if err != nil {
 		return errors.FileError.Wrap(err, fmt.Sprintf("Failed to open token file path: %v", path))
 	}
 	defer file.Close()
 
-	body, err := json.Marshal(t)
+	b, err := json.Marshal(t)
 	if err != nil {
 		return errors.JSONError.Wrap(err, fmt.Sprintf("Failed to marshal token body: %v", *t))
 	}
 
-	_, err = file.Write(body)
+	_, err = file.Write(b)
 	if err != nil {
 		return errors.FileError.Wrap(err, "Failed to write new token to file: %v", path)
 	}
