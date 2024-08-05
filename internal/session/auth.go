@@ -29,12 +29,15 @@ var (
 	clientSecret string
 )
 
+// Authenticate is set to only run checks after the access token expiry
+// period has elapsed. This is for faster runtime, should be perfectly okay
+// unless token files are externally tappered.
 // Checks if the access token is valid. If not, refreshes the access token.
 // If the access token is not valid, reauthenticates s. Updating the token
 // file.
 func (s *Session) Authenticate(c *config.Config) error {
 	if time.Now().After(s.AccessToken.Expiry) {
-		validCred, _ := c.ValidSpotifyCredentials()
+		validCred, _ := c.Spotify.Valid()
 		if !validCred {
 			fmt.Printf("%v %v %v\n", color.RedString("Error"), "Invalid spotify client credentials:", color.YellowString(c.FilePath()))
 			os.Exit(0)

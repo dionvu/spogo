@@ -27,11 +27,6 @@ func NewAccessToken(str string) *AccessToken {
 	}
 }
 
-// Returns the token as a string
-func (t *AccessToken) String() string {
-	return t.Token
-}
-
 // Loads the access token from token file
 func (t *AccessToken) Load(path string) error {
 	file, err := os.Open(path)
@@ -114,4 +109,9 @@ func (t *AccessToken) Update(tok string, c *config.Config) error {
 	}
 
 	return nil
+}
+
+// Returns the token as a string
+func (t *AccessToken) String() string {
+	return t.Token
 }

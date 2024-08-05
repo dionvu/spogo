@@ -12,6 +12,7 @@ type Session struct {
 	RefreshToken *tokens.RefreshToken
 }
 
+// Creates a new session, loading tokens from respective files, and authenticating.
 func New(c *config.Config) (*Session, error) {
 	s := &Session{
 		AccessToken:  &tokens.AccessToken{},

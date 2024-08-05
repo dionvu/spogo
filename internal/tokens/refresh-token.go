@@ -23,11 +23,6 @@ func NewRefreshToken(tok string) *RefreshToken {
 	return t
 }
 
-// The token as a string
-func (t *RefreshToken) String() string {
-	return t.Token
-}
-
 // Loads the token fields from the refresh token file.
 func (t *RefreshToken) Load(path string) error {
 	file, err := os.Open(path)
@@ -73,4 +68,9 @@ func (t *RefreshToken) Update(tok string, c *config.Config) error {
 	}
 
 	return nil
+}
+
+// The token as a string
+func (t *RefreshToken) String() string {
+	return t.Token
 }

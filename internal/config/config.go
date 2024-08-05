@@ -3,11 +3,8 @@ package config
 import (
 	"fmt"
 	"io"
-	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/dionv/spogo/errors"
 	"github.com/dionv/spogo/templates"
@@ -88,28 +85,6 @@ func (c *Config) Load() error {
 	c.Spotify.setSecret(data.Spotify.ClientSecret)
 
 	return nil
-}
-
-// Attempts to do the "client credentials" authentication flow
-// to verify valid spotify client ID and client secret.
-func (c *Config) ValidSpotifyCredentials() (bool, error) {
-	data := url.Values{}
-	data.Set("grant_type", "client_credentials")
-
-	ep := "https://accounts.spotify.com/api/token"
-	req, err := http.NewRequest(http.MethodPost, ep, strings.NewReader(data.Encode()))
-	if err != nil {
-		return false, fmt.Errorf("unable to create new http request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.SetBasicAuth(c.Spotify.ClientID(), c.Spotify.ClientSecret())
-
-	if res, err := http.DefaultClient.Do(req); err != nil || res.StatusCode != http.StatusOK {
-		return false, errors.HTTPError.Wrap(err, fmt.Sprintf("unable to do http request: %v", err))
-	}
-
-	return true, nil
 }
 
 // Creates the root config directory and "config.yaml".

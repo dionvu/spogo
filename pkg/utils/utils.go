@@ -1,31 +1,11 @@
 package utils
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
 	"log"
-	"net/http"
 	"os/exec"
 	"runtime"
-
-	errx "github.com/dionv/spogo/errors"
 )
-
-func ParseJsonResponse(res *http.Response) (map[string]interface{}, error) {
-	data := map[string]interface{}{}
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, errx.FileError.Wrap(err, "Failed to read response body")
-	}
-
-	err = json.Unmarshal(body, &data)
-	if err != nil {
-		return nil, errx.JSONError.Wrap(err, "Failed to unmarshal response body")
-	}
-
-	return data, nil
-}
 
 // Opens a url depending on user's system?
 // Maybe lol, haven't tested with windows or mac.
