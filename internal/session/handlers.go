@@ -8,12 +8,12 @@ import (
 	"strings"
 
 	"github.com/dionv/spogo/errors"
+	"github.com/dionv/spogo/internal/session/auth/scopes"
 	"github.com/google/uuid"
 )
 
 const (
 	SPOTIFYAUTHURL = "https://accounts.spotify.com/authorize"
-	SCOPE          = "user-read-private user-read-email"
 )
 
 // Redirects user to the spotify authentication url and awaits callback.
@@ -24,7 +24,12 @@ func startAuth(w http.ResponseWriter, r *http.Request) {
 	query.Set("redirect_uri", REDIRECT_URI)
 	query.Set("response_type", "code")
 	query.Set("client_id", clientID)
-	query.Set("scope", SCOPE)
+	query.Set("scope", strings.Join([]string{
+		scopes.UserReadPrivate,
+		scopes.UserReadEmail,
+		scopes.UserReadPlaybackState,
+		scopes.UserModifyPlaybackState,
+	}, " "))
 	query.Set("state", state)
 
 	req, err := http.NewRequest(http.MethodGet, SPOTIFYAUTHURL, strings.NewReader(query.Encode()))

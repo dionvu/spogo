@@ -24,7 +24,9 @@ func NewRefreshToken(tok string) *RefreshToken {
 }
 
 // Loads the token fields from the refresh token file.
-func (t *RefreshToken) Load(path string) error {
+func (t *RefreshToken) Load(c *config.Config) error {
+	path := filepath.Join(c.CachePath(), config.REQUESTTOKENFILE)
+
 	file, err := os.Open(path)
 	if err != nil {
 		return errors.FileError.Wrap(err, fmt.Sprintf("Failed to open token file path: %v", path))
@@ -48,12 +50,10 @@ func (t *RefreshToken) Load(path string) error {
 func (t *RefreshToken) Update(tok string, c *config.Config) error {
 	t.Token = tok
 
-	path := filepath.Join(c.Path(), config.TOKENSDIRECTORY)
-	os.MkdirAll(path, os.ModePerm)
-
-	file, err := os.Create(filepath.Join(path, config.REQUESTTOKENFILE))
+	filePath := filepath.Join(c.CachePath(), config.REQUESTTOKENFILE)
+	file, err := os.Create(filePath)
 	if err != nil {
-		return errors.FileError.Wrap(err, fmt.Sprintf("Failed to open token file path: %v", path))
+		return errors.FileError.Wrap(err, fmt.Sprintf("Failed to open token file path: %v", filePath))
 	}
 	defer file.Close()
 
@@ -64,7 +64,7 @@ func (t *RefreshToken) Update(tok string, c *config.Config) error {
 
 	_, err = file.Write(b)
 	if err != nil {
-		return errors.FileError.Wrap(err, "Failed to write new token to file: %v", path)
+		return errors.FileError.Wrap(err, "Failed to write new token to file: %v", filePath)
 	}
 
 	return nil

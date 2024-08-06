@@ -4,12 +4,17 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/dionv/spogo/errors"
 	"github.com/dionv/spogo/internal/config"
 	"github.com/dionv/spogo/internal/device"
-	"github.com/dionv/spogo/internal/player"
 	"github.com/dionv/spogo/internal/session"
-	"github.com/dionv/spogo/pkg/utils"
 	"github.com/fatih/color"
+	"github.com/joomcode/errorx"
+
+	// "github.com/dionv/spogo/internal/device"
+	"github.com/dionv/spogo/internal/player"
+	"github.com/dionv/spogo/pkg/utils"
+	// "github.com/fatih/color"
 )
 
 func main() {
@@ -22,6 +27,9 @@ func main() {
 	s, err := session.New(c)
 	utils.CatchErr(err)
 
+	p, err := player.New(c)
+	utils.CatchErr(err)
+
 	devices, err := device.GetDevices(s)
 	utils.CatchErr(err)
 
@@ -30,8 +38,24 @@ func main() {
 		os.Exit(0)
 	}
 
-	p := player.New(&(*devices)[0])
+	err = p.SetDevice(&(*devices)[0], c)
+	if err != nil {
+		fmt.Println(err)
+	}
 
-	p.Pause(s)
-	// p.Resume(s)
+	// handleErrorControls(e)
+	err = p.Resume(s)
+
+	// p.Pause(s)
+
+	// p.SkipNext(s)
+}
+
+func handleErrorControls(err error) {
+	if errorx.GetTypeName(err) == errors.ReauthenticationError.String() {
+		fmt.Println("Please reauth")
+		os.Exit(0)
+	}
+
+	utils.CatchErr(err)
 }

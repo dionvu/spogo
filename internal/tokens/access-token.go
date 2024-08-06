@@ -28,7 +28,8 @@ func NewAccessToken(str string) *AccessToken {
 }
 
 // Loads the access token from token file
-func (t *AccessToken) Load(path string) error {
+func (t *AccessToken) Load(c *config.Config) error {
+	path := filepath.Join(c.CachePath(), config.ACCESSTOKENFILE)
 	file, err := os.Open(path)
 	if err != nil {
 		return errors.FileError.Wrap(err, fmt.Sprintf("Failed to open token file path: %v", path))
@@ -89,7 +90,7 @@ func (t *AccessToken) Update(tok string, c *config.Config) error {
 	t.Token = tok
 	t.Expiry = time.Now().Add(time.Hour)
 
-	path := filepath.Join(c.Path(), config.TOKENSDIRECTORY)
+	path := c.CachePath()
 	os.MkdirAll(path, os.ModePerm)
 
 	file, err := os.Create(filepath.Join(path, config.ACCESSTOKENFILE))

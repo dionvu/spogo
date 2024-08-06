@@ -36,10 +36,12 @@ func (s *Spotify) Valid() (bool, error) {
 	return true, nil
 }
 
+// The client ID as a string
 func (s *Spotify) ClientID() string {
 	return s.clientID
 }
 
+// The client secret as a string
 func (s *Spotify) ClientSecret() string {
 	return s.clientSecret
 }

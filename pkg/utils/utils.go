@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os/exec"
 	"runtime"
@@ -43,4 +44,9 @@ func OpenURL(url string) {
 	}
 
 	fmt.Println("Opening browser to -> ", url)
+}
+
+func PrintResponseBody(r io.Reader) {
+	b, _ := io.ReadAll(r)
+	fmt.Println(string(b))
 }

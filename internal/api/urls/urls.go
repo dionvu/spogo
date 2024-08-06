@@ -1,6 +1,7 @@
 package urls
 
 const (
+	PLAYER        = "https://api.spotify.com/v1/me/player"
 	PLAYERNEXT    = "https://api.spotify.com/v1/me/player/next"
 	PLAYERDEVICES = "https://api.spotify.com/v1/me/player/devices"
 	PLAYERSHUFFLE = "https://api.spotify.com/v1/me/player/shuffle"

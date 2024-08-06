@@ -10,6 +10,9 @@ import (
 	"github.com/dionv/spogo/internal/session"
 )
 
+// Device represents a spotify playback device. There is no
+// guarantee that the device is still valid or active on the user's
+// device since it will be cached.
 type Device struct {
 	ID               string `json:"id"`
 	IsActive         bool   `json:"is_active"`
@@ -21,10 +24,8 @@ type Device struct {
 	SupportsVolume   bool   `json:"supports_volume"`
 }
 
-type DevicesResponse struct {
-	Devices []Device `json:"devices"`
-}
-
+// Retrieves currently available playback devices, or an empty slice
+// if none are available.
 func GetDevices(s *session.Session) (*[]Device, error) {
 	req, err := http.NewRequest(http.MethodGet, urls.PLAYERDEVICES, nil)
 	if err != nil {
@@ -36,12 +37,15 @@ func GetDevices(s *session.Session) (*[]Device, error) {
 	if err != nil {
 		return nil, errors.HTTPError.Wrap(err, "Failed to get response for playback devices")
 	}
+	defer res.Body.Close()
 
 	if res.StatusCode != 200 {
 		return nil, errors.ReauthenticationError.Wrap(err, "Bad token")
 	}
 
-	data := &DevicesResponse{}
+	data := &struct {
+		Devices []Device `json:"devices"`
+	}{}
 
 	if err = json.NewDecoder(res.Body).Decode(data); err != nil {
 		return nil, errors.JSONError.Wrap(err, "Failed to decode json response for playback devices")

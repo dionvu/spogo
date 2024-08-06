@@ -1,8 +1,6 @@
 package session
 
 import (
-	"path/filepath"
-
 	"github.com/dionv/spogo/internal/config"
 	"github.com/dionv/spogo/internal/tokens"
 )
@@ -20,8 +18,8 @@ func New(c *config.Config) (*Session, error) {
 	}
 
 	// Loads possible access token and refresh token from respective token files.
-	s.AccessToken.Load(filepath.Join(c.Path(), config.TOKENSDIRECTORY, config.ACCESSTOKENFILE))
-	s.RefreshToken.Load(filepath.Join(c.Path(), config.TOKENSDIRECTORY, config.REQUESTTOKENFILE))
+	s.AccessToken.Load(c)
+	s.RefreshToken.Load(c)
 
 	// Authenticates valid access token, or valid access token and refresh token.
 	err := s.Authenticate(c)
