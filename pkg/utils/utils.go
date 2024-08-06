@@ -5,7 +5,15 @@ import (
 	"log"
 	"os/exec"
 	"runtime"
+
+	"github.com/fatih/color"
 )
+
+func CatchErr(err error) {
+	if err != nil {
+		fmt.Printf("%v %v\n", color.RedString("Error"), err)
+	}
+}
 
 // Opens a url depending on user's system?
 // Maybe lol, haven't tested with windows or mac.
