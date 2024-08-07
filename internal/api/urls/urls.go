@@ -7,4 +7,5 @@ const (
 	PLAYERSHUFFLE = "https://api.spotify.com/v1/me/player/shuffle"
 	PLAYERPLAY    = "https://api.spotify.com/v1/me/player/play"
 	PLAYERPAUSE   = "https://api.spotify.com/v1/me/player/pause"
+	PLAYERVOLUME  = "https://api.spotify.com/v1/me/player/volume"
 )

@@ -46,7 +46,8 @@ func OpenURL(url string) {
 	fmt.Println("Opening browser to -> ", url)
 }
 
-func PrintResponseBody(r io.Reader) {
+func PrintResponseBody(r io.ReadCloser) {
 	b, _ := io.ReadAll(r)
+	defer r.Close()
 	fmt.Println(string(b))
 }

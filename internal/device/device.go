@@ -14,14 +14,14 @@ import (
 // guarantee that the device is still valid or active on the user's
 // device since it will be cached.
 type Device struct {
-	ID               string `json:"id"`
-	IsActive         bool   `json:"is_active"`
-	IsPrivateSession bool   `json:"is_private_session"`
-	IsRestricted     bool   `json:"is_restricted"`
-	Name             string `json:"name"`
-	Type             string `json:"type"`
-	VolumePercent    int    `json:"volume_percent"`
-	SupportsVolume   bool   `json:"supports_volume"`
+	ID string `json:"id"`
+	// IsActive         bool   `json:"is_active"`
+	// IsPrivateSession bool   `json:"is_private_session"`
+	// IsRestricted     bool   `json:"is_restricted"`
+	// Name             string `json:"name"`
+	// Type             string `json:"type"`
+	// VolumePercent    int    `json:"volume_percent"`
+	// SupportsVolume   bool   `json:"supports_volume"`
 }
 
 // Retrieves currently available playback devices, or an empty slice

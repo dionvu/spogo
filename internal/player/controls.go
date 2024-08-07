@@ -41,9 +41,10 @@ func (p *Player) TransferPlayback(s *session.Session, play bool) error {
 	if res.StatusCode == status.BADTOKEN {
 		return errors.ReauthenticationError.NewWithNoMessage()
 	}
-	// if res.StatusCode != status.OK {
-	// 	return errors.ReauthenticationError.New("Bad request check res message")
-	// }
+
+	if res.StatusCode >= 400 {
+		return errors.HTTPError.New("Bad request, likely invalid player")
+	}
 
 	return nil
 }
@@ -51,6 +52,10 @@ func (p *Player) TransferPlayback(s *session.Session, play bool) error {
 // Resumes playback on the current device.
 func (p *Player) Resume(s *session.Session) error {
 	return p.TransferPlayback(s, true)
+}
+
+func (p *Player) TogglePlayback(s *session.Session) error {
+	return nil
 }
 
 // func (p *Player) Pause(s *session.Session) error {
@@ -73,9 +78,10 @@ func (p *Player) SkipNext(s *session.Session) error {
 	if res.StatusCode == status.BADTOKEN {
 		return errors.ReauthenticationError.NewWithNoMessage()
 	}
-	// if res.StatusCode != status.OK {
-	// 	return errors.ReauthenticationError.New("Bad request check res message")
-	// }
+
+	if res.StatusCode >= 400 {
+		return errors.HTTPError.New("Bad request, likely invalid player")
+	}
 
 	return nil
 }
@@ -97,34 +103,36 @@ func (p *Player) Pause(s *session.Session) error {
 	if res.StatusCode == status.BADTOKEN {
 		return errors.ReauthenticationError.NewWithNoMessage()
 	}
-	// if res.StatusCode != status.OK {
-	// 	return errors.ReauthenticationError.New("Bad request check res message")
-	// }
+
+	if res.StatusCode >= 205 {
+		return errors.HTTPError.New("Bad request, likely invalid player")
+	}
 
 	return nil
 }
 
-// // Resumes playback on the current device.
-// func (p *Player) Resume(s *session.Session) error {
-// 	req, err := http.NewRequest(http.MethodPut, urls.PLAYERPLAY, nil)
-// 	if err != nil {
-// 		return errors.HTTPError.WrapWithNoMessage(err)
-// 	}
-//
-// 	req.Header.Set(headers.AUTH, "Bearer "+s.AccessToken.String())
-// 	req.Header.Set(headers.CONTENTTYPE, headers.JSON)
-//
-// 	res, err := http.DefaultClient.Do(req)
-// 	if err != nil {
-// 		return errors.HTTPError.WrapWithNoMessage(err)
-// 	}
-//
-// 	if res.StatusCode == status.BADTOKEN {
-// 		return errors.ReauthenticationError.NewWithNoMessage()
-// 	}
-// 	// if res.StatusCode != status.OK {
-// 	// 	return errors.ReauthenticationError.New("Bad request check res message")
-// 	// }
-//
-// 	return nil
-// }
+// Resumes playback on the current device.
+func (p *Player) ResumeAlt(s *session.Session) error {
+	req, err := http.NewRequest(http.MethodPut, urls.PLAYERPLAY, nil)
+	if err != nil {
+		return errors.HTTPError.WrapWithNoMessage(err)
+	}
+
+	req.Header.Set(headers.AUTH, "Bearer "+s.AccessToken.String())
+	req.Header.Set(headers.CONTENTTYPE, headers.JSON)
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return errors.HTTPError.WrapWithNoMessage(err)
+	}
+
+	if res.StatusCode == status.BADTOKEN {
+		return errors.ReauthenticationError.NewWithNoMessage()
+	}
+
+	if res.StatusCode >= 205 {
+		return errors.HTTPError.New("Bad request, likely invalid player")
+	}
+
+	return nil
+}

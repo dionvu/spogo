@@ -3,7 +3,7 @@ package errors
 import "github.com/joomcode/errorx"
 
 var (
-	AppNamespace = errorx.NewNamespace("auth")
+	AppNamespace = errorx.NewNamespace("app")
 
 	HTTPError        = AppNamespace.NewType("http_error")
 	HTTPRequestError = AppNamespace.NewType("http_request_error")
@@ -20,4 +20,6 @@ var (
 
 	EncryptionError = AppNamespace.NewType("encryption_error")
 	DecryptionError = AppNamespace.NewType("decryption_error")
+
+	PLAYBACKERROR = AppNamespace.NewType("playback_error")
 )
