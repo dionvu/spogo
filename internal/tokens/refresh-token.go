@@ -12,7 +12,7 @@ import (
 )
 
 type RefreshToken struct {
-	Token string
+	Token string `json:"refresh_token"`
 }
 
 func NewRefreshToken(tok string) *RefreshToken {

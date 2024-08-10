@@ -22,4 +22,6 @@ var (
 	DecryptionError = AppNamespace.NewType("decryption_error")
 
 	PLAYBACKERROR = AppNamespace.NewType("playback_error")
+
+	PROMPTTUIERROR = AppNamespace.NewType("prompt_tui_error")
 )

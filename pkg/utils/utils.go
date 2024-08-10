@@ -4,15 +4,18 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"os/exec"
 	"runtime"
 
+	"github.com/dionv/spogo/public/icons"
 	"github.com/fatih/color"
 )
 
 func CatchErr(err error) {
 	if err != nil {
-		fmt.Printf("%v %v\n", color.RedString("Error"), err)
+		fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error"), err)
+		os.Exit(0)
 	}
 }
 
