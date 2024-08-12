@@ -26,14 +26,14 @@ func New(c *config.Config) (*Player, error) {
 		device: nil,
 	}
 
-	if !cacheExist(c) {
+	if !deviceCacheExist(c) {
 		if err := createCache(c); err != nil {
 			return nil, err
 		}
 	}
 
 	d, err := getCachedPlaybackDevice(c)
-	if errorx.GetTypeName(err) == errors.PLAYBACKERROR.String() {
+	if errorx.GetTypeName(err) == errors.NoDeviceError.String() {
 		return p, nil
 	}
 	if err != nil {
@@ -45,16 +45,15 @@ func New(c *config.Config) (*Player, error) {
 	return p, nil
 }
 
-// Prompts the user with all avaiable playback devices,
-// caches user's choice, and sets player device to choice.
-func (p *Player) UserSelectDevice(s *session.Session, c *config.Config) error {
+// Prompts the user with all avaiable playback devices and returns choice.
+func (p *Player) UserSelectDevice(s *session.Session, c *config.Config) (*device.Device, error) {
 	devices, err := device.GetDevices(s)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if len(*devices) == 0 {
-		return errors.PLAYBACKERROR.New("No playback devices were found.")
+		return nil, errors.NoDeviceError.New("No active playback devices detected.")
 	}
 
 	deviceNames := []string{}
@@ -71,38 +70,34 @@ func (p *Player) UserSelectDevice(s *session.Session, c *config.Config) error {
 	i, _, err := prompt.Run()
 	if err != nil {
 		fmt.Printf("Prompt failed %v\n", err)
-		return errors.PROMPTTUIERROR.Wrap(err, "Prompt failed")
+		return nil, errors.PromptTuiError.Wrap(err, "Devices prompt failed")
 	}
 
-	err = p.SetDevice(&(*devices)[i], c)
-	if err != nil {
-		fmt.Println(err)
-	}
+	// err = p.SetDevice(&(*devices)[i], c)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
 
-	return nil
+	return &(*devices)[i], nil
 }
 
-func cacheExist(c *config.Config) bool {
-	if _, err := os.ReadFile(filepath.Join(c.CachePath(), config.DEVICEFILE)); err != nil {
-		return false
-	}
-	return true
-}
-
-func createCache(c *config.Config) error {
-	file, err := os.Create(filepath.Join(c.CachePath(), config.DEVICEFILE))
-	if err != nil {
-		return errors.FileError.Wrap(err, fmt.Sprintf("Creating file %v", c.FilePath()))
-	}
-	file.Close()
-
-	return nil
-}
-
-// Sets the player device and caches the device.
+// Sets the playback device for player and saves playback device into
+// cache file "device.json".
 func (p *Player) SetDevice(d *device.Device, c *config.Config) error {
 	p.device = d
-	return cachePlaybackDevice(d, c)
+
+	f, err := os.Create(c.DeviceFile())
+	if err != nil {
+		return errors.FileError.Wrap(err, "Failed to open device cache file")
+	}
+	defer f.Close()
+
+	err = json.NewEncoder(f).Encode(d)
+	if err != nil {
+		errors.JSONError.Wrap(err, "Failed to marshal device")
+	}
+
+	return nil
 }
 
 func (p *Player) GetDevice() *device.Device {
@@ -113,41 +108,47 @@ func (p *Player) GetDevice() *device.Device {
 	return p.device
 }
 
-func cachePlaybackDevice(d *device.Device, c *config.Config) error {
-	f, err := os.Create(c.DeviceFile())
-	if err != nil {
-		return errors.FileError.Wrap(err, "Failed to open device cache file")
-	}
-	defer f.Close()
-
-	err = json.NewEncoder(f).Encode(d)
-	if err != nil {
-		errors.FileError.Wrap(err, "Failed to marshal device")
-	}
-
-	return nil
-}
-
-// Gets a playback device stored in device cache file.
-// This function will error if no device is found.
+// Gets playback device stored in device cache file
+// "device.json". This function will error if no device
+// is found.
 func getCachedPlaybackDevice(c *config.Config) (*device.Device, error) {
+	d := &device.Device{}
+
 	f, err := os.Open(c.DeviceFile())
 	if err != nil {
 		return nil, errors.FileError.Wrap(err, "Failed to open device cache file")
 	}
 	defer f.Close()
 
-	d := &device.Device{}
+	// Reached EOF before finished decoding into a device.
+	if err = json.NewDecoder(f).Decode(d); err == io.EOF {
+		return nil, errors.NoDeviceError.Wrap(err, "Playback device not active")
+	}
 
-	err = json.NewDecoder(f).Decode(d)
 	if err != nil {
-
-		if err == io.EOF {
-			return nil, errors.PLAYBACKERROR.Wrap(err, "No device found.")
-		}
-
-		return nil, errors.FileError.Wrap(err, "Failed to marshal device")
+		return nil, errors.JSONError.Wrap(err, "Failed to marshal device")
 	}
 
 	return d, nil
+}
+
+// Helper function for player new function to
+// see if the "device.json" cache file exists.
+func deviceCacheExist(c *config.Config) bool {
+	if _, err := os.ReadFile(filepath.Join(c.CachePath(), config.DEVICEFILE)); err != nil {
+		return false
+	}
+	return true
+}
+
+// Helper function for the player new function
+// to creates the "device.json" cache file.
+func createCache(c *config.Config) error {
+	file, err := os.Create(filepath.Join(c.CachePath(), config.DEVICEFILE))
+	if err != nil {
+		return errors.FileError.Wrap(err, fmt.Sprintf("Creating file %v", c.FilePath()))
+	}
+	file.Close()
+
+	return nil
 }

@@ -11,7 +11,8 @@ import (
 	"github.com/dionv/spogo/internal/session"
 )
 
-func (p *Player) SetShuffle(state bool, s *session.Session) error {
+// Enables or disables shuffling of tracks in current playlist or album.
+func (p *Player) Shuffle(state bool, s *session.Session) error {
 	query := &url.Values{}
 	query.Set("state", strconv.FormatBool(state))
 

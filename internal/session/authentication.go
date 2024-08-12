@@ -13,6 +13,7 @@ import (
 	"github.com/dionv/spogo/errors"
 	"github.com/dionv/spogo/internal/config"
 	"github.com/dionv/spogo/pkg/utils"
+	"github.com/dionv/spogo/public/icons"
 	"github.com/fatih/color"
 )
 
@@ -39,7 +40,7 @@ func (s *Session) Authenticate(c *config.Config) error {
 	if time.Now().After(s.AccessToken.Expiry) {
 		validCred, _ := c.Spotify.Valid()
 		if !validCred {
-			fmt.Printf("%v %v %v\n", color.RedString("Error"), "Invalid spotify client credentials:", color.YellowString(c.FilePath()))
+			fmt.Printf("%v %v %v\n", color.RedString(icons.Warning+"Error:"), "Invalid spotify client credentials:", color.YellowString(c.FilePath()))
 			os.Exit(0)
 		}
 

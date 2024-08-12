@@ -86,6 +86,29 @@ func (p *Player) SkipNext(s *session.Session) error {
 	return nil
 }
 
+func (p *Player) SkipPrev(s *session.Session) error {
+	req, err := http.NewRequest(http.MethodPost, urls.PLAYERPREV, nil)
+	if err != nil {
+		return errors.HTTPError.WrapWithNoMessage(err)
+	}
+	req.Header.Add(headers.AUTH, "Bearer "+s.AccessToken.String())
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return errors.HTTPError.WrapWithNoMessage(err)
+	}
+
+	if res.StatusCode == status.BADTOKEN {
+		return errors.ReauthenticationError.NewWithNoMessage()
+	}
+
+	if res.StatusCode >= 400 {
+		return errors.HTTPError.New("Bad request, likely invalid player")
+	}
+
+	return nil
+}
+
 // Pauses playback on the current device.
 func (p *Player) Pause(s *session.Session) error {
 	req, err := http.NewRequest(http.MethodPut, urls.PLAYERPAUSE, nil)
@@ -104,33 +127,12 @@ func (p *Player) Pause(s *session.Session) error {
 		return errors.ReauthenticationError.NewWithNoMessage()
 	}
 
-	if res.StatusCode >= 205 {
-		return errors.HTTPError.New("Bad request, likely invalid player")
+	// Spotify returns 403 for some reason if track is already paused
+	if res.StatusCode >= 403 {
+		return nil
 	}
 
-	return nil
-}
-
-// Resumes playback on the current device.
-func (p *Player) ResumeAlt(s *session.Session) error {
-	req, err := http.NewRequest(http.MethodPut, urls.PLAYERPLAY, nil)
-	if err != nil {
-		return errors.HTTPError.WrapWithNoMessage(err)
-	}
-
-	req.Header.Set(headers.AUTH, "Bearer "+s.AccessToken.String())
-	req.Header.Set(headers.CONTENTTYPE, headers.JSON)
-
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return errors.HTTPError.WrapWithNoMessage(err)
-	}
-
-	if res.StatusCode == status.BADTOKEN {
-		return errors.ReauthenticationError.NewWithNoMessage()
-	}
-
-	if res.StatusCode >= 205 {
+	if res.StatusCode >= 400 {
 		return errors.HTTPError.New("Bad request, likely invalid player")
 	}
 

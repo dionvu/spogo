@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"strconv"
 
 	"github.com/fatih/color"
 	"github.com/joomcode/errorx"
@@ -24,7 +23,7 @@ func main() {
 	err = c.Load()
 	utils.CatchErr(err)
 
-	s, err := session.New(c)
+	session, err := session.New(c)
 	utils.CatchErr(err)
 
 	p, err := player.New(c)
@@ -36,19 +35,23 @@ func main() {
 		Name:  "spogo",
 		Usage: "spotify + go = spogo!",
 		Action: func(ctx *cli.Context) error {
-			fmt.Println(cli.HelpFlag)
+			printWelcome()
 			return nil
 		},
-
 		Commands: []*cli.Command{
 			{
 				Name:    "devices",
 				Aliases: []string{"d"},
+				Usage:   "Select a playback device",
 				Action: func(ctx *cli.Context) error {
-					err = p.UserSelectDevice(s, c)
-					if errorx.GetTypeName(err) == errors.PLAYBACKERROR.String() {
-						fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error"), "No playback devices found")
+					d, err := p.UserSelectDevice(session, c)
+					if errorx.GetTypeName(err) == errors.NoDeviceError.String() {
+						HandleNoDevice()
 						os.Exit(0)
+					}
+
+					if err = p.SetDevice(d, c); err != nil {
+						return err
 					}
 
 					return nil
@@ -64,9 +67,43 @@ func main() {
 				Aliases: []string{"r"},
 				Usage:   "resume playback",
 				Action: func(ctx *cli.Context) error {
-					if err := p.Resume(s); err != nil {
-						fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error:"), "No active playback device detected")
+					if err := p.Resume(session); err != nil {
+						HandleNoDevice()
+					}
+
+					return nil
+				},
+				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
+					PrintHelpCommand(ctx, err)
+					os.Exit(0)
+					return nil
+				},
+			},
+			{
+				Name:    "pause",
+				Aliases: []string{"p"},
+				Usage:   "pause playback",
+				Action: func(ctx *cli.Context) error {
+					if err := p.Pause(session); err != nil {
+						HandleNoDevice()
 						os.Exit(0)
+					}
+
+					return nil
+				},
+				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
+					PrintHelpCommand(ctx, err)
+					os.Exit(0)
+					return nil
+				},
+			},
+			{
+				Name:    "next",
+				Aliases: []string{"n"},
+				Usage:   "skips playback to next track in queue",
+				Action: func(ctx *cli.Context) error {
+					if err := p.SkipNext(session); err != nil {
+						HandleNoDevice()
 					}
 
 					return nil
@@ -79,15 +116,13 @@ func main() {
 			},
 
 			{
-				Name:    "pause",
-				Aliases: []string{"p"},
-				Usage:   "pause playback",
+				Name:    "previous",
+				Aliases: []string{"prev", "back", "b"},
+				Usage:   "skips playback to the previous track",
 				Action: func(ctx *cli.Context) error {
-					if err := p.Pause(s); err != nil {
-						fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error:"), "No active playback device detected")
-						os.Exit(0)
+					if err := p.SkipPrev(session); err != nil {
+						HandleNoDevice()
 					}
-
 					return nil
 				},
 				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
@@ -101,36 +136,48 @@ func main() {
 				Name:    "volume",
 				Aliases: []string{"v", "vol"},
 				Usage:   "change playback device volume",
-				// Flags: []cli.Flag{
-				// 	&cli.IntFlag{
-				// 		Name:  "set",
-				// 		Usage: "sets volume to given `NUMBER`",
-				// 	},
-				// },
+				Flags: []cli.Flag{
+					&cli.IntFlag{
+						Name:    "set",
+						Aliases: []string{"s"},
+						Usage:   "sets volume to `INT`",
+						Value:   0,
+					},
+					&cli.IntFlag{
+						Name:    "up",
+						Aliases: []string{"u"},
+						Usage:   "raises volume by `INT`",
+					},
+					&cli.IntFlag{
+						Name:    "down",
+						Aliases: []string{"d"},
+						Usage:   "lowers volume by `INT`",
+					},
+				},
 
 				Action: func(ctx *cli.Context) error {
-					if ctx.Args().First() == "" {
-						fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error:"), "No interger provided")
-						fmt.Printf("%v\n", color.YellowString(icons.Question+"Help: "+ctx.App.Name+" help "+ctx.Command.Name))
-						os.Exit(0)
+					if ctx.IsSet("set") {
+						// Ensures volume is in the range [0, 100], and sets volume.
+						vol := int(max(0, min(100, ctx.Int("set"))))
+
+						if err := p.SetVolume(session, vol); err != nil {
+							HandleNoDevice()
+							os.Exit(0)
+						}
+						return nil
 					}
 
-					num, err := strconv.ParseInt(ctx.Args().First(), 10, 8)
-					if err != nil {
-						fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error:"), "Invalid integer")
-						fmt.Printf("%v\n", color.YellowString(icons.Question+"Help: "+ctx.App.Name+" help "+ctx.Command.Name))
-						os.Exit(0)
+					if ctx.IsSet("up") {
 					}
 
-					v := max(0, min(100, num))
-
-					if err := p.SetVolume(s, int(v)); err != nil {
-						fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error:"), "No active playback device detected")
-						os.Exit(0)
+					if ctx.IsSet("down") {
 					}
+
+					HandleNoFlag(ctx)
 
 					return nil
 				},
+
 				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
 					PrintHelpCommand(ctx, err)
 					os.Exit(0)
@@ -146,9 +193,25 @@ func main() {
 	}
 }
 
-// Prints the command to pritn help information corresponding
-// to the command that the user messed up on.
+// Prints the command to pritn help information
+// corresponding to the command that the user messed up on.
 func PrintHelpCommand(ctx *cli.Context, err error) {
 	fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error:"), err)
 	fmt.Printf("%v\n", color.YellowString(icons.Question+"Help: "+ctx.App.Name+" help "+ctx.Command.Name))
+}
+
+func HandleNoFlag(ctx *cli.Context) {
+	fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error:"), "no flags provided")
+	fmt.Printf("%v\n", color.YellowString(icons.Question+"Help: "+config.APPNAME+" help "+ctx.Command.Name))
+}
+
+// Prints the error message corresponding to no
+// active or selected playback device.
+func HandleNoDevice() {
+	fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error:"), "no active playback device")
+	fmt.Printf("%v\n", color.YellowString(icons.Question+"Help: "+config.APPNAME+" devices"))
+}
+
+func printWelcome() {
+	fmt.Println(cli.HelpFlag)
 }

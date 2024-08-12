@@ -13,15 +13,19 @@ var (
 
 	YAMLError = AppNamespace.NewType("yaml_error")
 
-	InvalidTokenError     = AppNamespace.NewType("invalid_token_error")
+	// InvalidTokenError     = AppNamespace.NewType("invalid_token_error")
 	ReauthenticationError = AppNamespace.NewType("reauthentication_error")
 
 	ApiError = AppNamespace.NewType("api_error")
 
-	EncryptionError = AppNamespace.NewType("encryption_error")
-	DecryptionError = AppNamespace.NewType("decryption_error")
+	PromptTuiError = AppNamespace.NewType("prompt_tui_error")
 
-	PLAYBACKERROR = AppNamespace.NewType("playback_error")
+	PlayBack = errorx.NewNamespace("playback")
 
-	PROMPTTUIERROR = AppNamespace.NewType("prompt_tui_error")
+	NoDeviceError = PlayBack.NewType("no_device_error")
+
+	/////////
+	Cli = errorx.NewNamespace("cli")
+
+	NoFlagProvidedError = Cli.NewType("no_flag_provided_error")
 )

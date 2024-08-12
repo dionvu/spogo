@@ -8,4 +8,5 @@ const (
 	PLAYERPLAY    = "https://api.spotify.com/v1/me/player/play"
 	PLAYERPAUSE   = "https://api.spotify.com/v1/me/player/pause"
 	PLAYERVOLUME  = "https://api.spotify.com/v1/me/player/volume"
+	PLAYERPREV    = "https://api.spotify.com/v1/me/player/previous"
 )
