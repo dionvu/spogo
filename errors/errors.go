@@ -22,7 +22,8 @@ var (
 
 	PlayBack = errorx.NewNamespace("playback")
 
-	NoDeviceError = PlayBack.NewType("no_device_error")
+	NoDeviceError   = PlayBack.NewType("no_device_error")
+	NoPlaybackError = PlayBack.NewType("no_playback_error")
 
 	/////////
 	Cli = errorx.NewNamespace("cli")
