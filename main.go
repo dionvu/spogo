@@ -19,21 +19,22 @@ import (
 func main() {
 	c, err := config.New()
 	utils.CatchErr(err)
-
-	err = c.Load()
-	utils.CatchErr(err)
+	utils.CatchErr(c.Load())
 
 	session, err := session.New(c)
 	utils.CatchErr(err)
 
-	p, err := player.New(c)
+	player, err := player.New(c)
+	utils.CatchErr(err)
+
+	state, err := player.GetPlayerState(session)
 	utils.CatchErr(err)
 
 	app := &cli.App{
 		EnableBashCompletion: true,
 
 		Name:  "spogo",
-		Usage: "spotify + go = spogo!",
+		Usage: "control spotify directly in your terminal!",
 		Action: func(ctx *cli.Context) error {
 			printWelcome()
 			return nil
@@ -44,13 +45,14 @@ func main() {
 				Aliases: []string{"d"},
 				Usage:   "Select a playback device",
 				Action: func(ctx *cli.Context) error {
-					d, err := p.UserSelectDevice(session, c)
+					d, err := player.UserSelectDevice(session, c)
 					if errorx.GetTypeName(err) == errors.NoDeviceError.String() {
-						HandleNoDevice()
+						fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error:"), "no active playback device detected")
+						fmt.Printf("%v\n", color.YellowString(icons.Question+"Help: "+config.APPNAME+" devices"))
 						os.Exit(0)
 					}
 
-					if err = p.SetDevice(d, c); err != nil {
+					if err = player.SetDevice(d, c); err != nil {
 						return err
 					}
 
@@ -62,13 +64,15 @@ func main() {
 					return nil
 				},
 			},
+
 			{
 				Name:    "resume",
 				Aliases: []string{"r"},
 				Usage:   "resume playback",
 				Action: func(ctx *cli.Context) error {
-					if err := p.Resume(session); err != nil {
+					if err := player.Resume(session); err != nil {
 						HandleNoDevice()
+						os.Exit(0)
 					}
 
 					return nil
@@ -79,12 +83,52 @@ func main() {
 					return nil
 				},
 			},
+
+			{
+				Name:    "forward",
+				Aliases: []string{"f"},
+				Usage:   "skips current track forward 15 seconds",
+				Args:    true,
+				Action: func(ctx *cli.Context) error {
+					if err := player.SeekToPosition(session, state.ProgressMs+15000); err != nil {
+						HandleNoDevice()
+						os.Exit(0)
+					}
+
+					return nil
+				},
+				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
+					PrintHelpCommand(ctx, err)
+					os.Exit(0)
+					return nil
+				},
+			},
+
+			{
+				Name:    "backward",
+				Aliases: []string{"back", "b"},
+				Usage:   "skips current track backward 15 seconds",
+				Action: func(ctx *cli.Context) error {
+					if err := player.SeekToPosition(session, state.ProgressMs-15000); err != nil {
+						HandleNoDevice()
+						os.Exit(0)
+					}
+
+					return nil
+				},
+				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
+					PrintHelpCommand(ctx, err)
+					os.Exit(0)
+					return nil
+				},
+			},
+
 			{
 				Name:    "pause",
 				Aliases: []string{"p"},
 				Usage:   "pause playback",
 				Action: func(ctx *cli.Context) error {
-					if err := p.Pause(session); err != nil {
+					if err := player.Pause(session); err != nil {
 						HandleNoDevice()
 						os.Exit(0)
 					}
@@ -102,7 +146,7 @@ func main() {
 				Aliases: []string{"n"},
 				Usage:   "skips playback to next track in queue",
 				Action: func(ctx *cli.Context) error {
-					if err := p.SkipNext(session); err != nil {
+					if err := player.SkipNext(session); err != nil {
 						HandleNoDevice()
 					}
 
@@ -117,10 +161,10 @@ func main() {
 
 			{
 				Name:    "previous",
-				Aliases: []string{"prev", "back", "b"},
+				Aliases: []string{"prev"},
 				Usage:   "skips playback to the previous track",
 				Action: func(ctx *cli.Context) error {
-					if err := p.SkipPrev(session); err != nil {
+					if err := player.SkipPrev(session); err != nil {
 						HandleNoDevice()
 					}
 					return nil
@@ -140,18 +184,18 @@ func main() {
 					&cli.IntFlag{
 						Name:    "set",
 						Aliases: []string{"s"},
-						Usage:   "sets volume to `INT`",
+						Usage:   "sets volume to `num`",
 						Value:   0,
 					},
 					&cli.IntFlag{
 						Name:    "up",
 						Aliases: []string{"u"},
-						Usage:   "raises volume by `INT`",
+						Usage:   "raises volume by `num`",
 					},
 					&cli.IntFlag{
 						Name:    "down",
 						Aliases: []string{"d"},
-						Usage:   "lowers volume by `INT`",
+						Usage:   "lowers volume by `num`",
 					},
 				},
 
@@ -160,7 +204,7 @@ func main() {
 						// Ensures volume is in the range [0, 100], and sets volume.
 						vol := int(max(0, min(100, ctx.Int("set"))))
 
-						if err := p.SetVolume(session, vol); err != nil {
+						if err := player.SetVolume(session, vol); err != nil {
 							HandleNoDevice()
 							os.Exit(0)
 						}
@@ -168,9 +212,11 @@ func main() {
 					}
 
 					if ctx.IsSet("up") {
+						// TODO
 					}
 
 					if ctx.IsSet("down") {
+						// TODO
 					}
 
 					HandleNoFlag(ctx)
@@ -187,19 +233,22 @@ func main() {
 		},
 	}
 
+	// Runs the cli command and catches any error.
 	if err := app.Run(os.Args); err != nil {
 		fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error:"), err)
 		fmt.Printf("%v\n", color.YellowString(icons.Question+"Help: "+config.APPNAME+" help <command>"))
 	}
 }
 
-// Prints the command to pritn help information
+// Prints the command to print help information
 // corresponding to the command that the user messed up on.
 func PrintHelpCommand(ctx *cli.Context, err error) {
 	fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error:"), err)
 	fmt.Printf("%v\n", color.YellowString(icons.Question+"Help: "+ctx.App.Name+" help "+ctx.Command.Name))
 }
 
+// Prints the error message corresponding to
+// command requiring flags but none were provided.
 func HandleNoFlag(ctx *cli.Context) {
 	fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error:"), "no flags provided")
 	fmt.Printf("%v\n", color.YellowString(icons.Question+"Help: "+config.APPNAME+" help "+ctx.Command.Name))
@@ -212,6 +261,10 @@ func HandleNoDevice() {
 	fmt.Printf("%v\n", color.YellowString(icons.Question+"Help: "+config.APPNAME+" devices"))
 }
 
+// Prints the welcome message that provides the help
+// command and a header with the app name.
 func printWelcome() {
-	fmt.Println(cli.HelpFlag)
+	fmt.Printf("%v", " ___  ___  ___  ___  ___\n|_ -|| . || . || . || . |\n|___||  _||___||_  ||___|\n     |_|       |___|\n\n")
+	fmt.Println(color.HiBlueString(icons.NoteBox + "Spotify " + icons.Multiply + "Go " + icons.Equals + "Spogo!"))
+	fmt.Println(color.YellowString(icons.Question + "Help: --help, -h"))
 }

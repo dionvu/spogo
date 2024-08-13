@@ -73,11 +73,6 @@ func (p *Player) UserSelectDevice(s *session.Session, c *config.Config) (*device
 		return nil, errors.PromptTuiError.Wrap(err, "Devices prompt failed")
 	}
 
-	// err = p.SetDevice(&(*devices)[i], c)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-
 	return &(*devices)[i], nil
 }
 

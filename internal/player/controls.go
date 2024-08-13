@@ -3,6 +3,8 @@ package player
 import (
 	"encoding/json"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/dionv/spogo/errors"
@@ -17,6 +19,10 @@ import (
 // an alternative that replaces the "player/play" and "player/pause"
 // endpoints.
 func (p *Player) TransferPlayback(s *session.Session, play bool) error {
+	if p.device == nil {
+		return errors.NoDeviceError.New("no selected playback device")
+	}
+
 	data := map[string]interface{}{}
 
 	data["device_ids"] = []string{p.device.ID}
@@ -43,7 +49,7 @@ func (p *Player) TransferPlayback(s *session.Session, play bool) error {
 	}
 
 	if res.StatusCode >= 400 {
-		return errors.HTTPError.New("Bad request, likely invalid player")
+		return errors.HTTPError.New("bad request")
 	}
 
 	return nil
@@ -54,16 +60,12 @@ func (p *Player) Resume(s *session.Session) error {
 	return p.TransferPlayback(s, true)
 }
 
-func (p *Player) TogglePlayback(s *session.Session) error {
-	return nil
-}
-
-// func (p *Player) Pause(s *session.Session) error {
-// 	return p.TransferPlayback(s, false)
-// }
-
 // Skips the the next track in the queue.
 func (p *Player) SkipNext(s *session.Session) error {
+	if p.device == nil {
+		return errors.NoDeviceError.New("no selected playback device")
+	}
+
 	req, err := http.NewRequest(http.MethodPost, urls.PLAYERNEXT, nil)
 	if err != nil {
 		return errors.HTTPError.WrapWithNoMessage(err)
@@ -80,13 +82,17 @@ func (p *Player) SkipNext(s *session.Session) error {
 	}
 
 	if res.StatusCode >= 400 {
-		return errors.HTTPError.New("Bad request, likely invalid player")
+		return errors.HTTPError.New("bad request")
 	}
 
 	return nil
 }
 
 func (p *Player) SkipPrev(s *session.Session) error {
+	if p.device == nil {
+		return errors.NoDeviceError.New("no selected playback device")
+	}
+
 	req, err := http.NewRequest(http.MethodPost, urls.PLAYERPREV, nil)
 	if err != nil {
 		return errors.HTTPError.WrapWithNoMessage(err)
@@ -103,7 +109,7 @@ func (p *Player) SkipPrev(s *session.Session) error {
 	}
 
 	if res.StatusCode >= 400 {
-		return errors.HTTPError.New("Bad request, likely invalid player")
+		return errors.HTTPError.New("bad request")
 	}
 
 	return nil
@@ -111,6 +117,10 @@ func (p *Player) SkipPrev(s *session.Session) error {
 
 // Pauses playback on the current device.
 func (p *Player) Pause(s *session.Session) error {
+	if p.device == nil {
+		return errors.NoDeviceError.New("no selected playback device")
+	}
+
 	req, err := http.NewRequest(http.MethodPut, urls.PLAYERPAUSE, nil)
 	if err != nil {
 		return errors.HTTPError.WrapWithNoMessage(err)
@@ -133,7 +143,40 @@ func (p *Player) Pause(s *session.Session) error {
 	}
 
 	if res.StatusCode >= 400 {
-		return errors.HTTPError.New("Bad request, likely invalid player")
+		return errors.HTTPError.New("bad request")
+	}
+
+	return nil
+}
+
+// Seeks to given position in milliseconds to user's current playing track.
+func (p *Player) SeekToPosition(s *session.Session, pos int) error {
+	if p.device == nil {
+		return errors.NoDeviceError.New("no selected playback device")
+	}
+
+	query := url.Values{}
+	query.Set("position_ms", strconv.Itoa(pos))
+	query.Set("device_id", p.device.ID)
+
+	req, err := http.NewRequest(http.MethodPut, urls.PLAYERSEEK+"?"+query.Encode(), nil)
+	if err != nil {
+		return errors.HTTPError.WrapWithNoMessage(err)
+	}
+
+	req.Header.Set(headers.AUTH, "Bearer "+s.AccessToken.String())
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return errors.HTTPError.WrapWithNoMessage(err)
+	}
+
+	if res.StatusCode == status.BADTOKEN {
+		return errors.ReauthenticationError.NewWithNoMessage()
+	}
+
+	if res.StatusCode >= 400 {
+		return errors.HTTPError.New("bad request")
 	}
 
 	return nil
