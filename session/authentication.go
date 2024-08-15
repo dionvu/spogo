@@ -40,7 +40,8 @@ func (s *Session) Authenticate(c *config.Config) error {
 	if time.Now().After(s.AccessToken.Expiry) {
 		validCred, _ := c.Spotify.Valid()
 		if !validCred {
-			fmt.Printf("%v %v %v\n", color.RedString(icons.Warning+"Error:"), "Invalid spotify client credentials:", color.YellowString(c.FilePath()))
+			fmt.Printf("%v %v %v\n", color.RedString(icons.Warning+"Error:"),
+				"Invalid spotify client credentials:", color.YellowString(c.FilePath()))
 			os.Exit(0)
 		}
 
@@ -68,7 +69,9 @@ func getNewTokens(s *Session, c *config.Config) error {
 
 		startServer()
 
-		utils.OpenURL(URI)
+		if err := utils.OpenURL(URI); err != nil {
+			fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error:"), err)
+		}
 
 		// Awaits the authentication code from handlers.
 		return <-ch

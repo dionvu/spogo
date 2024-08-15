@@ -26,7 +26,7 @@ func (p *Player) State(s *session.Session) (*PlayerState, error) {
 		return nil, errors.HTTPError.WrapWithNoMessage(err)
 	}
 
-	req.Header.Set(headers.AUTH, "Bearer "+s.AccessToken.String())
+	req.Header.Set(headers.Auth, "Bearer "+s.AccessToken.String())
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {

@@ -8,7 +8,7 @@ import (
 	"github.com/dionv/spogo/errors"
 	"github.com/dionv/spogo/session"
 	"github.com/dionv/spogo/spotify/headers"
-	"github.com/dionv/spogo/spotify/statuses"
+	"github.com/dionv/spogo/spotify/status"
 	"github.com/dionv/spogo/spotify/urls"
 )
 
@@ -21,15 +21,15 @@ func (p *Player) SetVolume(s *session.Session, val int) error {
 		return errors.HTTPError.WrapWithNoMessage(err)
 	}
 
-	req.Header.Set(headers.AUTH, "Bearer "+s.AccessToken.String())
-	req.Header.Set(headers.CONTENTTYPE, headers.JSON)
+	req.Header.Set(headers.Auth, "Bearer "+s.AccessToken.String())
+	req.Header.Set(headers.ContentType, headers.ApplicationJson)
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return errors.HTTPError.WrapWithNoMessage(err)
 	}
 
-	if res.StatusCode == status.BADTOKEN {
+	if res.StatusCode == status.BadToken {
 		return errors.ReauthenticationError.NewWithNoMessage()
 	}
 

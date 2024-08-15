@@ -9,11 +9,8 @@ import (
 
 	"github.com/dionv/spogo/errors"
 	"github.com/dionv/spogo/spotify/scopes"
+	"github.com/dionv/spogo/spotify/urls"
 	"github.com/google/uuid"
-)
-
-const (
-	SPOTIFYAUTHURL = "https://accounts.spotify.com/authorize"
 )
 
 // Redirects user to the spotify authentication url and awaits callback.
@@ -32,7 +29,7 @@ func startAuth(w http.ResponseWriter, r *http.Request) {
 	}, " "))
 	query.Set("state", state)
 
-	req, err := http.NewRequest(http.MethodGet, SPOTIFYAUTHURL, strings.NewReader(query.Encode()))
+	req, err := http.NewRequest(http.MethodGet, urls.SPOTIFYAUTHURL, strings.NewReader(query.Encode()))
 	if err != nil {
 		log.Fatal(errors.HTTPRequestError.Wrap(err, "Unable to create new http request"))
 	}
@@ -41,7 +38,7 @@ func startAuth(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(errors.HTTPRequestError.Wrap(err, "Unable to do http request"))
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("%s?%s", SPOTIFYAUTHURL, query.Encode()), http.StatusTemporaryRedirect)
+	http.Redirect(w, r, fmt.Sprintf("%s?%s", urls.SPOTIFYAUTHURL, query.Encode()), http.StatusTemporaryRedirect)
 }
 
 // After user is redirected to the redirect uri, ensures valid state

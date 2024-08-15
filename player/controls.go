@@ -10,7 +10,7 @@ import (
 	"github.com/dionv/spogo/errors"
 	"github.com/dionv/spogo/session"
 	"github.com/dionv/spogo/spotify/headers"
-	"github.com/dionv/spogo/spotify/statuses"
+	"github.com/dionv/spogo/spotify/status"
 	"github.com/dionv/spogo/spotify/urls"
 )
 
@@ -36,14 +36,14 @@ func (p *Player) Resume(s *session.Session) error {
 	if err != nil {
 		return errors.HTTPError.WrapWithNoMessage(err)
 	}
-	req.Header.Add(headers.AUTH, "Bearer "+s.AccessToken.String())
+	req.Header.Add(headers.Auth, "Bearer "+s.AccessToken.String())
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return errors.HTTPError.WrapWithNoMessage(err)
 	}
 
-	if res.StatusCode == status.BADTOKEN {
+	if res.StatusCode == status.BadToken {
 		return errors.ReauthenticationError.NewWithNoMessage()
 	}
 
@@ -68,14 +68,14 @@ func (p *Player) SkipNext(s *session.Session) error {
 	if err != nil {
 		return errors.HTTPError.WrapWithNoMessage(err)
 	}
-	req.Header.Add(headers.AUTH, "Bearer "+s.AccessToken.String())
+	req.Header.Add(headers.Auth, "Bearer "+s.AccessToken.String())
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return errors.HTTPError.WrapWithNoMessage(err)
 	}
 
-	if res.StatusCode == status.BADTOKEN {
+	if res.StatusCode == status.BadToken {
 		return errors.ReauthenticationError.NewWithNoMessage()
 	}
 
@@ -95,14 +95,14 @@ func (p *Player) SkipPrev(s *session.Session) error {
 	if err != nil {
 		return errors.HTTPError.WrapWithNoMessage(err)
 	}
-	req.Header.Add(headers.AUTH, "Bearer "+s.AccessToken.String())
+	req.Header.Add(headers.Auth, "Bearer "+s.AccessToken.String())
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return errors.HTTPError.WrapWithNoMessage(err)
 	}
 
-	if res.StatusCode == status.BADTOKEN {
+	if res.StatusCode == status.BadToken {
 		return errors.ReauthenticationError.NewWithNoMessage()
 	}
 
@@ -124,14 +124,14 @@ func (p *Player) Pause(s *session.Session) error {
 		return errors.HTTPError.WrapWithNoMessage(err)
 	}
 
-	req.Header.Set(headers.AUTH, "Bearer "+s.AccessToken.String())
+	req.Header.Set(headers.Auth, "Bearer "+s.AccessToken.String())
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return errors.HTTPError.WrapWithNoMessage(err)
 	}
 
-	if res.StatusCode == status.BADTOKEN {
+	if res.StatusCode == status.BadToken {
 		return errors.ReauthenticationError.NewWithNoMessage()
 	}
 
@@ -162,14 +162,14 @@ func (p *Player) SeekToPosition(s *session.Session, pos int) error {
 		return errors.HTTPError.WrapWithNoMessage(err)
 	}
 
-	req.Header.Set(headers.AUTH, "Bearer "+s.AccessToken.String())
+	req.Header.Set(headers.Auth, "Bearer "+s.AccessToken.String())
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return errors.HTTPError.WrapWithNoMessage(err)
 	}
 
-	if res.StatusCode == status.BADTOKEN {
+	if res.StatusCode == status.BadToken {
 		return errors.ReauthenticationError.NewWithNoMessage()
 	}
 

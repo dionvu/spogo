@@ -1,9 +1,10 @@
 package icons
 
 const (
-	Warning  = " "
-	Question = "󰠗 "
-	NoteBox  = "󰎄 "
-	Multiply = " "
-	Equals   = " "
+	Warning   = " "
+	Attention = " "
+	Question  = "󰠗 "
+	NoteBox   = "󰎄 "
+	Multiply  = " "
+	Equals    = " "
 )

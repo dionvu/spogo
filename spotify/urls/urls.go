@@ -11,3 +11,7 @@ const (
 	PLAYERPREV    = "https://api.spotify.com/v1/me/player/previous"
 	PLAYERSEEK    = "https://api.spotify.com/v1/me/player/seek"
 )
+
+const (
+	SPOTIFYAUTHURL = "https://accounts.spotify.com/authorize"
+)

@@ -31,7 +31,7 @@ func GetDevices(s *session.Session) (*[]Device, error) {
 	if err != nil {
 		return nil, errors.HTTPError.Wrap(err, "Failed to create http request for playback devices")
 	}
-	req.Header.Set(headers.AUTH, "Bearer "+s.AccessToken.String())
+	req.Header.Set(headers.Auth, "Bearer "+s.AccessToken.String())
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
