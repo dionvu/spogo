@@ -1,8 +1,8 @@
 package session
 
 import (
-	"github.com/dionv/spogo/internal/config"
-	"github.com/dionv/spogo/internal/tokens"
+	"github.com/dionv/spogo/config"
+	"github.com/dionv/spogo/tokens"
 )
 
 type Session struct {

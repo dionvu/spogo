@@ -4,19 +4,20 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/dionv/spogo/api/headers"
+	"github.com/dionv/spogo/api/urls"
+	"github.com/dionv/spogo/device"
 	"github.com/dionv/spogo/errors"
-	"github.com/dionv/spogo/internal/api/headers"
-	"github.com/dionv/spogo/internal/api/urls"
-	"github.com/dionv/spogo/internal/device"
-	"github.com/dionv/spogo/internal/session"
+	"github.com/dionv/spogo/session"
 )
 
 type PlayerState struct {
-	Device     *device.Device `json:"device"`
-	ProgressMs int            `json:"progress_ms"`
+	Device       *device.Device `json:"device"`
+	ProgressMs   int            `json:"progress_ms"`
+	ShuffleState bool           `json:"shuffle_state"`
 }
 
-func (p *Player) GetPlayerState(s *session.Session) (*PlayerState, error) {
+func (p *Player) State(s *session.Session) (*PlayerState, error) {
 	ps := &PlayerState{}
 
 	req, err := http.NewRequest(http.MethodGet, urls.PLAYER, nil)
@@ -32,7 +33,7 @@ func (p *Player) GetPlayerState(s *session.Session) (*PlayerState, error) {
 	}
 
 	if res.StatusCode == 204 {
-		return nil, errors.NoPlaybackError.New("playback not available or active")
+		return nil, errors.DeviceError.New("playback device is not active")
 	}
 
 	if res.StatusCode > 204 {

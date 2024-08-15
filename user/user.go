@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/dionv/spogo/internal/session"
+	"github.com/dionv/spogo/session"
 	"github.com/fatih/color"
 )
 

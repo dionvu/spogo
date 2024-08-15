@@ -5,14 +5,19 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/dionv/spogo/api/headers"
+	"github.com/dionv/spogo/api/status"
+	"github.com/dionv/spogo/api/urls"
 	"github.com/dionv/spogo/errors"
-	"github.com/dionv/spogo/internal/api/headers"
-	"github.com/dionv/spogo/internal/api/urls"
-	"github.com/dionv/spogo/internal/session"
+	"github.com/dionv/spogo/session"
 )
 
 // Enables or disables shuffling of tracks in current playlist or album.
 func (p *Player) Shuffle(state bool, s *session.Session) error {
+	if p.device == nil {
+		return errors.DeviceError.New("no selected playback device")
+	}
+
 	query := &url.Values{}
 	query.Set("state", strconv.FormatBool(state))
 
@@ -28,8 +33,12 @@ func (p *Player) Shuffle(state bool, s *session.Session) error {
 		return errors.HTTPError.WrapWithNoMessage(err)
 	}
 
-	if res.StatusCode != http.StatusOK {
-		return errors.ReauthenticationError.New("Bad access token")
+	if res.StatusCode == status.BADTOKEN {
+		return errors.ReauthenticationError.NewWithNoMessage()
+	}
+
+	if res.StatusCode >= 400 {
+		return errors.HTTPError.New("bad request")
 	}
 
 	return nil

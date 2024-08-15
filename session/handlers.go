@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/dionv/spogo/errors"
-	"github.com/dionv/spogo/internal/session/auth/scopes"
+	"github.com/dionv/spogo/session/auth/scopes"
 	"github.com/google/uuid"
 )
 

@@ -8,37 +8,25 @@ import (
 	"github.com/joomcode/errorx"
 	"github.com/urfave/cli/v2"
 
+	"github.com/dionv/spogo/config"
 	"github.com/dionv/spogo/errors"
-	"github.com/dionv/spogo/internal/config"
-	"github.com/dionv/spogo/internal/player"
-	"github.com/dionv/spogo/internal/session"
-	"github.com/dionv/spogo/pkg/utils"
-	"github.com/dionv/spogo/public/icons"
+	"github.com/dionv/spogo/icons"
+	"github.com/dionv/spogo/player"
+	"github.com/dionv/spogo/session"
 )
 
 func main() {
 	c, err := config.New()
-	utils.CatchErr(err)
-	utils.CatchErr(c.Load())
+	errors.Catch(err)
+	errors.Catch(c.Load())
 
 	session, err := session.New(c)
-	utils.CatchErr(err)
+	errors.Catch(err)
 
 	player, err := player.New(c)
-	utils.CatchErr(err)
-
-	state, err := player.GetPlayerState(session)
-	utils.CatchErr(err)
+	errors.Catch(err)
 
 	app := &cli.App{
-		EnableBashCompletion: true,
-
-		Name:  "spogo",
-		Usage: "control spotify directly in your terminal!",
-		Action: func(ctx *cli.Context) error {
-			printWelcome()
-			return nil
-		},
 		Commands: []*cli.Command{
 			{
 				Name:    "devices",
@@ -46,21 +34,56 @@ func main() {
 				Usage:   "Select a playback device",
 				Action: func(ctx *cli.Context) error {
 					d, err := player.UserSelectDevice(session, c)
-					if errorx.GetTypeName(err) == errors.NoDeviceError.String() {
-						fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error:"), "no active playback device detected")
-						fmt.Printf("%v\n", color.YellowString(icons.Question+"Help: "+config.APPNAME+" devices"))
-						os.Exit(0)
+
+					if errorx.GetTypeName(err) == errors.DeviceError.String() {
+						errors.Print(err)
+						PrintHelpCommand(ctx.Command)
+						return nil
 					}
 
-					if err = player.SetDevice(d, c); err != nil {
-						return err
-					}
+					errors.Catch(player.SetDevice(d, c))
 
 					return nil
 				},
 				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
-					PrintHelpCommand(ctx, err)
-					os.Exit(0)
+					HandleBadUsage(ctx, err)
+					return nil
+				},
+			},
+
+			{
+				Name:    "shuffle",
+				Aliases: []string{"s"},
+				Usage:   "toggle shuffling on current playlist/album",
+				// Flags: []cli.Flag{
+				// 	&cli.BoolFlag{
+				// 		Name:    "set",
+				// 		Aliases: []string{"s"},
+				// 		Usage:   "sets shuffling to `true/false`",
+				// 	},
+				// },
+				Action: func(ctx *cli.Context) error {
+					state, err := player.State(session)
+					if errorx.GetTypeName(err) == errors.DeviceError.String() {
+						errors.Print(err)
+						PrintHelpCommand(ctx.Command)
+						return nil
+					}
+
+					// if ctx.IsSet("set") {
+					err = player.Shuffle(!state.ShuffleState, session)
+
+					errors.Catch(err)
+
+					// return nil
+					// }
+
+					// HandleNoFlag(ctx)
+
+					return nil
+				},
+				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
+					HandleBadUsage(ctx, err)
 					return nil
 				},
 			},
@@ -70,16 +93,20 @@ func main() {
 				Aliases: []string{"r"},
 				Usage:   "resume playback",
 				Action: func(ctx *cli.Context) error {
-					if err := player.Resume(session); err != nil {
-						HandleNoDevice()
-						os.Exit(0)
+					err := player.Resume(session)
+
+					if errorx.GetTypeName(err) == errors.DeviceError.String() {
+						errors.Print(err)
+						PrintHelpCommand(ctx.Command)
+						return nil
 					}
+
+					errors.Catch(err)
 
 					return nil
 				},
 				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
-					PrintHelpCommand(ctx, err)
-					os.Exit(0)
+					HandleBadUsage(ctx, err)
 					return nil
 				},
 			},
@@ -90,15 +117,21 @@ func main() {
 				Usage:   "skips current track forward 15 seconds",
 				Args:    true,
 				Action: func(ctx *cli.Context) error {
-					if err := player.SeekToPosition(session, state.ProgressMs+15000); err != nil {
-						HandleNoDevice()
-						os.Exit(0)
+					state, err := player.State(session)
+					if errorx.GetTypeName(err) == errors.DeviceError.String() {
+						errors.Print(err)
+						PrintHelpCommand(ctx.Command)
+						return nil
 					}
+
+					errors.Catch(err)
+
+					errors.Catch(player.SeekToPosition(session, state.ProgressMs+15000))
 
 					return nil
 				},
 				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
-					PrintHelpCommand(ctx, err)
+					HandleBadUsage(ctx, err)
 					os.Exit(0)
 					return nil
 				},
@@ -109,16 +142,21 @@ func main() {
 				Aliases: []string{"back", "b"},
 				Usage:   "skips current track backward 15 seconds",
 				Action: func(ctx *cli.Context) error {
-					if err := player.SeekToPosition(session, state.ProgressMs-15000); err != nil {
-						HandleNoDevice()
-						os.Exit(0)
+					state, err := player.State(session)
+					if errorx.GetTypeName(err) == errors.DeviceError.String() {
+						errors.Print(err)
+						PrintHelpCommand(ctx.Command)
+						return nil
 					}
+
+					errors.Catch(err)
+
+					errors.Catch(player.SeekToPosition(session, state.ProgressMs-15000))
 
 					return nil
 				},
 				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
-					PrintHelpCommand(ctx, err)
-					os.Exit(0)
+					HandleBadUsage(ctx, err)
 					return nil
 				},
 			},
@@ -128,15 +166,19 @@ func main() {
 				Aliases: []string{"p"},
 				Usage:   "pause playback",
 				Action: func(ctx *cli.Context) error {
-					if err := player.Pause(session); err != nil {
-						HandleNoDevice()
+					err := player.Pause(session)
+					if errorx.GetTypeName(err) == errors.DeviceError.String() {
+						errors.Print(err)
+						PrintHelpCommand(ctx.Command)
 						os.Exit(0)
 					}
+
+					errors.Catch(err)
 
 					return nil
 				},
 				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
-					PrintHelpCommand(ctx, err)
+					HandleBadUsage(ctx, err)
 					os.Exit(0)
 					return nil
 				},
@@ -146,14 +188,19 @@ func main() {
 				Aliases: []string{"n"},
 				Usage:   "skips playback to next track in queue",
 				Action: func(ctx *cli.Context) error {
-					if err := player.SkipNext(session); err != nil {
-						HandleNoDevice()
+					err := player.SkipNext(session)
+					if errorx.GetTypeName(err) == errors.DeviceError.String() {
+						errors.Print(err)
+						PrintHelpCommand(ctx.Command)
+						return nil
 					}
+
+					errors.Catch(err)
 
 					return nil
 				},
 				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
-					PrintHelpCommand(ctx, err)
+					HandleBadUsage(ctx, err)
 					os.Exit(0)
 					return nil
 				},
@@ -164,13 +211,18 @@ func main() {
 				Aliases: []string{"prev"},
 				Usage:   "skips playback to the previous track",
 				Action: func(ctx *cli.Context) error {
-					if err := player.SkipPrev(session); err != nil {
-						HandleNoDevice()
+					err := player.SkipPrev(session)
+					if errorx.GetTypeName(err) == errors.DeviceError.String() {
+						errors.Print(err)
+						PrintHelpCommand(ctx.Command)
+						return nil
 					}
+					errors.Catch(err)
+
 					return nil
 				},
 				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
-					PrintHelpCommand(ctx, err)
+					HandleBadUsage(ctx, err)
 					os.Exit(0)
 					return nil
 				},
@@ -204,10 +256,15 @@ func main() {
 						// Ensures volume is in the range [0, 100], and sets volume.
 						vol := int(max(0, min(100, ctx.Int("set"))))
 
-						if err := player.SetVolume(session, vol); err != nil {
-							HandleNoDevice()
-							os.Exit(0)
+						err := player.SetVolume(session, vol)
+						if errorx.GetTypeName(err) == errors.DeviceError.String() {
+							errors.Print(err)
+							PrintHelpCommand(ctx.Command)
+							return nil
 						}
+
+						errors.Catch(err)
+
 						return nil
 					}
 
@@ -225,11 +282,25 @@ func main() {
 				},
 
 				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
-					PrintHelpCommand(ctx, err)
+					HandleBadUsage(ctx, err)
 					os.Exit(0)
 					return nil
 				},
 			},
+		},
+
+		Name:  "spogo",
+		Usage: "control spotify directly in your terminal!",
+		Action: func(ctx *cli.Context) error {
+			fmt.Printf("%v", ""+
+				" ___  ___  ___  ___  ___\n"+
+				"|_ -|| . || . || . || . |\n"+
+				"|___||  _||___||_  ||___|\n"+
+				"     |_|       |___|\n\n")
+
+			fmt.Println(color.HiGreenString(icons.NoteBox + "Spotify " + icons.Multiply + "Go " + icons.Equals + "Spogo!"))
+			fmt.Println(color.YellowString(icons.Question + "Help: --help, -h"))
+			return nil
 		},
 	}
 
@@ -242,7 +313,7 @@ func main() {
 
 // Prints the command to print help information
 // corresponding to the command that the user messed up on.
-func PrintHelpCommand(ctx *cli.Context, err error) {
+func HandleBadUsage(ctx *cli.Context, err error) {
 	fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error:"), err)
 	fmt.Printf("%v\n", color.YellowString(icons.Question+"Help: "+ctx.App.Name+" help "+ctx.Command.Name))
 }
@@ -254,17 +325,7 @@ func HandleNoFlag(ctx *cli.Context) {
 	fmt.Printf("%v\n", color.YellowString(icons.Question+"Help: "+config.APPNAME+" help "+ctx.Command.Name))
 }
 
-// Prints the error message corresponding to no
-// active or selected playback device.
-func HandleNoDevice() {
-	fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error:"), "no active playback device")
-	fmt.Printf("%v\n", color.YellowString(icons.Question+"Help: "+config.APPNAME+" devices"))
-}
-
-// Prints the welcome message that provides the help
-// command and a header with the app name.
-func printWelcome() {
-	fmt.Printf("%v", " ___  ___  ___  ___  ___\n|_ -|| . || . || . || . |\n|___||  _||___||_  ||___|\n     |_|       |___|\n\n")
-	fmt.Println(color.HiBlueString(icons.NoteBox + "Spotify " + icons.Multiply + "Go " + icons.Equals + "Spogo!"))
-	fmt.Println(color.YellowString(icons.Question + "Help: --help, -h"))
+// Prints the help command corresponding to given command.
+func PrintHelpCommand(c *cli.Command) {
+	fmt.Printf("%v\n", color.YellowString(icons.Question+"Help: "+config.APPNAME+" "+c.Name))
 }

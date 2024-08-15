@@ -7,26 +7,25 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/dionv/spogo/api/headers"
+	"github.com/dionv/spogo/api/status"
+	"github.com/dionv/spogo/api/urls"
 	"github.com/dionv/spogo/errors"
-	"github.com/dionv/spogo/internal/api/headers"
-	"github.com/dionv/spogo/internal/api/status"
-	"github.com/dionv/spogo/internal/api/urls"
-	"github.com/dionv/spogo/internal/session"
+	"github.com/dionv/spogo/session"
 )
 
-// Transfers playback to current device, then plays or pauses the device.
-// Required to transfer playback when user first opens device. Thus, its
-// an alternative that replaces the "player/play" and "player/pause"
-// endpoints.
-func (p *Player) TransferPlayback(s *session.Session, play bool) error {
+// Resume uses the "transfer playback device" endpoint instead of the
+// "resume playback" to ensure playback is always transfered to
+// selected device before the players resumes playback.
+func (p *Player) Resume(s *session.Session) error {
 	if p.device == nil {
-		return errors.NoDeviceError.New("no selected playback device")
+		return errors.DeviceError.New("no selected playback device")
 	}
 
 	data := map[string]interface{}{}
 
 	data["device_ids"] = []string{p.device.ID}
-	data["play"] = play
+	data["play"] = true
 
 	j, err := json.Marshal(data)
 	if err != nil {
@@ -48,6 +47,10 @@ func (p *Player) TransferPlayback(s *session.Session, play bool) error {
 		return errors.ReauthenticationError.NewWithNoMessage()
 	}
 
+	if res.StatusCode == 404 {
+		return errors.DeviceError.New("playback device is not active")
+	}
+
 	if res.StatusCode >= 400 {
 		return errors.HTTPError.New("bad request")
 	}
@@ -55,15 +58,10 @@ func (p *Player) TransferPlayback(s *session.Session, play bool) error {
 	return nil
 }
 
-// Resumes playback on the current device.
-func (p *Player) Resume(s *session.Session) error {
-	return p.TransferPlayback(s, true)
-}
-
 // Skips the the next track in the queue.
 func (p *Player) SkipNext(s *session.Session) error {
 	if p.device == nil {
-		return errors.NoDeviceError.New("no selected playback device")
+		return errors.DeviceError.New("no selected playback device")
 	}
 
 	req, err := http.NewRequest(http.MethodPost, urls.PLAYERNEXT, nil)
@@ -90,7 +88,7 @@ func (p *Player) SkipNext(s *session.Session) error {
 
 func (p *Player) SkipPrev(s *session.Session) error {
 	if p.device == nil {
-		return errors.NoDeviceError.New("no selected playback device")
+		return errors.DeviceError.New("no selected playback device")
 	}
 
 	req, err := http.NewRequest(http.MethodPost, urls.PLAYERPREV, nil)
@@ -118,7 +116,7 @@ func (p *Player) SkipPrev(s *session.Session) error {
 // Pauses playback on the current device.
 func (p *Player) Pause(s *session.Session) error {
 	if p.device == nil {
-		return errors.NoDeviceError.New("no selected playback device")
+		return errors.DeviceError.New("no selected playback device")
 	}
 
 	req, err := http.NewRequest(http.MethodPut, urls.PLAYERPAUSE, nil)
@@ -152,7 +150,7 @@ func (p *Player) Pause(s *session.Session) error {
 // Seeks to given position in milliseconds to user's current playing track.
 func (p *Player) SeekToPosition(s *session.Session, pos int) error {
 	if p.device == nil {
-		return errors.NoDeviceError.New("no selected playback device")
+		return errors.DeviceError.New("no selected playback device")
 	}
 
 	query := url.Values{}

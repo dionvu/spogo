@@ -7,10 +7,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/dionv/spogo/config"
+	"github.com/dionv/spogo/device"
 	"github.com/dionv/spogo/errors"
-	"github.com/dionv/spogo/internal/config"
-	"github.com/dionv/spogo/internal/device"
-	"github.com/dionv/spogo/internal/session"
+	"github.com/dionv/spogo/session"
 	"github.com/joomcode/errorx"
 	"github.com/manifoldco/promptui"
 )
@@ -33,7 +33,7 @@ func New(c *config.Config) (*Player, error) {
 	}
 
 	d, err := getCachedPlaybackDevice(c)
-	if errorx.GetTypeName(err) == errors.NoDeviceError.String() {
+	if errorx.GetTypeName(err) == errors.DeviceError.String() {
 		return p, nil
 	}
 	if err != nil {
@@ -53,7 +53,7 @@ func (p *Player) UserSelectDevice(s *session.Session, c *config.Config) (*device
 	}
 
 	if len(*devices) == 0 {
-		return nil, errors.NoDeviceError.New("No active playback devices detected.")
+		return nil, errors.DeviceError.New("no active playback devices detected")
 	}
 
 	deviceNames := []string{}
@@ -117,7 +117,7 @@ func getCachedPlaybackDevice(c *config.Config) (*device.Device, error) {
 
 	// Reached EOF before finished decoding into a device.
 	if err = json.NewDecoder(f).Decode(d); err == io.EOF {
-		return nil, errors.NoDeviceError.Wrap(err, "Playback device not active")
+		return nil, errors.DeviceError.Wrap(err, "Playback device is not active")
 	}
 
 	if err != nil {

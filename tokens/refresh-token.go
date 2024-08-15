@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/dionv/spogo/config"
 	"github.com/dionv/spogo/errors"
-	"github.com/dionv/spogo/internal/config"
 )
 
 type RefreshToken struct {

@@ -4,20 +4,9 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"os/exec"
 	"runtime"
-
-	"github.com/dionv/spogo/public/icons"
-	"github.com/fatih/color"
 )
-
-func CatchErr(err error) {
-	if err != nil {
-		fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error"), err)
-		os.Exit(0)
-	}
-}
 
 // Opens a url depending on user's system?
 // Maybe lol, haven't tested with windows or mac.
