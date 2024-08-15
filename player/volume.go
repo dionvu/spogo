@@ -5,11 +5,11 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/dionv/spogo/api/headers"
-	"github.com/dionv/spogo/api/status"
-	"github.com/dionv/spogo/api/urls"
 	"github.com/dionv/spogo/errors"
 	"github.com/dionv/spogo/session"
+	"github.com/dionv/spogo/spotify/headers"
+	"github.com/dionv/spogo/spotify/statuses"
+	"github.com/dionv/spogo/spotify/urls"
 )
 
 func (p *Player) SetVolume(s *session.Session, val int) error {

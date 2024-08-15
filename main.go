@@ -50,127 +50,24 @@ func main() {
 					return nil
 				},
 			},
-
 			{
-				Name:    "shuffle",
-				Aliases: []string{"s"},
-				Usage:   "toggle shuffling on current playlist/album",
-				// Flags: []cli.Flag{
-				// 	&cli.BoolFlag{
-				// 		Name:    "set",
-				// 		Aliases: []string{"s"},
-				// 		Usage:   "sets shuffling to `true/false`",
-				// 	},
-				// },
-				Action: func(ctx *cli.Context) error {
-					state, err := player.State(session)
-					if errorx.GetTypeName(err) == errors.DeviceError.String() {
-						errors.Print(err)
-						PrintHelpCommand(ctx.Command)
-						return nil
-					}
-
-					// if ctx.IsSet("set") {
-					err = player.Shuffle(!state.ShuffleState, session)
-
-					errors.Catch(err)
-
-					// return nil
-					// }
-
-					// HandleNoFlag(ctx)
-
-					return nil
-				},
-				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
-					HandleBadUsage(ctx, err)
-					return nil
-				},
-			},
-
-			{
-				Name:    "resume",
-				Aliases: []string{"r"},
-				Usage:   "resume playback",
-				Action: func(ctx *cli.Context) error {
-					err := player.Resume(session)
-
-					if errorx.GetTypeName(err) == errors.DeviceError.String() {
-						errors.Print(err)
-						PrintHelpCommand(ctx.Command)
-						return nil
-					}
-
-					errors.Catch(err)
-
-					return nil
-				},
-				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
-					HandleBadUsage(ctx, err)
-					return nil
-				},
-			},
-
-			{
-				Name:    "forward",
-				Aliases: []string{"f"},
-				Usage:   "skips current track forward 15 seconds",
-				Args:    true,
-				Action: func(ctx *cli.Context) error {
-					state, err := player.State(session)
-					if errorx.GetTypeName(err) == errors.DeviceError.String() {
-						errors.Print(err)
-						PrintHelpCommand(ctx.Command)
-						return nil
-					}
-
-					errors.Catch(err)
-
-					errors.Catch(player.SeekToPosition(session, state.ProgressMs+15000))
-
-					return nil
-				},
-				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
-					HandleBadUsage(ctx, err)
-					os.Exit(0)
-					return nil
-				},
-			},
-
-			{
-				Name:    "backward",
-				Aliases: []string{"back", "b"},
-				Usage:   "skips current track backward 15 seconds",
-				Action: func(ctx *cli.Context) error {
-					state, err := player.State(session)
-					if errorx.GetTypeName(err) == errors.DeviceError.String() {
-						errors.Print(err)
-						PrintHelpCommand(ctx.Command)
-						return nil
-					}
-
-					errors.Catch(err)
-
-					errors.Catch(player.SeekToPosition(session, state.ProgressMs-15000))
-
-					return nil
-				},
-				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
-					HandleBadUsage(ctx, err)
-					return nil
-				},
-			},
-
-			{
-				Name:    "pause",
+				Name:    "play/pause",
 				Aliases: []string{"p"},
-				Usage:   "pause playback",
+				Usage:   "toggles playback",
 				Action: func(ctx *cli.Context) error {
-					err := player.Pause(session)
+					var err error
+
+					state, err := player.State(session)
 					if errorx.GetTypeName(err) == errors.DeviceError.String() {
 						errors.Print(err)
 						PrintHelpCommand(ctx.Command)
 						os.Exit(0)
+					}
+
+					if state.IsPlaying {
+						err = player.Pause(session)
+					} else {
+						err = player.Resume(session)
 					}
 
 					errors.Catch(err)
@@ -227,7 +124,6 @@ func main() {
 					return nil
 				},
 			},
-
 			{
 				Name:    "volume",
 				Aliases: []string{"v", "vol"},
@@ -284,6 +180,77 @@ func main() {
 				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
 					HandleBadUsage(ctx, err)
 					os.Exit(0)
+					return nil
+				},
+			},
+			{
+				Name:    "forward",
+				Aliases: []string{"f"},
+				Usage:   "skips current track forward 15 seconds",
+				Args:    true,
+				Action: func(ctx *cli.Context) error {
+					state, err := player.State(session)
+					if errorx.GetTypeName(err) == errors.DeviceError.String() {
+						errors.Print(err)
+						PrintHelpCommand(ctx.Command)
+						return nil
+					}
+
+					errors.Catch(err)
+
+					errors.Catch(player.SeekToPosition(session, state.ProgressMs+15000))
+
+					return nil
+				},
+				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
+					HandleBadUsage(ctx, err)
+					os.Exit(0)
+					return nil
+				},
+			},
+			{
+				Name:    "backward",
+				Aliases: []string{"back", "b"},
+				Usage:   "skips current track backward 15 seconds",
+				Action: func(ctx *cli.Context) error {
+					state, err := player.State(session)
+					if errorx.GetTypeName(err) == errors.DeviceError.String() {
+						errors.Print(err)
+						PrintHelpCommand(ctx.Command)
+						return nil
+					}
+
+					errors.Catch(err)
+
+					errors.Catch(player.SeekToPosition(session, state.ProgressMs-15000))
+
+					return nil
+				},
+				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
+					HandleBadUsage(ctx, err)
+					return nil
+				},
+			},
+			{
+				Name:    "shuffle",
+				Aliases: []string{"s"},
+				Usage:   "toggle shuffling on current playlist/album",
+				Action: func(ctx *cli.Context) error {
+					state, err := player.State(session)
+					if errorx.GetTypeName(err) == errors.DeviceError.String() {
+						errors.Print(err)
+						PrintHelpCommand(ctx.Command)
+						return nil
+					}
+
+					err = player.Shuffle(!state.ShuffleState, session)
+
+					errors.Catch(err)
+
+					return nil
+				},
+				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
+					HandleBadUsage(ctx, err)
 					return nil
 				},
 			},

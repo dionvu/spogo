@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/dionv/spogo/api/headers"
-	"github.com/dionv/spogo/api/urls"
 	"github.com/dionv/spogo/errors"
 	"github.com/dionv/spogo/session"
+	"github.com/dionv/spogo/spotify/headers"
+	"github.com/dionv/spogo/spotify/urls"
 )
 
 // Device represents a spotify playback device. There is no

@@ -4,16 +4,17 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/dionv/spogo/api/headers"
-	"github.com/dionv/spogo/api/urls"
 	"github.com/dionv/spogo/device"
 	"github.com/dionv/spogo/errors"
 	"github.com/dionv/spogo/session"
+	"github.com/dionv/spogo/spotify/headers"
+	"github.com/dionv/spogo/spotify/urls"
 )
 
 type PlayerState struct {
 	Device       *device.Device `json:"device"`
 	ProgressMs   int            `json:"progress_ms"`
+	IsPlaying    bool           `json:"is_playing"`
 	ShuffleState bool           `json:"shuffle_state"`
 }
 
