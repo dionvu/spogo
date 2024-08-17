@@ -64,13 +64,13 @@ type ShowsResponse struct {
 }
 
 type EpisodesResponse struct {
-	Href     string          `json:"href"`
-	Limit    int             `json:"limit"`
-	Next     string          `json:"next"`
-	Offset   int             `json:"offset"`
-	Previous string          `json:"previous"`
-	Total    int             `json:"total"`
-	Items    []spotify.Album `json:"items"`
+	Href     string            `json:"href"`
+	Limit    int               `json:"limit"`
+	Next     string            `json:"next"`
+	Offset   int               `json:"offset"`
+	Previous string            `json:"previous"`
+	Total    int               `json:"total"`
+	Items    []spotify.Episode `json:"items"`
 }
 
 type AlbumsResponse struct {

@@ -35,6 +35,8 @@ var (
 	NoFlagProvidedError = Cli.NewType("no_flag_provided_error")
 
 	User = errorx.NewNamespace("user")
+
+	InputError = User.NewType("input_error")
 )
 
 // If the error is not nil: prints the error, and exits the program.
