@@ -18,6 +18,8 @@ import (
 )
 
 func main() {
+	var commandName string
+
 	c, err := config.New()
 	errors.Catch(err)
 	errors.Catch(c.Load())
@@ -33,10 +35,16 @@ func main() {
 			{
 				Name:    "search",
 				Aliases: []string{"s"},
-				Usage:   "searches for `query` with given search types",
+				Usage:   "searches for `query` string",
 				Args:    true,
 				Action: func(ctx *cli.Context) error {
+					commandName = "search"
+
 					searchType := []string{"album", "artist", "track", "playlist", "show", "episode"}
+
+					if ctx.Args().First() == "" {
+						return errors.InputError.New("no search query provided")
+					}
 
 					res, err := search.Search(ctx.Args().First(), searchType, session)
 					if err != nil {
@@ -55,7 +63,7 @@ func main() {
 						names := []string{}
 
 						for _, album := range res.Albums.Items {
-							names = append(names, album.Name+" | "+album.Artists[0].Name)
+							names = append(names, album.String())
 						}
 
 						albumPrompt := promptui.Select{
@@ -83,7 +91,7 @@ func main() {
 						names := []string{}
 
 						for _, track := range res.Tracks.Items {
-							names = append(names, track.Name+" | "+track.Artists[0].Name)
+							names = append(names, track.String())
 						}
 
 						albumPrompt := promptui.Select{
@@ -107,12 +115,77 @@ func main() {
 						errors.Catch(err)
 
 					case "playlist":
-						fmt.Println(res.Playlists.Items[0].Name)
+						names := []string{}
+
+						for _, playlist := range res.Playlists.Items {
+							names = append(names, playlist.Name+" | "+playlist.Owner.DisplayName)
+						}
+
+						albumPrompt := promptui.Select{
+							Label: "Select a playlist",
+							Items: names,
+						}
+
+						i, _, err := albumPrompt.Run()
+						if err != nil {
+							return nil
+						}
+
+						err = player.Play("", res.Tracks.Items[i].Uri, session)
+
+						if errorx.GetTypeName(err) == errors.DeviceError.String() {
+							errors.Print(err)
+							PrintHelpCommand(ctx.Command)
+							return nil
+						}
 					case "show":
-						fmt.Println(res.Shows.Items[0].Name)
+						names := []string{}
+
+						for _, show := range res.Shows.Items {
+							names = append(names, show.String())
+						}
+
+						albumPrompt := promptui.Select{
+							Label: "Select a playlist",
+							Items: names,
+						}
+
+						i, _, err := albumPrompt.Run()
+						if err != nil {
+							return nil
+						}
+
+						err = player.Play("", res.Tracks.Items[i].Uri, session)
+
+						if errorx.GetTypeName(err) == errors.DeviceError.String() {
+							errors.Print(err)
+							PrintHelpCommand(ctx.Command)
+							return nil
+						}
 					case "episode":
-						fmt.Println(res.Episodes.Items[0].Name)
-					case "artist":
+						names := []string{}
+
+						for _, ep := range res.Episodes.Items {
+							names = append(names, ep.String())
+						}
+
+						episodePrompt := promptui.Select{
+							Label: "Select an episode",
+							Items: names,
+						}
+
+						i, _, err := episodePrompt.Run()
+						if err != nil {
+							return nil
+						}
+
+						err = player.Play("", res.Tracks.Items[i].Uri, session)
+
+						if errorx.GetTypeName(err) == errors.DeviceError.String() {
+							errors.Print(err)
+							PrintHelpCommand(ctx.Command)
+							return nil
+						}
 					}
 
 					return nil
@@ -150,7 +223,7 @@ func main() {
 				Aliases: []string{"p"},
 				Usage:   "toggles playback",
 				Action: func(ctx *cli.Context) error {
-					var err error
+					commandName = ctx.Command.Name
 
 					state, err := player.State(session)
 					if errorx.GetTypeName(err) == errors.DeviceError.String() {
@@ -180,6 +253,8 @@ func main() {
 				Aliases: []string{"n"},
 				Usage:   "skips playback to next track in queue",
 				Action: func(ctx *cli.Context) error {
+					commandName = ctx.Command.Name
+
 					err := player.SkipNext(session)
 					if errorx.GetTypeName(err) == errors.DeviceError.String() {
 						errors.Print(err)
@@ -203,6 +278,8 @@ func main() {
 				Aliases: []string{"prev"},
 				Usage:   "skips playback to the previous track",
 				Action: func(ctx *cli.Context) error {
+					commandName = ctx.Command.Name
+
 					err := player.SkipPrev(session)
 					if errorx.GetTypeName(err) == errors.DeviceError.String() {
 						errors.Print(err)
@@ -278,12 +355,15 @@ func main() {
 					return nil
 				},
 			},
+
 			{
 				Name:    "forward",
 				Aliases: []string{"f"},
 				Usage:   "skips current track forward 15 seconds",
 				Args:    true,
 				Action: func(ctx *cli.Context) error {
+					commandName = ctx.Command.Name
+
 					state, err := player.State(session)
 					if errorx.GetTypeName(err) == errors.DeviceError.String() {
 						errors.Print(err)
@@ -308,6 +388,8 @@ func main() {
 				Aliases: []string{"back", "b"},
 				Usage:   "skips current track backward 15 seconds",
 				Action: func(ctx *cli.Context) error {
+					commandName = ctx.Command.Name
+
 					state, err := player.State(session)
 					if errorx.GetTypeName(err) == errors.DeviceError.String() {
 						errors.Print(err)
@@ -330,6 +412,8 @@ func main() {
 				Name:  "shuffle",
 				Usage: "toggle shuffling on current playlist/album",
 				Action: func(ctx *cli.Context) error {
+					commandName = ctx.Command.Name
+
 					state, err := player.State(session)
 					if errorx.GetTypeName(err) == errors.DeviceError.String() {
 						errors.Print(err)
@@ -350,11 +434,9 @@ func main() {
 			},
 		},
 
-		HideHelp: true,
-		Name:     "spogo",
-		Usage:    "control spotify directly in your terminal!",
+		Name:  "spogo",
+		Usage: "control spotify directly in your terminal!",
 		OnUsageError: func(cCtx *cli.Context, err error, isSubcommand bool) error {
-			// Avoids default error message in
 			return err
 		},
 
@@ -373,9 +455,18 @@ func main() {
 
 	// Runs the cli command and catches any error.
 	if err := app.Run(os.Args); err != nil {
-		fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error:"), err)
-		fmt.Printf("%v\n", color.YellowString(icons.Question+"Help: "+config.APPNAME+" help <"+os.Args[0]+">"))
+		fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error:"), err.(*errorx.Error).Message())
+		// fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error:"), err)
+		if commandName != "" {
+			fmt.Printf("%v\n", color.YellowString(icons.Question+"Help: "+config.APPNAME+" help "+commandName))
+			return
+		}
+
+		fmt.Printf("%v\n", color.YellowString(icons.Question+"Help: "+config.APPNAME+" help "+os.Args[1]))
 	}
+}
+
+func PrintError(ctx *cli.Context, err error) {
 }
 
 // Prints the command to print help information
