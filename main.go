@@ -43,26 +43,76 @@ func main() {
 						return err
 					}
 
-					category := promptui.Select{
+					categoryPrompt := promptui.Select{
 						Label: "Select a category",
 						Items: searchType,
 					}
 
-					_, choice, err := category.Run()
+					_, category, err := categoryPrompt.Run()
 
-					switch choice {
+					switch category {
 					case "album":
-						fmt.Println(res.Albums.Items[0].Uri)
-					case "artist":
-						fmt.Println(res.Artists.Items[0].Name)
+						names := []string{}
+
+						for _, album := range res.Albums.Items {
+							names = append(names, album.Name+" | "+album.Artists[0].Name)
+						}
+
+						albumPrompt := promptui.Select{
+							Label: "Select an album",
+							Items: names,
+						}
+
+						i, _, err := albumPrompt.Run()
+						if err != nil {
+							return nil
+						}
+
+						err = player.Play(res.Albums.Items[i].Uri, "", session)
+
+						if errorx.GetTypeName(err) == errors.DeviceError.String() {
+							errors.Print(err)
+							PrintHelpCommand(ctx.Command)
+							return nil
+						}
+
+						errors.Catch(err)
+
 					case "track":
-						fmt.Println(res.Tracks.Items[0].Name)
+
+						names := []string{}
+
+						for _, track := range res.Tracks.Items {
+							names = append(names, track.Name+" | "+track.Artists[0].Name)
+						}
+
+						albumPrompt := promptui.Select{
+							Label: "Select a track",
+							Items: names,
+						}
+
+						i, _, err := albumPrompt.Run()
+						if err != nil {
+							return nil
+						}
+
+						err = player.Play("", res.Tracks.Items[i].Uri, session)
+
+						if errorx.GetTypeName(err) == errors.DeviceError.String() {
+							errors.Print(err)
+							PrintHelpCommand(ctx.Command)
+							return nil
+						}
+
+						errors.Catch(err)
+
 					case "playlist":
 						fmt.Println(res.Playlists.Items[0].Name)
 					case "show":
 						fmt.Println(res.Shows.Items[0].Name)
 					case "episode":
 						fmt.Println(res.Episodes.Items[0].Name)
+					case "artist":
 					}
 
 					return nil
@@ -112,7 +162,7 @@ func main() {
 					if state.IsPlaying {
 						err = player.Pause(session)
 					} else {
-						err = player.Play(nil, session)
+						err = player.Resume(session)
 					}
 
 					errors.Catch(err)

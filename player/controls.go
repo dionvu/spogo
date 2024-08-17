@@ -14,21 +14,64 @@ import (
 	"github.com/dionv/spogo/spotify/urls"
 )
 
-// Play uses the "transfer playback device" endpoint instead of the
-// "resume playback" to ensure playback is always transfered to
-// selected device before the players resumes playback.
-// Optionally pass in a uri to to resume playback on a different
-// track, album, etc.
-func (p *Player) Play(uri *string, s *session.Session) error {
+func (p *Player) Play(ctxUri string, uri string, s *session.Session) error {
 	if p.device == nil {
 		return errors.DeviceError.New("no selected playback device")
 	}
 
 	data := map[string]interface{}{}
 
-	if uri != nil {
-		data["uri"] = []string{*uri}
+	data["device_id"] = p.device.ID
+	data["position_ms"] = 0
+
+	if ctxUri != "" {
+		data["context_uri"] = ctxUri
 	}
+
+	if uri != "" {
+		data["uris"] = []string{uri}
+	}
+
+	j, err := json.Marshal(data)
+	if err != nil {
+		return errors.JSONError.WrapWithNoMessage(err)
+	}
+
+	req, err := http.NewRequest(http.MethodPut, urls.PLAYERPLAY, strings.NewReader(string(j)))
+	if err != nil {
+		return errors.HTTPError.WrapWithNoMessage(err)
+	}
+	req.Header.Add(headers.Auth, "Bearer "+s.AccessToken.String())
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return errors.HTTPError.WrapWithNoMessage(err)
+	}
+
+	if res.StatusCode == status.BadToken {
+		return errors.ReauthenticationError.NewWithNoMessage()
+	}
+
+	if res.StatusCode == 404 {
+		return errors.DeviceError.New("playback device is not active")
+	}
+
+	if res.StatusCode >= 400 {
+		return errors.HTTPError.New("bad request")
+	}
+
+	return nil
+}
+
+// Resume uses the "transfer playback device" endpoint instead of the
+// "resume playback" to ensure playback is always transfered to
+// selected device before the players resumes playback.
+func (p *Player) Resume(s *session.Session) error {
+	if p.device == nil {
+		return errors.DeviceError.New("no selected playback device")
+	}
+
+	data := map[string]interface{}{}
 
 	data["device_ids"] = []string{p.device.ID}
 	data["play"] = true

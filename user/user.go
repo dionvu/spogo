@@ -20,7 +20,6 @@ type User struct {
 	} `json:"external_urls"`
 
 	Followers struct {
-		// Always null atm (due to spotify api)
 		Href string `json:"href"`
 
 		Total int `json:"total"`
