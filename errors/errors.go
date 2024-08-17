@@ -20,7 +20,6 @@ var (
 
 	YAMLError = AppNamespace.NewType("yaml_error")
 
-	// InvalidTokenError     = AppNamespace.NewType("invalid_token_error")
 	ReauthenticationError = AppNamespace.NewType("reauthentication_error")
 
 	ApiError = AppNamespace.NewType("api_error")
@@ -31,10 +30,11 @@ var (
 
 	DeviceError = PlayBack.NewType("no_device_error")
 
-	/////////
 	Cli = errorx.NewNamespace("cli")
 
 	NoFlagProvidedError = Cli.NewType("no_flag_provided_error")
+
+	User = errorx.NewNamespace("user")
 )
 
 // If the error is not nil: prints the error, and exits the program.

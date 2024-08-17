@@ -6,6 +6,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/joomcode/errorx"
+	"github.com/manifoldco/promptui"
 	"github.com/urfave/cli/v2"
 
 	"github.com/dionv/spogo/config"
@@ -13,6 +14,7 @@ import (
 	"github.com/dionv/spogo/icons"
 	"github.com/dionv/spogo/player"
 	"github.com/dionv/spogo/session"
+	"github.com/dionv/spogo/spotify/search"
 )
 
 func main() {
@@ -28,6 +30,49 @@ func main() {
 
 	app := &cli.App{
 		Commands: []*cli.Command{
+			{
+				Name:    "search",
+				Aliases: []string{"s"},
+				Usage:   "searches for `query` with given search types",
+				Args:    true,
+				Action: func(ctx *cli.Context) error {
+					searchType := []string{"album", "artist", "track", "playlist", "show", "episode"}
+
+					res, err := search.Search(ctx.Args().First(), searchType, session)
+					if err != nil {
+						return err
+					}
+
+					category := promptui.Select{
+						Label: "Select a category",
+						Items: searchType,
+					}
+
+					_, choice, err := category.Run()
+
+					switch choice {
+					case "album":
+						fmt.Println(res.Albums.Items[0].Uri)
+					case "artist":
+						fmt.Println(res.Artists.Items[0].Name)
+					case "track":
+						fmt.Println(res.Tracks.Items[0].Name)
+					case "playlist":
+						fmt.Println(res.Playlists.Items[0].Name)
+					case "show":
+						fmt.Println(res.Shows.Items[0].Name)
+					case "episode":
+						fmt.Println(res.Episodes.Items[0].Name)
+					}
+
+					return nil
+				},
+
+				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
+					HandleBadUsage(ctx, err)
+					return nil
+				},
+			},
 			{
 				Name:    "devices",
 				Aliases: []string{"d"},
@@ -67,7 +112,7 @@ func main() {
 					if state.IsPlaying {
 						err = player.Pause(session)
 					} else {
-						err = player.Resume(session)
+						err = player.Play(nil, session)
 					}
 
 					errors.Catch(err)
@@ -232,9 +277,8 @@ func main() {
 				},
 			},
 			{
-				Name:    "shuffle",
-				Aliases: []string{"s"},
-				Usage:   "toggle shuffling on current playlist/album",
+				Name:  "shuffle",
+				Usage: "toggle shuffling on current playlist/album",
 				Action: func(ctx *cli.Context) error {
 					state, err := player.State(session)
 					if errorx.GetTypeName(err) == errors.DeviceError.String() {
@@ -256,8 +300,14 @@ func main() {
 			},
 		},
 
-		Name:  "spogo",
-		Usage: "control spotify directly in your terminal!",
+		HideHelp: true,
+		Name:     "spogo",
+		Usage:    "control spotify directly in your terminal!",
+		OnUsageError: func(cCtx *cli.Context, err error, isSubcommand bool) error {
+			// Avoids default error message in
+			return err
+		},
+
 		Action: func(ctx *cli.Context) error {
 			fmt.Printf("%v", ""+
 				" ___  ___  ___  ___  ___\n"+
@@ -274,7 +324,7 @@ func main() {
 	// Runs the cli command and catches any error.
 	if err := app.Run(os.Args); err != nil {
 		fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error:"), err)
-		fmt.Printf("%v\n", color.YellowString(icons.Question+"Help: "+config.APPNAME+" help <command>"))
+		fmt.Printf("%v\n", color.YellowString(icons.Question+"Help: "+config.APPNAME+" help <"+os.Args[0]+">"))
 	}
 }
 

@@ -14,15 +14,21 @@ import (
 	"github.com/dionv/spogo/spotify/urls"
 )
 
-// Resume uses the "transfer playback device" endpoint instead of the
+// Play uses the "transfer playback device" endpoint instead of the
 // "resume playback" to ensure playback is always transfered to
 // selected device before the players resumes playback.
-func (p *Player) Resume(s *session.Session) error {
+// Optionally pass in a uri to to resume playback on a different
+// track, album, etc.
+func (p *Player) Play(uri *string, s *session.Session) error {
 	if p.device == nil {
 		return errors.DeviceError.New("no selected playback device")
 	}
 
 	data := map[string]interface{}{}
+
+	if uri != nil {
+		data["uri"] = []string{*uri}
+	}
 
 	data["device_ids"] = []string{p.device.ID}
 	data["play"] = true
