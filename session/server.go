@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/dionv/spogo/errors"
-	"github.com/dionv/spogo/spotify/scopes"
-	"github.com/dionv/spogo/spotify/urls"
+	"github.com/dionv/spogo/spotify/api/scopes"
+	"github.com/dionv/spogo/spotify/api/urls"
 	"github.com/google/uuid"
 )
 

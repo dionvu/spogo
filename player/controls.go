@@ -9,9 +9,9 @@ import (
 
 	"github.com/dionv/spogo/errors"
 	"github.com/dionv/spogo/session"
-	"github.com/dionv/spogo/spotify/headers"
-	"github.com/dionv/spogo/spotify/status"
-	"github.com/dionv/spogo/spotify/urls"
+	"github.com/dionv/spogo/spotify/api/headers"
+	"github.com/dionv/spogo/spotify/api/status"
+	"github.com/dionv/spogo/spotify/api/urls"
 )
 
 func (p *Player) Play(ctxUri string, uri string, s *session.Session) error {

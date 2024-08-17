@@ -6,8 +6,8 @@ import (
 
 	"github.com/dionv/spogo/errors"
 	"github.com/dionv/spogo/session"
-	"github.com/dionv/spogo/spotify/headers"
-	"github.com/dionv/spogo/spotify/urls"
+	"github.com/dionv/spogo/spotify/api/headers"
+	"github.com/dionv/spogo/spotify/api/urls"
 )
 
 // Device represents a spotify playback device. There is no
