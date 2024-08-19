@@ -37,24 +37,24 @@ func New() (*Config, error) {
 	// Sets the root config path.
 	path, err := os.UserConfigDir()
 	if err != nil {
-		return nil, errors.FileError.Wrap(err, "Failed to get user's home directory")
+		return nil, errors.FileOpen.Wrap(err, "failed to get user's home directory")
 	}
 
 	cd, err := os.UserCacheDir()
 	if err != nil {
-		return nil, errors.FileError.Wrap(err, "Failed to get user's cache directory")
+		return nil, errors.FileOpen.Wrap(err, "failed to get user's cache directory")
 	}
 
 	// Ensures ".config/spogo" exists.
 	c.path = filepath.Join(path, APPNAME)
 	if err := os.MkdirAll(c.path, os.ModePerm); err != nil {
-		return nil, errors.FileError.Wrap(err, fmt.Sprintf("Creating file path %v", c.path))
+		return nil, errors.FileCreate.Wrap(err, fmt.Sprintf("creating file path %v", c.path))
 	}
 
 	// Ensures ".cache/spogo" exists.
 	c.cachePath = filepath.Join(cd, APPNAME)
 	if err := os.MkdirAll(c.cachePath, os.ModePerm); err != nil {
-		return nil, errors.FileError.Wrap(err, fmt.Sprintf("Creating file path %v", c.cachePath))
+		return nil, errors.FileCreate.Wrap(err, fmt.Sprintf("creating file path %v", c.cachePath))
 	}
 
 	// Creates "config.yaml" if it doesn't exist.
@@ -71,13 +71,13 @@ func New() (*Config, error) {
 func (c *Config) Load() error {
 	file, err := os.Open(c.FilePath())
 	if err != nil {
-		return errors.FileError.Wrap(err, fmt.Sprintf("Missing config file: %v", c.FilePath()))
+		return errors.FileOpen.Wrap(err, fmt.Sprintf("missing config file: %v", c.FilePath()))
 	}
 	defer file.Close()
 
-	buf, err := io.ReadAll(file)
+	b, err := io.ReadAll(file)
 	if err != nil {
-		return errors.FileError.Wrap(err, fmt.Sprintf("Failed to read config file: %v", c.FilePath()))
+		return errors.FileRead.Wrap(err, fmt.Sprintf("failed to read config file: %v", c.FilePath()))
 	}
 
 	data := &struct {
@@ -87,9 +87,9 @@ func (c *Config) Load() error {
 		} `yaml:"spotify"`
 	}{}
 
-	err = yaml.Unmarshal(buf, data)
+	err = yaml.Unmarshal(b, data)
 	if err != nil {
-		return errors.YAMLError.Wrap(err, fmt.Sprintf("Unmarshal failed"))
+		return errors.YAML.Wrap(err, fmt.Sprintf("failed to unmarshal yaml: %v", string(b)))
 	}
 
 	c.Spotify.setID(data.Spotify.ClientID)
@@ -103,7 +103,7 @@ func (c *Config) Load() error {
 func (c *Config) create() error {
 	file, err := os.Create(c.FilePath())
 	if err != nil {
-		return errors.FileError.Wrap(err, fmt.Sprintf("Creating file %v", c.FilePath()))
+		return errors.FileCreate.Wrap(err, fmt.Sprintf("creating file %v", c.FilePath()))
 	}
 	defer file.Close()
 
@@ -114,7 +114,7 @@ func (c *Config) create() error {
 
 	_, err = file.WriteString(string(b))
 	if err != nil {
-		return errors.FileError.Wrap(err, fmt.Sprintf("Writing to file: %v", file.Name()))
+		return errors.FileWrite.Wrap(err, fmt.Sprintf("writing to file: %v", file.Name()))
 	}
 
 	fmt.Printf("Please enter your spotify client ID & client secret: %v\n", color.YellowString(c.FilePath()))

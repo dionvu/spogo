@@ -2,9 +2,11 @@ package device
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/dionv/spogo/errors"
+	"github.com/dionv/spogo/icons"
 	"github.com/dionv/spogo/session"
 	"github.com/dionv/spogo/spotify/api/headers"
 	"github.com/dionv/spogo/spotify/api/urls"
@@ -26,18 +28,18 @@ type Device struct {
 func GetDevices(s *session.Session) (*[]Device, error) {
 	req, err := http.NewRequest(http.MethodGet, urls.PLAYERDEVICES, nil)
 	if err != nil {
-		return nil, errors.HTTPError.Wrap(err, "Failed to create http request for playback devices")
+		return nil, errors.HTTPRequest.Wrap(err, "failed to create http request for playback devices")
 	}
 	req.Header.Set(headers.Auth, "Bearer "+s.AccessToken.String())
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, errors.HTTPError.Wrap(err, "Failed to get response for playback devices")
+		return nil, errors.HTTP.Wrap(err, "failed to get response for playback devices")
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != 200 {
-		return nil, errors.ReauthenticationError.Wrap(err, "Bad token")
+		return nil, errors.Reauthentication.Wrap(err, "bad token")
 	}
 
 	data := &struct {
@@ -45,8 +47,16 @@ func GetDevices(s *session.Session) (*[]Device, error) {
 	}{}
 
 	if err = json.NewDecoder(res.Body).Decode(data); err != nil {
-		return nil, errors.JSONError.Wrap(err, "Failed to decode json response for playback devices")
+		return nil, errors.JSONDecode.Wrap(err, "failed to decode json response for playback devices")
 	}
 
 	return &data.Devices, nil
+}
+
+func (d *Device) String() string {
+	return d.Name
+}
+
+func (d *Device) StringDetailed() string {
+	return fmt.Sprintf("%v, %v, %v %v", d.Name, d.Type, d.VolumePercent, icons.VolumeMax)
 }

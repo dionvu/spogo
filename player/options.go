@@ -15,7 +15,7 @@ import (
 // Enables or disables shuffling of tracks in current playlist or album.
 func (p *Player) Shuffle(state bool, s *session.Session) error {
 	if p.device == nil {
-		return errors.DeviceError.New("no selected playback device")
+		return errors.NoDevice.New("no selected playback device")
 	}
 
 	query := &url.Values{}
@@ -24,21 +24,21 @@ func (p *Player) Shuffle(state bool, s *session.Session) error {
 	url := urls.PLAYERSHUFFLE + "?" + query.Encode()
 	req, err := http.NewRequest(http.MethodPut, url, nil)
 	if err != nil {
-		return errors.HTTPError.WrapWithNoMessage(err)
+		return errors.HTTPRequest.WrapWithNoMessage(err)
 	}
 	req.Header.Add(headers.Auth, "Bearer "+s.AccessToken.String())
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return errors.HTTPError.WrapWithNoMessage(err)
+		return errors.HTTP.WrapWithNoMessage(err)
 	}
 
 	if res.StatusCode == status.BadToken {
-		return errors.ReauthenticationError.NewWithNoMessage()
+		return errors.Reauthentication.NewWithNoMessage()
 	}
 
 	if res.StatusCode >= 400 {
-		return errors.HTTPError.New("bad request")
+		return errors.HTTP.New("bad request")
 	}
 
 	return nil

@@ -31,11 +31,11 @@ func startAuth(w http.ResponseWriter, r *http.Request) {
 
 	req, err := http.NewRequest(http.MethodGet, urls.SPOTIFYAUTHURL, strings.NewReader(query.Encode()))
 	if err != nil {
-		log.Fatal(errors.HTTPRequestError.Wrap(err, "Unable to create new http request"))
+		log.Fatal(errors.HTTPRequest.Wrap(err, "unable to create new http request for spotify authentication url"))
 	}
 
 	if _, err = http.DefaultClient.Do(req); err != nil {
-		log.Fatal(errors.HTTPRequestError.Wrap(err, "Unable to do http request"))
+		log.Fatal(errors.HTTP.Wrap(err, "unable to do http request"))
 	}
 
 	http.Redirect(w, r, fmt.Sprintf("%s?%s", urls.SPOTIFYAUTHURL, query.Encode()), http.StatusTemporaryRedirect)
@@ -45,16 +45,16 @@ func startAuth(w http.ResponseWriter, r *http.Request) {
 // and fetches the authentication code.
 func completeAuth(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Query().Get("state") != state {
-		log.Fatal("Invalid state")
+		log.Fatal("invalid state")
 	}
 
 	if r.URL.Query().Get("error") != "" {
-		log.Fatal("Failed to complete authentication")
+		log.Fatal("failed to complete authentication")
 	}
 
 	ch <- r.URL.Query().Get("code")
 
-	fmt.Fprintln(w, "Authentication success!")
+	fmt.Fprintln(w, "authentication success!")
 }
 
 // Starts the fucking server :DD.
@@ -62,7 +62,7 @@ func startServer() {
 	go func() {
 		err := http.ListenAndServe(":"+PORT, nil)
 		if err != nil {
-			log.Fatalf("Failed to start server on port: %v", PORT)
+			log.Fatalf("failed to start server on port: %v", PORT)
 		}
 	}()
 }

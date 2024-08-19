@@ -18,7 +18,7 @@ func (p *Player) SetVolume(s *session.Session, val int) error {
 
 	req, err := http.NewRequest(http.MethodPut, urls.PLAYERVOLUME+"?"+query.Encode(), nil)
 	if err != nil {
-		return errors.HTTPError.WrapWithNoMessage(err)
+		return errors.HTTPRequest.Wrap(err, "failed to make request to change player volume")
 	}
 
 	req.Header.Set(headers.Auth, "Bearer "+s.AccessToken.String())
@@ -26,15 +26,15 @@ func (p *Player) SetVolume(s *session.Session, val int) error {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return errors.HTTPError.WrapWithNoMessage(err)
+		return errors.HTTP.WrapWithNoMessage(err)
 	}
 
 	if res.StatusCode == status.BadToken {
-		return errors.ReauthenticationError.NewWithNoMessage()
+		return errors.Reauthentication.NewWithNoMessage()
 	}
 
 	if res.StatusCode >= 400 {
-		return errors.HTTPError.New("Bad request, likely invalid player")
+		return errors.HTTP.New("Bad request, likely invalid player")
 	}
 
 	return nil

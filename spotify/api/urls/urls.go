@@ -10,6 +10,7 @@ const (
 	PLAYERVOLUME  = "https://api.spotify.com/v1/me/player/volume"
 	PLAYERPREV    = "https://api.spotify.com/v1/me/player/previous"
 	PLAYERSEEK    = "https://api.spotify.com/v1/me/player/seek"
+	PLAYERCURRENT = "https://api.spotify.com/v1/me/player/currently-playing"
 )
 
 const SEARCH = "https://api.spotify.com/v1/search"

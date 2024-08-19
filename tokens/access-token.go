@@ -32,18 +32,18 @@ func (t *AccessToken) Load(c *config.Config) error {
 	path := filepath.Join(c.CachePath(), config.ACCESSTOKENFILE)
 	file, err := os.Open(path)
 	if err != nil {
-		return errors.FileError.Wrap(err, fmt.Sprintf("Failed to open token file path: %v", path))
+		return errors.FileOpen.Wrap(err, fmt.Sprintf("failed to open token file path: %v", path))
 	}
 	defer file.Close()
 
 	b, err := io.ReadAll(file)
 	if err != nil {
-		return errors.FileError.Wrap(err, fmt.Sprintf("Failed to read token file: %v", path))
+		return errors.FileRead.Wrap(err, fmt.Sprintf("failed to read token file: %v", path))
 	}
 
 	err = json.Unmarshal(b, t)
 	if err != nil {
-		return errors.JSONError.Wrap(err, "Failed to unmarshal token")
+		return errors.JSONUnmarshal.Wrap(err, fmt.Sprintf("failed to unmarshal token body %v", string(b)))
 	}
 
 	return nil
@@ -59,7 +59,7 @@ func (t *AccessToken) Refresh(refreshToken *RefreshToken, c *config.Config) erro
 	ep := "https://accounts.spotify.com/api/token"
 	req, err := http.NewRequest(http.MethodPost, ep, strings.NewReader(query.Encode()))
 	if err != nil {
-		return errors.HTTPRequestError.Wrap(err, "Failed to make a request for new access token")
+		return errors.HTTPRequest.Wrap(err, "failed to make a request for new access token")
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -67,16 +67,16 @@ func (t *AccessToken) Refresh(refreshToken *RefreshToken, c *config.Config) erro
 
 	res, err := http.DefaultClient.Do(req)
 	if res.StatusCode != 200 || err != nil {
-		return errors.ReauthenticationError.Wrap(err, "Bad refresh token")
+		return errors.Reauthentication.Wrap(err, "bad refresh token")
 	}
 
-	body, err := io.ReadAll(res.Body)
+	b, err := io.ReadAll(res.Body)
 	if err != nil {
-		return errors.FileError.Wrap(err, "Failed to read response body")
+		return errors.FileRead.Wrap(err, fmt.Sprintf("failed to read response body"))
 	}
 
-	if err = json.Unmarshal(body, t); err != nil {
-		return errors.JSONError.Wrap(err, "Failed to unmarshal response body")
+	if err = json.Unmarshal(b, t); err != nil {
+		return errors.JSONUnmarshal.Wrap(err, fmt.Sprintf("failed to unmarshal response body: %v", string(b)))
 	}
 
 	t.Update(t.String(), c)
@@ -95,18 +95,18 @@ func (t *AccessToken) Update(tok string, c *config.Config) error {
 
 	file, err := os.Create(filepath.Join(path, config.ACCESSTOKENFILE))
 	if err != nil {
-		return errors.FileError.Wrap(err, fmt.Sprintf("Failed to open token file path: %v", path))
+		return errors.FileCreate.Wrap(err, fmt.Sprintf("failed to open token file path: %v", path))
 	}
 	defer file.Close()
 
 	b, err := json.Marshal(t)
 	if err != nil {
-		return errors.JSONError.Wrap(err, fmt.Sprintf("Failed to marshal token body: %v", *t))
+		return errors.JSONMarshal.Wrap(err, fmt.Sprintf("failed to marshal token body: %v", *t))
 	}
 
 	_, err = file.Write(b)
 	if err != nil {
-		return errors.FileError.Wrap(err, "Failed to write new token to file: %v", path)
+		return errors.FileWrite.Wrap(err, fmt.Sprintf("failed to write new token to file: %v", path))
 	}
 
 	return nil

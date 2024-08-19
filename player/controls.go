@@ -16,7 +16,7 @@ import (
 
 func (p *Player) Play(ctxUri string, uri string, s *session.Session) error {
 	if p.device == nil {
-		return errors.DeviceError.New("no selected playback device")
+		return errors.NoDevice.New("no selected playback device")
 	}
 
 	data := map[string]interface{}{}
@@ -34,30 +34,30 @@ func (p *Player) Play(ctxUri string, uri string, s *session.Session) error {
 
 	j, err := json.Marshal(data)
 	if err != nil {
-		return errors.JSONError.WrapWithNoMessage(err)
+		return errors.JSONMarshal.WrapWithNoMessage(err)
 	}
 
 	req, err := http.NewRequest(http.MethodPut, urls.PLAYERPLAY, strings.NewReader(string(j)))
 	if err != nil {
-		return errors.HTTPError.WrapWithNoMessage(err)
+		return errors.HTTPRequest.Wrap(err, "failed to make new request to play: %v", uri)
 	}
 	req.Header.Add(headers.Auth, "Bearer "+s.AccessToken.String())
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return errors.HTTPError.WrapWithNoMessage(err)
+		return errors.HTTP.WrapWithNoMessage(err)
 	}
 
 	if res.StatusCode == status.BadToken {
-		return errors.ReauthenticationError.NewWithNoMessage()
+		return errors.Reauthentication.NewWithNoMessage()
 	}
 
 	if res.StatusCode == 404 {
-		return errors.DeviceError.New("playback device is not active")
+		return errors.NoDevice.New("playback device is not active")
 	}
 
 	if res.StatusCode >= 400 {
-		return errors.HTTPError.New("bad request")
+		return errors.HTTP.New("bad request")
 	}
 
 	return nil
@@ -68,7 +68,7 @@ func (p *Player) Play(ctxUri string, uri string, s *session.Session) error {
 // selected device before the players resumes playback.
 func (p *Player) Resume(s *session.Session) error {
 	if p.device == nil {
-		return errors.DeviceError.New("no selected playback device")
+		return errors.NoDevice.New("no selected playback device")
 	}
 
 	data := map[string]interface{}{}
@@ -78,30 +78,30 @@ func (p *Player) Resume(s *session.Session) error {
 
 	j, err := json.Marshal(data)
 	if err != nil {
-		return errors.JSONError.WrapWithNoMessage(err)
+		return errors.JSONMarshal.WrapWithNoMessage(err)
 	}
 
 	req, err := http.NewRequest(http.MethodPut, urls.PLAYER, strings.NewReader(string(j)))
 	if err != nil {
-		return errors.HTTPError.WrapWithNoMessage(err)
+		return errors.HTTPRequest.WrapWithNoMessage(err)
 	}
 	req.Header.Add(headers.Auth, "Bearer "+s.AccessToken.String())
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return errors.HTTPError.WrapWithNoMessage(err)
+		return errors.HTTP.WrapWithNoMessage(err)
 	}
 
 	if res.StatusCode == status.BadToken {
-		return errors.ReauthenticationError.NewWithNoMessage()
+		return errors.Reauthentication.NewWithNoMessage()
 	}
 
 	if res.StatusCode == 404 {
-		return errors.DeviceError.New("playback device is not active")
+		return errors.NoDevice.New("playback device is not active")
 	}
 
 	if res.StatusCode >= 400 {
-		return errors.HTTPError.New("bad request")
+		return errors.HTTP.New("bad request")
 	}
 
 	return nil
@@ -110,26 +110,26 @@ func (p *Player) Resume(s *session.Session) error {
 // Skips the the next track in the queue.
 func (p *Player) SkipNext(s *session.Session) error {
 	if p.device == nil {
-		return errors.DeviceError.New("no selected playback device")
+		return errors.NoDevice.New("no selected playback device")
 	}
 
 	req, err := http.NewRequest(http.MethodPost, urls.PLAYERNEXT, nil)
 	if err != nil {
-		return errors.HTTPError.WrapWithNoMessage(err)
+		return errors.HTTPRequest.WrapWithNoMessage(err)
 	}
 	req.Header.Add(headers.Auth, "Bearer "+s.AccessToken.String())
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return errors.HTTPError.WrapWithNoMessage(err)
+		return errors.HTTP.WrapWithNoMessage(err)
 	}
 
 	if res.StatusCode == status.BadToken {
-		return errors.ReauthenticationError.NewWithNoMessage()
+		return errors.Reauthentication.NewWithNoMessage()
 	}
 
 	if res.StatusCode >= 400 {
-		return errors.HTTPError.New("bad request")
+		return errors.HTTP.New("bad request")
 	}
 
 	return nil
@@ -137,26 +137,26 @@ func (p *Player) SkipNext(s *session.Session) error {
 
 func (p *Player) SkipPrev(s *session.Session) error {
 	if p.device == nil {
-		return errors.DeviceError.New("no selected playback device")
+		return errors.NoDevice.New("no selected playback device")
 	}
 
 	req, err := http.NewRequest(http.MethodPost, urls.PLAYERPREV, nil)
 	if err != nil {
-		return errors.HTTPError.WrapWithNoMessage(err)
+		return errors.HTTPRequest.WrapWithNoMessage(err)
 	}
 	req.Header.Add(headers.Auth, "Bearer "+s.AccessToken.String())
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return errors.HTTPError.WrapWithNoMessage(err)
+		return errors.HTTP.WrapWithNoMessage(err)
 	}
 
 	if res.StatusCode == status.BadToken {
-		return errors.ReauthenticationError.NewWithNoMessage()
+		return errors.Reauthentication.NewWithNoMessage()
 	}
 
 	if res.StatusCode >= 400 {
-		return errors.HTTPError.New("bad request")
+		return errors.HTTP.New("bad request")
 	}
 
 	return nil
@@ -165,23 +165,23 @@ func (p *Player) SkipPrev(s *session.Session) error {
 // Pauses playback on the current device.
 func (p *Player) Pause(s *session.Session) error {
 	if p.device == nil {
-		return errors.DeviceError.New("no selected playback device")
+		return errors.NoDevice.New("no selected playback device")
 	}
 
 	req, err := http.NewRequest(http.MethodPut, urls.PLAYERPAUSE, nil)
 	if err != nil {
-		return errors.HTTPError.WrapWithNoMessage(err)
+		return errors.HTTP.WrapWithNoMessage(err)
 	}
 
 	req.Header.Set(headers.Auth, "Bearer "+s.AccessToken.String())
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return errors.HTTPError.WrapWithNoMessage(err)
+		return errors.HTTP.WrapWithNoMessage(err)
 	}
 
 	if res.StatusCode == status.BadToken {
-		return errors.ReauthenticationError.NewWithNoMessage()
+		return errors.Reauthentication.NewWithNoMessage()
 	}
 
 	// Spotify returns 403 for some reason if track is already paused
@@ -190,7 +190,7 @@ func (p *Player) Pause(s *session.Session) error {
 	}
 
 	if res.StatusCode >= 400 {
-		return errors.HTTPError.New("bad request")
+		return errors.HTTP.New("bad request")
 	}
 
 	return nil
@@ -199,7 +199,7 @@ func (p *Player) Pause(s *session.Session) error {
 // Seeks to given position in milliseconds to user's current playing track.
 func (p *Player) SeekToPosition(s *session.Session, pos int) error {
 	if p.device == nil {
-		return errors.DeviceError.New("no selected playback device")
+		return errors.NoDevice.New("no selected playback device")
 	}
 
 	query := url.Values{}
@@ -208,22 +208,22 @@ func (p *Player) SeekToPosition(s *session.Session, pos int) error {
 
 	req, err := http.NewRequest(http.MethodPut, urls.PLAYERSEEK+"?"+query.Encode(), nil)
 	if err != nil {
-		return errors.HTTPError.WrapWithNoMessage(err)
+		return errors.HTTPRequest.WrapWithNoMessage(err)
 	}
 
 	req.Header.Set(headers.Auth, "Bearer "+s.AccessToken.String())
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return errors.HTTPError.WrapWithNoMessage(err)
+		return errors.HTTP.WrapWithNoMessage(err)
 	}
 
 	if res.StatusCode == status.BadToken {
-		return errors.ReauthenticationError.NewWithNoMessage()
+		return errors.Reauthentication.NewWithNoMessage()
 	}
 
 	if res.StatusCode >= 400 {
-		return errors.HTTPError.New("bad request")
+		return errors.HTTP.New("bad request")
 	}
 
 	return nil

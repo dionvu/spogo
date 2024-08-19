@@ -10,33 +10,41 @@ import (
 )
 
 var (
-	AppNamespace = errorx.NewNamespace("app")
+	App = errorx.NewNamespace("app")
 
-	HTTPError        = AppNamespace.NewType("http_error")
-	HTTPRequestError = AppNamespace.NewType("http_request_error")
+	HTTP          = App.NewType("http")
+	HTTPRequest   = App.NewType("http-request")
+	File          = App.NewType("file")
+	FileOpen      = App.NewType("file-open")
+	FileCreate    = App.NewType("file-create")
+	FileRead      = App.NewType("file-read")
+	FileWrite     = App.NewType("file-write")
+	JSON          = App.NewType("json")
+	JSONUnmarshal = App.NewType("json-unmarshal")
+	JSONMarshal   = App.NewType("json-marshal")
+	JSONEncode    = App.NewType("json-encode")
+	JSONDecode    = App.NewType("json-decode")
+	YAML          = App.NewType("yaml")
+)
 
-	FileError = AppNamespace.NewType("file_error")
-	JSONError = AppNamespace.NewType("json_error")
+var (
+	Dependency = errorx.NewNamespace("dependency")
 
-	YAMLError = AppNamespace.NewType("yaml_error")
+	PromptTui = Dependency.NewType("prompt-tui")
+)
 
-	ReauthenticationError = AppNamespace.NewType("reauthentication_error")
-
-	ApiError = AppNamespace.NewType("api_error")
-
-	PromptTuiError = AppNamespace.NewType("prompt_tui_error")
-
-	PlayBack = errorx.NewNamespace("playback")
-
-	DeviceError = PlayBack.NewType("no_device_error")
-
-	Cli = errorx.NewNamespace("cli")
-
-	NoFlagProvidedError = Cli.NewType("no_flag_provided_error")
-
+var (
 	User = errorx.NewNamespace("user")
 
-	InputError = User.NewType("input_error")
+	Reauthentication = User.NewType("reauthentication")
+	NoFlagProvided   = User.NewType("no-flag")
+	Input            = User.NewType("input")
+)
+
+var (
+	PlayBack = errorx.NewNamespace("playback")
+
+	NoDevice = PlayBack.NewType("no-device")
 )
 
 // If the error is not nil: prints the error, and exits the program.

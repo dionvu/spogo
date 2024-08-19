@@ -2,6 +2,7 @@ package search
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -93,21 +94,21 @@ func Search(input string, searchType []string, s *session.Session) (*Response, e
 
 	req, err := http.NewRequest(http.MethodGet, urls.SEARCH+"?"+query.Encode(), nil)
 	if err != nil {
-		return nil, errors.HTTPError.WrapWithNoMessage(err)
+		return nil, errors.HTTPRequest.Wrap(err, fmt.Sprintf("failed to make request for search query: %v", input))
 	}
 	req.Header.Add(headers.Auth, "Bearer "+s.AccessToken.String())
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, errors.HTTPError.WrapWithNoMessage(err)
+		return nil, errors.HTTPRequest.WrapWithNoMessage(err)
 	}
 
 	if res.StatusCode == status.BadToken {
-		return nil, errors.ReauthenticationError.NewWithNoMessage()
+		return nil, errors.Reauthentication.NewWithNoMessage()
 	}
 
 	if res.StatusCode != status.Ok {
-		return nil, errors.HTTPError.New("bad request")
+		return nil, errors.HTTP.New("bad request")
 	}
 
 	if err = json.NewDecoder(res.Body).Decode(r); err != nil {

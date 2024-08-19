@@ -41,7 +41,7 @@ func (s *Session) Authenticate(c *config.Config) error {
 		validCred, _ := c.Spotify.Valid()
 		if !validCred {
 			fmt.Printf("%v %v %v\n", color.RedString(icons.Warning+"Error:"),
-				"Invalid spotify client credentials:", color.YellowString(c.FilePath()))
+				"invalid spotify client credentials:", color.YellowString(c.FilePath()))
 			os.Exit(0)
 		}
 
@@ -85,7 +85,7 @@ func getNewTokens(s *Session, c *config.Config) error {
 	ep := "https://accounts.spotify.com/api/token"
 	req, err := http.NewRequest(http.MethodPost, ep, strings.NewReader(query.Encode()))
 	if err != nil {
-		return errors.HTTPRequestError.Wrap(err, "Unable to create new http request")
+		return errors.HTTPRequest.Wrap(err, "unable to create new http request for new token")
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -93,17 +93,17 @@ func getNewTokens(s *Session, c *config.Config) error {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return errors.HTTPRequestError.Wrap(err, "Unable to get http response")
+		return errors.HTTP.Wrap(err, "unable to get http response")
 	}
 
-	body, err := io.ReadAll(res.Body)
+	b, err := io.ReadAll(res.Body)
 	if err != nil {
-		return errors.FileError.Wrap(err, "Failed to read response body")
+		return errors.FileRead.Wrap(err, "failed to read response body")
 	}
 
 	data := map[string]interface{}{}
-	if err = json.Unmarshal(body, &data); err != nil {
-		return errors.JSONError.Wrap(err, "Failed to unmarshal response body")
+	if err = json.Unmarshal(b, &data); err != nil {
+		return errors.JSONUnmarshal.Wrap(err, "failed to unmarshal response body: %v", string(b))
 	}
 
 	s.AccessToken.Update(data["access_token"].(string), c)

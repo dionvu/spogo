@@ -7,9 +7,11 @@ import (
 	"github.com/fatih/color"
 	"github.com/joomcode/errorx"
 	"github.com/manifoldco/promptui"
+
 	"github.com/urfave/cli/v2"
 
 	"github.com/dionv/spogo/config"
+	"github.com/dionv/spogo/device"
 	"github.com/dionv/spogo/errors"
 	"github.com/dionv/spogo/icons"
 	"github.com/dionv/spogo/player"
@@ -43,7 +45,7 @@ func main() {
 					searchType := []string{"album", "artist", "track", "playlist", "show", "episode"}
 
 					if ctx.Args().First() == "" {
-						return errors.InputError.New("no search query provided")
+						return errors.Input.New("no search query provided")
 					}
 
 					res, err := search.Search(ctx.Args().First(), searchType, session)
@@ -78,7 +80,7 @@ func main() {
 
 						err = player.Play(res.Albums.Items[i].Uri, "", session)
 
-						if errorx.GetTypeName(err) == errors.DeviceError.String() {
+						if errorx.GetTypeName(err) == errors.NoDevice.String() {
 							errors.Print(err)
 							PrintHelpCommand(ctx.Command)
 							return nil
@@ -106,7 +108,7 @@ func main() {
 
 						err = player.Play("", res.Tracks.Items[i].Uri, session)
 
-						if errorx.GetTypeName(err) == errors.DeviceError.String() {
+						if errorx.GetTypeName(err) == errors.NoDevice.String() {
 							errors.Print(err)
 							PrintHelpCommand(ctx.Command)
 							return nil
@@ -133,7 +135,7 @@ func main() {
 
 						err = player.Play("", res.Tracks.Items[i].Uri, session)
 
-						if errorx.GetTypeName(err) == errors.DeviceError.String() {
+						if errorx.GetTypeName(err) == errors.NoDevice.String() {
 							errors.Print(err)
 							PrintHelpCommand(ctx.Command)
 							return nil
@@ -157,7 +159,7 @@ func main() {
 
 						err = player.Play("", res.Tracks.Items[i].Uri, session)
 
-						if errorx.GetTypeName(err) == errors.DeviceError.String() {
+						if errorx.GetTypeName(err) == errors.NoDevice.String() {
 							errors.Print(err)
 							PrintHelpCommand(ctx.Command)
 							return nil
@@ -181,7 +183,7 @@ func main() {
 
 						err = player.Play("", res.Tracks.Items[i].Uri, session)
 
-						if errorx.GetTypeName(err) == errors.DeviceError.String() {
+						if errorx.GetTypeName(err) == errors.NoDevice.String() {
 							errors.Print(err)
 							PrintHelpCommand(ctx.Command)
 							return nil
@@ -200,10 +202,24 @@ func main() {
 				Name:    "devices",
 				Aliases: []string{"d"},
 				Usage:   "Select a playback device",
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:    "detailed",
+						Aliases: []string{"d"},
+						Usage:   "addittional detailed information about each device",
+					},
+				},
 				Action: func(ctx *cli.Context) error {
-					d, err := player.UserSelectDevice(session, c)
+					var d *device.Device
+					var err error
 
-					if errorx.GetTypeName(err) == errors.DeviceError.String() {
+					if ctx.IsSet("detailed") {
+						d, err = player.UserSelectDevice(session, c, true)
+					} else {
+						d, err = player.UserSelectDevice(session, c, false)
+					}
+
+					if errorx.GetTypeName(err) == errors.NoDevice.String() {
 						errors.Print(err)
 						PrintHelpCommand(ctx.Command)
 						return nil
@@ -226,7 +242,7 @@ func main() {
 					commandName = ctx.Command.Name
 
 					state, err := player.State(session)
-					if errorx.GetTypeName(err) == errors.DeviceError.String() {
+					if errorx.GetTypeName(err) == errors.NoDevice.String() {
 						errors.Print(err)
 						PrintHelpCommand(ctx.Command)
 						os.Exit(0)
@@ -239,7 +255,6 @@ func main() {
 					}
 
 					errors.Catch(err)
-
 					return nil
 				},
 				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
@@ -256,7 +271,7 @@ func main() {
 					commandName = ctx.Command.Name
 
 					err := player.SkipNext(session)
-					if errorx.GetTypeName(err) == errors.DeviceError.String() {
+					if errorx.GetTypeName(err) == errors.NoDevice.String() {
 						errors.Print(err)
 						PrintHelpCommand(ctx.Command)
 						return nil
@@ -281,7 +296,7 @@ func main() {
 					commandName = ctx.Command.Name
 
 					err := player.SkipPrev(session)
-					if errorx.GetTypeName(err) == errors.DeviceError.String() {
+					if errorx.GetTypeName(err) == errors.NoDevice.String() {
 						errors.Print(err)
 						PrintHelpCommand(ctx.Command)
 						return nil
@@ -325,7 +340,7 @@ func main() {
 						vol := int(max(0, min(100, ctx.Int("set"))))
 
 						err := player.SetVolume(session, vol)
-						if errorx.GetTypeName(err) == errors.DeviceError.String() {
+						if errorx.GetTypeName(err) == errors.NoDevice.String() {
 							errors.Print(err)
 							PrintHelpCommand(ctx.Command)
 							return nil
@@ -365,7 +380,7 @@ func main() {
 					commandName = ctx.Command.Name
 
 					state, err := player.State(session)
-					if errorx.GetTypeName(err) == errors.DeviceError.String() {
+					if errorx.GetTypeName(err) == errors.NoDevice.String() {
 						errors.Print(err)
 						PrintHelpCommand(ctx.Command)
 						return nil
@@ -391,7 +406,7 @@ func main() {
 					commandName = ctx.Command.Name
 
 					state, err := player.State(session)
-					if errorx.GetTypeName(err) == errors.DeviceError.String() {
+					if errorx.GetTypeName(err) == errors.NoDevice.String() {
 						errors.Print(err)
 						PrintHelpCommand(ctx.Command)
 						return nil
@@ -415,7 +430,7 @@ func main() {
 					commandName = ctx.Command.Name
 
 					state, err := player.State(session)
-					if errorx.GetTypeName(err) == errors.DeviceError.String() {
+					if errorx.GetTypeName(err) == errors.NoDevice.String() {
 						errors.Print(err)
 						PrintHelpCommand(ctx.Command)
 						return nil
@@ -447,8 +462,8 @@ func main() {
 				"|___||  _||___||_  ||___|\n"+
 				"     |_|       |___|\n\n")
 
-			fmt.Println(color.HiGreenString(icons.NoteBox + "Spotify " + icons.Multiply + "Go " + icons.Equals + "Spogo!"))
-			fmt.Println(color.YellowString(icons.Question + "Help: --help, -h"))
+			fmt.Println(color.HiGreenString(icons.NoteBox + " Spotify " + icons.Multiply + " Go " + icons.Equals + " Spogo!"))
+			fmt.Println(color.YellowString(icons.Question + " Help: --help, -h"))
 			return nil
 		},
 	}
