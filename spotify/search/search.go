@@ -7,12 +7,12 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/dionv/spogo/errors"
-	"github.com/dionv/spogo/session"
-	"github.com/dionv/spogo/spotify"
-	"github.com/dionv/spogo/spotify/api/headers"
-	"github.com/dionv/spogo/spotify/api/status"
-	"github.com/dionv/spogo/spotify/api/urls"
+	"github.com/dionvu/spogo/errors"
+	"github.com/dionvu/spogo/session"
+	"github.com/dionvu/spogo/spotify"
+	"github.com/dionvu/spogo/spotify/api/headers"
+	"github.com/dionvu/spogo/spotify/api/status"
+	"github.com/dionvu/spogo/spotify/api/urls"
 )
 
 type Response struct {
@@ -90,7 +90,7 @@ func Search(input string, searchType []string, s *session.Session) (*Response, e
 	query := url.Values{}
 	query.Set("q", input)
 	query.Set("type", strings.Join(searchType, ","))
-	query.Set("limit", "10")
+	query.Set("limit", "20")
 
 	req, err := http.NewRequest(http.MethodGet, urls.SEARCH+"?"+query.Encode(), nil)
 	if err != nil {

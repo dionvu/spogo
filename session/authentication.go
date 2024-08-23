@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dionv/spogo/config"
-	"github.com/dionv/spogo/errors"
-	"github.com/dionv/spogo/icons"
-	"github.com/dionv/spogo/utils"
+	"github.com/dionvu/spogo/config"
+	"github.com/dionvu/spogo/errors"
+	"github.com/dionvu/spogo/icons"
+	"github.com/dionvu/spogo/utils"
 	"github.com/fatih/color"
 )
 

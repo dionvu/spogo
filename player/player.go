@@ -6,10 +6,10 @@ import (
 	"io"
 	"os"
 
-	"github.com/dionv/spogo/config"
-	"github.com/dionv/spogo/device"
-	"github.com/dionv/spogo/errors"
-	"github.com/dionv/spogo/session"
+	"github.com/dionvu/spogo/config"
+	"github.com/dionvu/spogo/device"
+	"github.com/dionvu/spogo/errors"
+	"github.com/dionvu/spogo/session"
 	"github.com/joomcode/errorx"
 	"github.com/manifoldco/promptui"
 )

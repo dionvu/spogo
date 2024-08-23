@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dionv/spogo/config"
-	"github.com/dionv/spogo/errors"
+	"github.com/dionvu/spogo/config"
+	"github.com/dionvu/spogo/errors"
 )
 
 type AccessToken struct {

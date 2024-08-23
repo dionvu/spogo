@@ -8,15 +8,14 @@ import (
 	"github.com/joomcode/errorx"
 	"github.com/manifoldco/promptui"
 
+	"github.com/dionvu/spogo/config"
+	"github.com/dionvu/spogo/device"
+	"github.com/dionvu/spogo/errors"
+	"github.com/dionvu/spogo/icons"
+	"github.com/dionvu/spogo/player"
+	"github.com/dionvu/spogo/session"
+	"github.com/dionvu/spogo/spotify/search"
 	"github.com/urfave/cli/v2"
-
-	"github.com/dionv/spogo/config"
-	"github.com/dionv/spogo/device"
-	"github.com/dionv/spogo/errors"
-	"github.com/dionv/spogo/icons"
-	"github.com/dionv/spogo/player"
-	"github.com/dionv/spogo/session"
-	"github.com/dionv/spogo/spotify/search"
 )
 
 func main() {
@@ -44,11 +43,23 @@ func main() {
 
 					searchType := []string{"album", "artist", "track", "playlist", "show", "episode"}
 
-					if ctx.Args().First() == "" {
-						return errors.Input.New("no search query provided")
+					query := ctx.Args().First()
+
+					if query == "" {
+						searchPrompt := promptui.Prompt{
+							Label: "Enter search query",
+						}
+
+						query, err = searchPrompt.Run()
+						if err != nil {
+							return nil
+						}
+						if query == "" {
+							return errors.Input.New("no search query provided")
+						}
 					}
 
-					res, err := search.Search(ctx.Args().First(), searchType, session)
+					res, err := search.Search(query, searchType, session)
 					if err != nil {
 						return err
 					}
@@ -235,6 +246,33 @@ func main() {
 				},
 			},
 			{
+				Name:    "info",
+				Aliases: []string{"i"},
+				Usage:   "prints info about the current track",
+				Action: func(ctx *cli.Context) error {
+					state, err := player.State(session)
+					if errorx.GetTypeName(err) == errors.NoDevice.String() {
+						errors.Print(err)
+						PrintNoDevice()
+						os.Exit(0)
+					}
+
+					errors.Catch(err)
+
+					if state.Track == nil {
+					} else {
+						fmt.Println(state.Track.StringPlaying(state.ProgressMs))
+					}
+
+					return nil
+				},
+				OnUsageError: func(ctx *cli.Context, err error, isSubcommand bool) error {
+					HandleBadUsage(ctx, err)
+					os.Exit(0)
+					return nil
+				},
+			},
+			{
 				Name:    "play/pause",
 				Aliases: []string{"p"},
 				Usage:   "toggles playback",
@@ -247,6 +285,8 @@ func main() {
 						PrintHelpCommand(ctx.Command)
 						os.Exit(0)
 					}
+
+					errors.Catch(err)
 
 					if state.IsPlaying {
 						err = player.Pause(session)
@@ -314,7 +354,7 @@ func main() {
 			{
 				Name:    "volume",
 				Aliases: []string{"v", "vol"},
-				Usage:   "change playback device volume",
+				Usage:   "change playback device volume [0-100]",
 				Flags: []cli.Flag{
 					&cli.IntFlag{
 						Name:    "set",
@@ -400,7 +440,7 @@ func main() {
 			},
 			{
 				Name:    "backward",
-				Aliases: []string{"back", "b"},
+				Aliases: []string{"b"},
 				Usage:   "skips current track backward 15 seconds",
 				Action: func(ctx *cli.Context) error {
 					commandName = ctx.Command.Name
@@ -462,7 +502,7 @@ func main() {
 				"|___||  _||___||_  ||___|\n"+
 				"     |_|       |___|\n\n")
 
-			fmt.Println(color.HiGreenString(icons.NoteBox + " Spotify " + icons.Multiply + " Go " + icons.Equals + " Spogo!"))
+			fmt.Println(color.HiGreenString(icons.NoteBox + "Spotify " + icons.Multiply + "Go " + icons.Equals + "Spogo!"))
 			fmt.Println(color.YellowString(icons.Question + " Help: --help, -h"))
 			return nil
 		},
@@ -479,9 +519,6 @@ func main() {
 
 		fmt.Printf("%v\n", color.YellowString(icons.Question+"Help: "+config.APPNAME+" help "+os.Args[1]))
 	}
-}
-
-func PrintError(ctx *cli.Context, err error) {
 }
 
 // Prints the command to print help information
@@ -501,4 +538,8 @@ func HandleNoFlag(ctx *cli.Context) {
 // Prints the help command corresponding to given command.
 func PrintHelpCommand(c *cli.Command) {
 	fmt.Printf("%v\n", color.YellowString(icons.Question+"Help: "+config.APPNAME+" "+c.Name))
+}
+
+func PrintNoDevice() {
+	fmt.Printf("%v\n", color.YellowString(icons.Question+"Help: "+config.APPNAME+" device"))
 }

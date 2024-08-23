@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"runtime"
 
-	"github.com/dionv/spogo/icons"
+	"github.com/dionvu/spogo/icons"
 	"github.com/fatih/color"
 )
 

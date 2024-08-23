@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/dionv/spogo/errors"
-	"github.com/dionv/spogo/templates"
+	"github.com/dionvu/spogo/errors"
+	"github.com/dionvu/spogo/templates"
 	"github.com/fatih/color"
 	"gopkg.in/yaml.v3"
 )

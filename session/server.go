@@ -7,9 +7,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/dionv/spogo/errors"
-	"github.com/dionv/spogo/spotify/api/scopes"
-	"github.com/dionv/spogo/spotify/api/urls"
+	"github.com/dionvu/spogo/errors"
+	"github.com/dionvu/spogo/spotify/api/scopes"
+	"github.com/dionvu/spogo/spotify/api/urls"
 	"github.com/google/uuid"
 )
 

@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/dionv/spogo/errors"
+	"github.com/dionvu/spogo/errors"
 )
 
 type Spotify struct {

@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/dionv/spogo/errors"
-	"github.com/dionv/spogo/icons"
-	"github.com/dionv/spogo/session"
-	"github.com/dionv/spogo/spotify/api/headers"
-	"github.com/dionv/spogo/spotify/api/urls"
+	"github.com/dionvu/spogo/errors"
+	"github.com/dionvu/spogo/icons"
+	"github.com/dionvu/spogo/session"
+	"github.com/dionvu/spogo/spotify/api/headers"
+	"github.com/dionvu/spogo/spotify/api/urls"
 )
 
 // Device represents a spotify playback device. There is no

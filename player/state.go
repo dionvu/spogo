@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/dionv/spogo/device"
-	"github.com/dionv/spogo/errors"
-	"github.com/dionv/spogo/session"
-	"github.com/dionv/spogo/spotify"
-	"github.com/dionv/spogo/spotify/api/headers"
-	"github.com/dionv/spogo/spotify/api/urls"
+	"github.com/dionvu/spogo/device"
+	"github.com/dionvu/spogo/errors"
+	"github.com/dionvu/spogo/session"
+	"github.com/dionvu/spogo/spotify"
+	"github.com/dionvu/spogo/spotify/api/headers"
+	"github.com/dionvu/spogo/spotify/api/urls"
 )
 
 type PlayerState struct {
@@ -18,8 +18,8 @@ type PlayerState struct {
 	IsPlaying    bool           `json:"is_playing"`
 	ShuffleState bool           `json:"shuffle_state"`
 	Item         interface{}    `json:"item"`
-	Track        spotify.Track
-	Episode      spotify.Episode
+	Track        *spotify.Track
+	Episode      *spotify.Episode
 }
 
 func (p *Player) State(s *session.Session) (*PlayerState, error) {
@@ -57,13 +57,20 @@ func (p *Player) State(s *session.Session) (*PlayerState, error) {
 		return nil, errors.JSONMarshal.Wrap(err, "failed to marshaling response: %v", itemMap)
 	}
 
+	var track spotify.Track
+	var episode spotify.Episode
+
 	// Type of item is a track
-	if err := json.Unmarshal(itemBytes, &ps.Track); err == nil {
+	if err := json.Unmarshal(itemBytes, &track); err == nil {
+		ps.Track = &track
+
 		return ps, nil
 	}
 
 	// Type of item is an episode
-	if err := json.Unmarshal(itemBytes, &ps.Episode); err == nil {
+	if err := json.Unmarshal(itemBytes, &episode); err == nil {
+		ps.Episode = &episode
+
 		return ps, nil
 	}
 

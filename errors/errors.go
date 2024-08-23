@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/dionv/spogo/icons"
+	"github.com/dionvu/spogo/icons"
 	"github.com/fatih/color"
 	"github.com/joomcode/errorx"
 )
