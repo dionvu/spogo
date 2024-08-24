@@ -7,7 +7,7 @@
 
 <h2>🚀 Demo</h2>
 
-[temp](temp)
+[demo](public/demo.gif)
 
 <h2>🛠️ Installation Steps:</h2>
 
@@ -106,7 +106,7 @@ spogo d
 
 `info` / `i` - Prints details about current track.
 
-`device` / `d` - Set playback device.
+`device` / `d` - Manage playback devices.
 
 `search` / `s` - Search for an album, track, artist, podcast, episode, etc.
 
