@@ -1,4 +1,4 @@
-<h1 align="center" id="title">Spogo</h1>
+<h1 align="center" id="title">Spogo 🎵</h1>
 
 <p align="center"><img src="https://img.shields.io/github/go-mod/go-version/dionvu/spogo?style=for-the-badge" alt="shields"><img src="https://img.shields.io/github/commit-activity/m/dionvu/spogo?style=for-the-badge" alt="shields"><img src="https://img.shields.io/github/license/dionvu/spogo?style=for-the-badge" alt="shields"></p>
 
@@ -7,7 +7,9 @@
 
 <h2>🚀 Demo</h2>
 
-![demo](https://youtu.be/XVPJPHnzcQs)
+https://github.com/user-attachments/assets/f56fa98d-f6fe-448c-acb8-c13975218c19
+
+
 
 <h2>🛠️ Installation Steps:</h2>
 
@@ -131,3 +133,5 @@ rm -rf ~/.config/spogo
 ```
 rm -rf ~/.cache/spogo
 ```
+
+<p>4. Farewell! 🫡</p>
