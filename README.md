@@ -133,3 +133,5 @@ rm -rf ~/.config/spogo
 ```
 rm -rf ~/.cache/spogo
 ```
+
+<p>4. Farewell! 🫡</p>
