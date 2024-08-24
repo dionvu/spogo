@@ -11,6 +11,8 @@
 
 <h2>🛠️ Installation Steps:</h2>
 
+<h3>🐧 Linux & MacOS</h3>
+
 <p>1. Clone the repo.</p>
 
 ```
@@ -41,7 +43,12 @@ cd .. && rm -rf spogo
 spogo
 ```
 
+<h3>🪟 Windows</h3>
+
+<p>Apologies to all windows people, I'll figure it out within the next 3-5 years promise. 👍</p>
+
 <h2>⚙️ Configuration</h2>
+
 
 <p>1. Navigate to <a href="https://developer.spotify.com/dashboard">Spotify Developer Dashboard</a> and click on "Create App".</p>
 
@@ -81,14 +88,29 @@ spogo d
 ```
 
 <p>You will only need to do this once since your device will be cached for your convenience.</p>
-<h2>🧐 Commands & Features</h2>
+<h2>🧐 Commands</h2>
 
-Project's features:
+<h3>⏯️ Control</h3>
 
-*   Search and play your favorite albums tracks podcasts.
-*   Manage multiple playback devices.
-*   Control playback with simple commands.
+`next` / `n` - Skips playback to next track.
 
+`previous`/ `prev` - Skips playback to next track.
+
+`forward`/ `f` - Skips current track forward 15s. 
+
+`backward`/ `f` - Skips current track backward 15s. 
+
+& more...
+
+<h3>📝 Others</h3>
+
+`info` / `i` - Prints details about current track.
+
+`device` / `d` - Set playback device.
+
+`search` / `s` - Search for an album, track, artist, podcast, episode, etc.
+
+& more...
 
 <h2>❌ Uninstallation Steps:</h2>
 
