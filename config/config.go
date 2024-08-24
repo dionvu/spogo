@@ -112,6 +112,8 @@ func (c *Config) create() error {
 	confileFile, _ := os.Open(filepath.Join(wd, templates.DIRECTORY, templates.CONFIGFILE))
 	b, _ := io.ReadAll(confileFile)
 
+	fmt.Println(string(b))
+
 	_, err = file.WriteString(string(b))
 	if err != nil {
 		return errors.FileWrite.Wrap(err, fmt.Sprintf("writing to file: %v", file.Name()))

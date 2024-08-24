@@ -109,5 +109,7 @@ func getNewTokens(s *Session, c *config.Config) error {
 	s.AccessToken.Update(data["access_token"].(string), c)
 	s.RefreshToken.Update(data["refresh_token"].(string), c)
 
+	os.Exit(0)
+
 	return nil
 }

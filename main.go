@@ -231,8 +231,12 @@ func main() {
 					}
 
 					if errorx.GetTypeName(err) == errors.NoDevice.String() {
-						errors.Print(err)
+						// errors.Print(err)
+						// PrintHelpCommand(ctx.Command)
+
+						fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error:"), "no playback devices open or detected")
 						PrintHelpCommand(ctx.Command)
+
 						return nil
 					}
 

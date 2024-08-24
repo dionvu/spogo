@@ -32,7 +32,7 @@ func New(c *config.Config) (*Player, error) {
 	}
 
 	d, err := getCachedPlaybackDevice(c)
-	if errorx.GetTypeName(err) == errors.NoDevice.String() {
+	if errorx.GetTypeName(err) == errors.JSONDecode.String() {
 		return p, nil
 	}
 	if err != nil {
