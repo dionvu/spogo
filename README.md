@@ -7,7 +7,7 @@
 
 <h2>🚀 Demo</h2>
 
-![demo](public/demo.mp4)
+![demo](https://youtu.be/XVPJPHnzcQs)
 
 <h2>🛠️ Installation Steps:</h2>
 
