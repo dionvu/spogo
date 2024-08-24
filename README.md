@@ -7,7 +7,7 @@
 
 <h2>🚀 Demo</h2>
 
-![demo](public/demo.gif)
+![demo](public/demo.mp4)
 
 <h2>🛠️ Installation Steps:</h2>
 
