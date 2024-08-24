@@ -7,7 +7,9 @@
 
 <h2>🚀 Demo</h2>
 
-![demo](https://youtu.be/XVPJPHnzcQs)
+https://github.com/user-attachments/assets/f56fa98d-f6fe-448c-acb8-c13975218c19
+
+
 
 <h2>🛠️ Installation Steps:</h2>
 
