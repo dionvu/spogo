@@ -1,4 +1,4 @@
-<h1 align="center" id="title">Spogo</h1>
+<h1 align="center" id="title">Spogo 🎵</h1>
 
 <p align="center"><img src="https://img.shields.io/github/go-mod/go-version/dionvu/spogo?style=for-the-badge" alt="shields"><img src="https://img.shields.io/github/commit-activity/m/dionvu/spogo?style=for-the-badge" alt="shields"><img src="https://img.shields.io/github/license/dionvu/spogo?style=for-the-badge" alt="shields"></p>
 
