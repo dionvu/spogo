@@ -27,6 +27,21 @@ type Config struct {
 	path      string
 	cachePath string
 	Spotify   Spotify `yaml:"spotify"`
+	options   struct {
+		CommandMode bool `yaml:"command_mode"`
+	} `yaml:"options"`
+	Color struct {
+		Album struct {
+			Name   int `yaml:"name"`
+			Artist int `yaml:"artist"`
+			Other  int `yaml:"other"`
+		} `yaml:"album"`
+		Track struct {
+			Name   int `yaml:"name"`
+			Artist int `yaml:"artist"`
+			Other  int `yaml:"other"`
+		} `yaml:"track"`
+	} `yaml:"color"`
 }
 
 // Creates spogo config root directory, "config.yaml",
@@ -80,20 +95,10 @@ func (c *Config) Load() error {
 		return errors.FileRead.Wrap(err, fmt.Sprintf("failed to read config file: %v", c.FilePath()))
 	}
 
-	data := &struct {
-		Spotify struct {
-			ClientID     string `yaml:"client_id"`
-			ClientSecret string `yaml:"client_secret"`
-		} `yaml:"spotify"`
-	}{}
-
-	err = yaml.Unmarshal(b, data)
+	err = yaml.Unmarshal(b, c)
 	if err != nil {
 		return errors.YAML.Wrap(err, fmt.Sprintf("failed to unmarshal yaml: %v", string(b)))
 	}
-
-	c.Spotify.setID(data.Spotify.ClientID)
-	c.Spotify.setSecret(data.Spotify.ClientSecret)
 
 	return nil
 }

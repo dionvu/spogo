@@ -40,3 +40,11 @@ func PrintResponseBody(r io.ReadCloser) {
 	defer r.Close()
 	fmt.Println(string(b))
 }
+
+func Color(text string, colorCode int) string {
+	if colorCode < 1 || colorCode > 255 {
+		return text
+	}
+
+	return fmt.Sprintf("\033[38;5;%dm%s\033[0m", colorCode, text)
+}

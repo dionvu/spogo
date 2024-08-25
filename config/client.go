@@ -10,8 +10,8 @@ import (
 )
 
 type Spotify struct {
-	clientID     string `yaml:"client_id"`
-	clientSecret string `yaml:"client_secret"`
+	ClientID     string `yaml:"client_id"`
+	ClientSecret string `yaml:"client_secret"`
 }
 
 // Attempts to do the "client credentials" authentication flow
@@ -27,7 +27,7 @@ func (s *Spotify) Valid() (bool, error) {
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.SetBasicAuth(s.ClientID(), s.ClientSecret())
+	req.SetBasicAuth(s.ClientID, s.ClientSecret)
 
 	if res, err := http.DefaultClient.Do(req); err != nil || res.StatusCode != http.StatusOK {
 		return false, errors.HTTP.Wrap(err, fmt.Sprintf("unable to do http request: %v", err))
@@ -36,20 +36,20 @@ func (s *Spotify) Valid() (bool, error) {
 	return true, nil
 }
 
-// The client ID as a string
-func (s *Spotify) ClientID() string {
-	return s.clientID
-}
-
-// The client secret as a string
-func (s *Spotify) ClientSecret() string {
-	return s.clientSecret
-}
-
-func (s *Spotify) setID(str string) {
-	s.clientID = str
-}
-
-func (s *Spotify) setSecret(str string) {
-	s.clientSecret = str
-}
+// // The client ID as a string
+// func (s *Spotify) ClientID() string {
+// 	return s.ClientID
+// }
+//
+// // The client secret as a string
+// func (s *Spotify) ClientSecret() string {
+// 	return s.ClientSecret
+// }
+//
+// func (s *Spotify) setID(str string) {
+// 	s.ClientID = str
+// }
+//
+// func (s *Spotify) setSecret(str string) {
+// 	s.ClientSecret = str
+// }

@@ -61,8 +61,8 @@ func (s *Session) Authenticate(c *config.Config) error {
 func getNewTokens(s *Session, c *config.Config) error {
 	code := func() string {
 		// For handlers access.
-		clientID = c.Spotify.ClientID()
-		clientSecret = c.Spotify.ClientSecret()
+		clientID = c.Spotify.ClientID
+		clientSecret = c.Spotify.ClientSecret
 
 		http.HandleFunc("/", startAuth)
 		http.HandleFunc("/callback", completeAuth)
@@ -89,7 +89,7 @@ func getNewTokens(s *Session, c *config.Config) error {
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.SetBasicAuth(c.Spotify.ClientID(), c.Spotify.ClientSecret())
+	req.SetBasicAuth(c.Spotify.ClientID, c.Spotify.ClientSecret)
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {

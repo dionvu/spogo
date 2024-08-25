@@ -63,7 +63,7 @@ func (t *AccessToken) Refresh(refreshToken *RefreshToken, c *config.Config) erro
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.SetBasicAuth(c.Spotify.ClientID(), c.Spotify.ClientSecret())
+	req.SetBasicAuth(c.Spotify.ClientID, c.Spotify.ClientSecret)
 
 	res, err := http.DefaultClient.Do(req)
 	if res.StatusCode != 200 || err != nil {
