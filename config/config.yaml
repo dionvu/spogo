@@ -1,0 +1,21 @@
+spotify:
+  client_id: "YOUR_CLIENT_ID" # Replace with your spotify client id
+  client_secret: "YOUR_CLIENT_SECRET" # Replace with your spotify client secret
+
+options:
+  command_mode: false # Displays a ui player instead of soley using commands
+
+# Set values within color to an ansi color value (0-255) 
+# Useful chart: https://user-images.githubusercontent.com/995050/47952855-ecb12480-df75-11e8-89d4-ac26c50e80b9.png
+color: 
+  album: 
+    # 0-255
+    name: 15
+    artist: 248
+    other: 248
+
+  track:
+    # 0-255
+    name: 15
+    artist: 248 
+    other: 248

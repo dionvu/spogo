@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 
 	"github.com/dionvu/spogo/errors"
-	"github.com/dionvu/spogo/templates"
 	"github.com/fatih/color"
 	"gopkg.in/yaml.v3"
 )
@@ -112,10 +111,16 @@ func (c *Config) create() error {
 	}
 	defer file.Close()
 
-	// This couldn't possibily go wrong! (I promise this will be fixed in at least the next 2 years)
-	wd, _ := os.Getwd()
-	confileFile, _ := os.Open(filepath.Join(wd, templates.DIRECTORY, templates.CONFIGFILE))
+	wd, err := os.Getwd()
+	if err != nil {
+		return errors.FileCreate.Wrap(err, "retrieving working directory")
+	}
+
+	confileFile, _ := os.Open(filepath.Join(wd, "config", CONFIGFILE))
 	b, _ := io.ReadAll(confileFile)
+	if err != nil {
+		return errors.FileCreate.Wrap(err, "reading config template file")
+	}
 
 	fmt.Println(string(b))
 

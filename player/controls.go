@@ -66,7 +66,7 @@ func (p *Player) Play(ctxUri string, uri string, s *session.Session) error {
 // Resume uses the "transfer playback device" endpoint instead of the
 // "resume playback" to ensure playback is always transfered to
 // selected device before the players resumes playback.
-func (p *Player) Resume(s *session.Session) error {
+func (p *Player) Resume(s *session.Session, play bool) error {
 	if p.device == nil {
 		return errors.NoDevice.New("no selected playback device")
 	}
@@ -74,7 +74,7 @@ func (p *Player) Resume(s *session.Session) error {
 	data := map[string]interface{}{}
 
 	data["device_ids"] = []string{p.device.ID}
-	data["play"] = true
+	data["play"] = play
 
 	j, err := json.Marshal(data)
 	if err != nil {

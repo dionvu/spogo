@@ -25,26 +25,22 @@ var (
 	JSONEncode    = App.NewType("json-encode")
 	JSONDecode    = App.NewType("json-decode")
 	YAML          = App.NewType("yaml")
-)
 
-var (
 	Dependency = errorx.NewNamespace("dependency")
 
 	PromptTui = Dependency.NewType("prompt-tui")
-)
 
-var (
 	User = errorx.NewNamespace("user")
 
 	Reauthentication = User.NewType("reauthentication")
 	NoFlagProvided   = User.NewType("no-flag")
 	Input            = User.NewType("input")
-)
 
-var (
 	PlayBack = errorx.NewNamespace("playback")
 
 	NoDevice = PlayBack.NewType("no-device")
+
+	Jpeg = PlayBack.NewType("jpeg")
 )
 
 // If the error is not nil: prints the error, and exits the program.

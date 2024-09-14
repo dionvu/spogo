@@ -7,7 +7,7 @@ arch=('aarch64' 'x86_64')
 url="https://github.com/dionvu/spogo"
 license=('MIT')
 depends=('go')
-makedepends=('go' 'git')
+makedepends=('go')
 source=("$pkgname-$pkgver.tar.gz::https://github.com/dionvu/spogo/archive/refs/tags/v$pkgver.tar.gz")
 sha256sums=('SKIP')
 

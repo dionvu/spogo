@@ -17,7 +17,11 @@ type Track struct {
 	ID         string   `json:"id"`
 }
 
-func (t *Track) PlayingInfo(c *config.Config, progressMs int) string {
+func (t *Track) InfoString(c *config.Config, progressMs int) (
+	track string, artist string,
+	progressMinutes string, progressSeconds string,
+	durationMinutes string, durationSeconds string,
+) {
 	artists := ""
 
 	for i := 0; i < len(t.Artists); i++ {
@@ -28,21 +32,21 @@ func (t *Track) PlayingInfo(c *config.Config, progressMs int) string {
 		}
 	}
 
-	info := "Track: " + t.Name + "\n"
+	track = "Track: " + t.Name
 
 	if len(t.Artists) == 1 {
-		info += "Artist: "
+		artist += "Artist: "
 	} else {
-		info += "Artists: "
+		artist += "Artists: "
 	}
 
-	info += artists
+	artist += artists
 
-	progressSeconds := strconv.Itoa(((progressMs / 1000) % 60))
-	progressMinutes := strconv.Itoa((progressMs / 1000) / 60)
+	progressSeconds = strconv.Itoa(((progressMs / 1000) % 60))
+	progressMinutes = strconv.Itoa((progressMs / 1000) / 60)
 
-	durationSeconds := strconv.Itoa((t.DurationMs / 1000) % 60)
-	durationMinutes := strconv.Itoa((t.DurationMs / 1000) / 60)
+	durationSeconds = strconv.Itoa((t.DurationMs / 1000) % 60)
+	durationMinutes = strconv.Itoa((t.DurationMs / 1000) / 60)
 
 	// Honestly idk what im doing here, but its coolish ig.
 	for _, time := range []*string{&progressSeconds, &durationSeconds} {
@@ -51,8 +55,7 @@ func (t *Track) PlayingInfo(c *config.Config, progressMs int) string {
 		}
 	}
 
-	return info + fmt.Sprintf("\n%s %vm:%vs / %vm:%vs", "Progress:",
-		progressMinutes, progressSeconds, durationMinutes, durationSeconds)
+	return track, artist, progressMinutes, progressSeconds, durationMinutes, durationSeconds
 }
 
 func (t *Track) String(c *config.Config) string {
