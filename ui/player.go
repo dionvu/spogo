@@ -2,69 +2,101 @@ package ui
 
 import (
 	"fmt"
+	"io"
 	"math"
-	"time"
+	"net/http"
+	"os"
+	"path/filepath"
 
-	tea "github.com/charmbracelet/bubbletea"
+	_ "image/jpeg"
+	_ "image/png"
+
+	"github.com/TheZoraiz/ascii-image-converter/aic_package"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/player"
 	"github.com/dionvu/spogo/session"
 )
 
-type tickMsg struct{}
+type PlayerView struct {
+	Session *session.Session
+	Player  *player.Player
+	Config  *config.Config
+	State   *player.PlayerState
 
-const (
-	POLLINTERVALMS = 500 * time.Millisecond
+	// The title status bar indicating, playing, paused or invalid device.
+	PlayingStatus      string
+	PlayingStatusStyle *lipgloss.Style
 
-	PLAYERVIEW   = "playerview"
-	PLAYLISTVIEW = "playlistview"
-	PAUSED       = "Paused"
-	NOWPLAYING   = "Now Playing"
-)
+	// Tracks time independent of state progress
+	// to improve performance, periodically will
+	// be checked for error.
+	ProgressMs int
 
-type Model struct {
-	Session     *session.Session
-	Player      *player.Player
-	Config      *config.Config
-	State       *player.PlayerState
-	CurrentView string
-	Views       struct {
-		Player struct {
-			PlayingStatus      string
-			PlayingStatusStyle *lipgloss.Style
-			ProgressMs         int
-			TrackID            string
-		}
+	// Kept to track if progressMs is in sync with the song.
+	TrackID string
+}
+
+func NewPlayerView(
+	session *session.Session, player *player.Player,
+	config *config.Config,
+) *PlayerView {
+	pv := &PlayerView{
+		Session: session,
+		Player:  player,
+		Config:  config,
 	}
+
+	pv.UpdateStateSync()
+
+	if pv.State != nil && pv.State.IsPlaying {
+		pv.PlayingStatusStyle = &NOW_PLAYING_STYLE
+		pv.PlayingStatus = NOW_PLAYING
+	} else if pv.State != nil && !pv.State.IsPlaying {
+		pv.PlayingStatusStyle = &PAUSED_STYLE
+		pv.PlayingStatus = PAUSED
+	} else {
+		pv.PlayingStatusStyle = &NO_PLAYER_STYLE
+		pv.PlayingStatus = NO_PLAYER
+	}
+
+	if pv.State != nil {
+		pv.ProgressMs = pv.State.ProgressMs
+		pv.TrackID = pv.State.Track.ID
+	}
+
+	return pv
 }
 
-func (m *Model) Init() tea.Cmd {
-	return tea.Tick(POLLINTERVALMS, func(time.Time) tea.Msg {
-		return tickMsg{}
-	})
-}
+func (pv *PlayerView) View() string {
+	var playerInfo string
+	mainControls := MAIN_CONTROLS_STYLE.Render("[ ") + MAIN_CONTROLS_SELECTED_STYLE.Render("F1 Player") + MAIN_CONTROLS_STYLE.Render(" | F2 Playlists | F3 Search | F4 Devices ]")
+	playerStatus := pv.PlayingStatusStyle.Render(pv.PlayingStatus)
 
-func (m *Model) View() string {
-	if m.CurrentView == PLAYERVIEW {
+	var ascii string
 
-		if !m.State.IsPlaying && m.Views.Player.PlayingStatus != PAUSED {
-			m.Views.Player.PlayingStatusStyle = &PAUSEDSTYLE
-			m.Views.Player.PlayingStatus = PAUSED
-		}
-
-		if m.State.IsPlaying && m.Views.Player.PlayingStatus != NOWPLAYING {
-			m.Views.Player.PlayingStatusStyle = &NOWPLAYINGSTYLE
-			m.Views.Player.PlayingStatus = NOWPLAYING
-		}
-
-		mainControls := "[F1 Player | F2 Playlists | F3 Search | F4 Devices]"
-
+	if pv.State != nil {
 		track, artist,
 			progressMin, progressSec,
-			durationMin, durationSec := m.State.Track.InfoString(m.Config, m.Views.Player.ProgressMs)
+			durationMin, durationSec := pv.State.Track.InfoString(pv.Config, pv.ProgressMs)
 
-		playerInfo := fmt.Sprintf(
+		res, _ := http.Get(pv.State.Track.Album.Images[0].Url)
+
+		cd, _ := os.UserCacheDir()
+		filepath := filepath.Join(cd, config.APPNAME, "image.jpeg")
+
+		file, _ := os.Create(filepath)
+
+		io.Copy(file, res.Body)
+
+		flags := aic_package.DefaultFlags()
+		flags.Colored = true
+		flags.Dimensions = []int{40, 20}
+		flags.Braille = true
+
+		ascii, _ = aic_package.Convert(filepath, flags)
+
+		playerInfo = fmt.Sprintf(
 			"%s\n\n%s\n\n[%sm:%ss / %sm:%ss]",
 			track,
 			artist,
@@ -73,93 +105,68 @@ func (m *Model) View() string {
 			durationMin,
 			durationSec,
 		)
-
-		playerStatus := m.Views.Player.PlayingStatusStyle.Render(m.Views.Player.PlayingStatus)
-
-		return mainControls + "\n\n" + playerStatus + "\n\n" + playerInfo + "\n"
 	}
 
-	return "TODO"
+	return fmt.Sprintf("%s\n\n%s\n\n%s\n\n%s", mainControls, ascii, playerStatus, playerInfo)
 }
 
-func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tickMsg:
-
-		go func() {
-			state, err := m.Player.State(m.Session)
-			if err == nil {
-				m.State = state
-			}
-		}()
-
-		if m.State.IsPlaying {
-			m.Views.Player.ProgressMs += int(POLLINTERVALMS.Milliseconds())
+// Ensures that player time progress is within 2 * polling rate.
+func (pv *PlayerView) EnsureSynced() {
+	// Checks pv state for external pausing or playing not captured by
+	// the update method.
+	if pv.State != nil {
+		if !pv.State.IsPlaying && pv.PlayingStatus != PAUSED {
+			pv.PlayingStatusStyle = &PAUSED_STYLE
+			pv.PlayingStatus = PAUSED
 		}
 
-		progressOutOfSync := math.Abs(float64(m.State.ProgressMs-m.Views.Player.ProgressMs)) >
-			float64(2*POLLINTERVALMS.Milliseconds())
-
-		songOutOfSync := m.State.Track.ID != m.Views.Player.TrackID
-
-		if progressOutOfSync || songOutOfSync {
-			m.Views.Player.ProgressMs = m.State.ProgressMs
-		}
-
-		return m, tea.Tick(POLLINTERVALMS, func(time.Time) tea.Msg {
-			return tickMsg{}
-		})
-
-	case tea.KeyMsg:
-		state, err := m.Player.State(m.Session)
-		if err != nil {
-			return m, tea.Quit
-		}
-		m.State = state
-
-		switch msg.String() {
-		case "ctrl+c", "q":
-			return m, tea.Quit
-
-		case "p", " ":
-			if m.State.IsPlaying {
-				m.Player.Pause(m.Session)
-				m.Views.Player.PlayingStatusStyle = &PAUSEDSTYLE
-				m.Views.Player.PlayingStatus = PAUSED
-			} else {
-				m.Player.Resume(m.Session, true)
-				m.Views.Player.PlayingStatusStyle = &NOWPLAYINGSTYLE
-				m.Views.Player.PlayingStatus = NOWPLAYING
-			}
-
+		if pv.State.IsPlaying && pv.PlayingStatus != NOW_PLAYING {
+			pv.PlayingStatusStyle = &NOW_PLAYING_STYLE
+			pv.PlayingStatus = NOW_PLAYING
 		}
 	}
 
-	return m, nil
+	if pv.State.IsPlaying {
+		pv.ProgressMs += int(POLLING_RATE_MS.Milliseconds())
+	}
+
+	// Syncs progress time if it differs too much (2 * Polling rate).
+	if math.Abs(float64(pv.State.ProgressMs-pv.ProgressMs)) >
+		float64(2*POLLING_RATE_MS.Milliseconds()) ||
+		pv.State.Track.ID != pv.TrackID {
+
+		pv.ProgressMs = pv.State.ProgressMs
+
+		pv.TrackID = pv.State.Track.ID
+	}
 }
 
-func New(
-	session *session.Session, player *player.Player,
-	config *config.Config, inititalState *player.PlayerState,
-) *Model {
-	m := &Model{
-		Session:     session,
-		Player:      player,
-		Config:      config,
-		State:       inititalState,
-		CurrentView: PLAYERVIEW,
-	}
+// Updates state asyncchronously to improve progress timer smoothness.
+func (pv *PlayerView) UpdateStateAsync() {
+	go func() {
+		pv.State, _ = pv.Player.State(pv.Session)
+	}()
+}
 
-	if m.State.IsPlaying {
-		m.Views.Player.PlayingStatusStyle = &NOWPLAYINGSTYLE
-		m.Views.Player.PlayingStatus = NOWPLAYING
+// Update state synchronously for percision.
+func (pv *PlayerView) UpdateStateSync() {
+	pv.State, _ = pv.Player.State(pv.Session)
+}
+
+func (pv *PlayerView) PlayPause() {
+	if pv.State.IsPlaying {
+		pv.Player.Pause(pv.Session)
 	} else {
-		m.Views.Player.PlayingStatusStyle = &PAUSEDSTYLE
-		m.Views.Player.PlayingStatus = PAUSED
+		pv.Player.Resume(pv.Session, true)
 	}
 
-	m.Views.Player.ProgressMs = inititalState.ProgressMs
-	m.Views.Player.TrackID = inititalState.Track.ID
+	pv.UpdateStateSync()
 
-	return m
+	if pv.State.IsPlaying {
+		pv.PlayingStatusStyle = &NOW_PLAYING_STYLE
+		pv.PlayingStatus = NOW_PLAYING
+	} else {
+		pv.PlayingStatusStyle = &PAUSED_STYLE
+		pv.PlayingStatus = PAUSED
+	}
 }

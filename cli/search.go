@@ -3,7 +3,7 @@ package cli
 import (
 	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/errors"
-	"github.com/dionvu/spogo/spotify/search"
+	"github.com/dionvu/spogo/spotify"
 	"github.com/joomcode/errorx"
 	"github.com/manifoldco/promptui"
 	urfave "github.com/urfave/cli/v2"
@@ -36,7 +36,7 @@ func searchComamnd(cli *Cli, config *config.Config) *urfave.Command {
 				}
 			}
 
-			res, err := search.Search(query, searchType, cli.Session)
+			res, err := spotify.Search(query, searchType, cli.Session)
 			if err != nil {
 				return err
 			}
@@ -108,7 +108,7 @@ func searchComamnd(cli *Cli, config *config.Config) *urfave.Command {
 				names := []string{}
 
 				for _, playlist := range res.Playlists.Items {
-					names = append(names, playlist.String())
+					names = append(names, playlist.Name)
 				}
 
 				albumPrompt := promptui.Select{
