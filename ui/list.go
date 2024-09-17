@@ -11,14 +11,14 @@ import (
 )
 
 const (
-	listHeight   = 14
+	listHeight   = 10
 	defaultWidth = 20
 )
 
 var (
 	titleStyle        = lipgloss.NewStyle().MarginLeft(2)
 	itemStyle         = lipgloss.NewStyle().PaddingLeft(4)
-	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170"))
+	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("#fe8019"))
 	paginationStyle   = list.DefaultStyles().PaginationStyle.PaddingLeft(4)
 	helpStyle         = list.DefaultStyles().HelpStyle.PaddingLeft(4).PaddingBottom(1)
 	quitTextStyle     = lipgloss.NewStyle().Margin(1, 0, 2, 4)
@@ -34,6 +34,21 @@ type ListModel struct {
 	list     list.Model
 	choice   string
 	quitting bool
+}
+
+func NewListModel(items []list.Item, title string) *ListModel {
+	l := list.New(items, itemDelegate{}, defaultWidth, listHeight)
+	l.Title = title
+	l.SetShowStatusBar(false)
+	l.SetFilteringEnabled(false)
+	l.Styles.Title = titleStyle
+	l.Styles.PaginationStyle = paginationStyle
+	l.Styles.HelpStyle = helpStyle
+	l.SetShowHelp(false)
+
+	lm := &ListModel{list: l}
+
+	return lm
 }
 
 func (m ListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -63,13 +78,7 @@ func (m ListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m ListModel) View() string {
-	if m.choice != "" {
-		return quitTextStyle.Render(fmt.Sprintf("%s? Sounds good to me.", m.choice))
-	}
-	// if m.quitting {
-	// 	return quitTextStyle.Render("Not hungry? That’s cool.")
-	// }
-	return "\n" + m.list.View()
+	return m.list.View()
 }
 
 func (m ListModel) Init() tea.Cmd {

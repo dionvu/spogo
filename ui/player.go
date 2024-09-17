@@ -8,10 +8,6 @@ import (
 	"os"
 	"path/filepath"
 
-	_ "image/jpeg"
-	_ "image/png"
-
-	"github.com/TheZoraiz/ascii-image-converter/aic_package"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/player"
@@ -50,13 +46,13 @@ func NewPlayerView(
 	pv.UpdateStateSync()
 
 	if pv.State != nil && pv.State.IsPlaying {
-		pv.PlayingStatusStyle = &NOW_PLAYING_STYLE
+		pv.PlayingStatusStyle = &PlayerViewStyle.StatusBar.NowPlaying
 		pv.PlayingStatus = NOW_PLAYING
 	} else if pv.State != nil && !pv.State.IsPlaying {
-		pv.PlayingStatusStyle = &PAUSED_STYLE
+		pv.PlayingStatusStyle = &PlayerViewStyle.StatusBar.Paused
 		pv.PlayingStatus = PAUSED
 	} else {
-		pv.PlayingStatusStyle = &NO_PLAYER_STYLE
+		pv.PlayingStatusStyle = &PlayerViewStyle.StatusBar.NoPlayer
 		pv.PlayingStatus = NO_PLAYER
 	}
 
@@ -68,18 +64,8 @@ func NewPlayerView(
 	return pv
 }
 
-func (pv *PlayerView) View() string {
-	var playerInfo string
-	mainControls := MAIN_CONTROLS_STYLE.Render("[ ") + MAIN_CONTROLS_SELECTED_STYLE.Render("F1 Player") + MAIN_CONTROLS_STYLE.Render(" | F2 Playlists | F3 Search | F4 Devices ]")
-	playerStatus := pv.PlayingStatusStyle.Render(pv.PlayingStatus)
-
-	var ascii string
-
+func (pv *PlayerView) View(terminalSize int) string {
 	if pv.State != nil {
-		track, artist,
-			progressMin, progressSec,
-			durationMin, durationSec := pv.State.Track.InfoString(pv.Config, pv.ProgressMs)
-
 		res, _ := http.Get(pv.State.Track.Album.Images[0].Url)
 
 		cd, _ := os.UserCacheDir()
@@ -89,25 +75,27 @@ func (pv *PlayerView) View() string {
 
 		io.Copy(file, res.Body)
 
-		flags := aic_package.DefaultFlags()
-		flags.Colored = true
-		flags.Dimensions = []int{40, 20}
-		flags.Braille = true
+		if terminalSize <= TERMINALSIZE.Small {
+			return fmt.Sprintf("\n\n%s\n\n%s\n\n%s",
+				AsciiView(filepath, ASCII_FLAGS_SMALL),
+				PlayerStatusView(pv),
+				PlayerInfoView(pv))
+		}
 
-		ascii, _ = aic_package.Convert(filepath, flags)
-
-		playerInfo = fmt.Sprintf(
-			"%s\n\n%s\n\n[%sm:%ss / %sm:%ss]",
-			track,
-			artist,
-			progressMin,
-			progressSec,
-			durationMin,
-			durationSec,
-		)
+		return fmt.Sprintf("%s\n\n%s\n\n%s\n\n%s",
+			MainControlsView(PLAYER_VIEW),
+			AsciiView(filepath, ASCII_FLAGS_NORMAL),
+			PlayerStatusView(pv),
+			PlayerInfoView(pv))
 	}
 
-	return fmt.Sprintf("%s\n\n%s\n\n%s\n\n%s", mainControls, ascii, playerStatus, playerInfo)
+	// if terminalSize <= TERMINALSIZE.Small {
+	// 	return "\n\n" + PlayerStatusView(pv)
+	// }
+
+	return fmt.Sprintf("%s\n\n%s",
+		MainControlsView(PLAYER_VIEW),
+		PlayerStatusView(pv))
 }
 
 // Ensures that player time progress is within 2 * polling rate.
@@ -116,12 +104,12 @@ func (pv *PlayerView) EnsureSynced() {
 	// the update method.
 	if pv.State != nil {
 		if !pv.State.IsPlaying && pv.PlayingStatus != PAUSED {
-			pv.PlayingStatusStyle = &PAUSED_STYLE
+			pv.PlayingStatusStyle = &PlayerViewStyle.StatusBar.Paused
 			pv.PlayingStatus = PAUSED
 		}
 
 		if pv.State.IsPlaying && pv.PlayingStatus != NOW_PLAYING {
-			pv.PlayingStatusStyle = &NOW_PLAYING_STYLE
+			pv.PlayingStatusStyle = &PlayerViewStyle.StatusBar.NowPlaying
 			pv.PlayingStatus = NOW_PLAYING
 		}
 	}
@@ -163,10 +151,10 @@ func (pv *PlayerView) PlayPause() {
 	pv.UpdateStateSync()
 
 	if pv.State.IsPlaying {
-		pv.PlayingStatusStyle = &NOW_PLAYING_STYLE
+		pv.PlayingStatusStyle = &PlayerViewStyle.StatusBar.NowPlaying
 		pv.PlayingStatus = NOW_PLAYING
 	} else {
-		pv.PlayingStatusStyle = &PAUSED_STYLE
+		pv.PlayingStatusStyle = &PlayerViewStyle.StatusBar.Paused
 		pv.PlayingStatus = PAUSED
 	}
 }
