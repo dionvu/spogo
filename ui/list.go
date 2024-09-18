@@ -11,8 +11,10 @@ import (
 )
 
 const (
-	listHeight   = 10
-	defaultWidth = 20
+	listHeight          = 10
+	defaultWidth        = 20
+	DEFAULT_LIST_HEIGHT = 12 // 8 Selections per page
+	SMALL_LIST_HEIGHT   = 8  // 4 Selections per page
 )
 
 var (
@@ -68,6 +70,7 @@ func (m ListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if ok {
 				m.choice = string(i)
 			}
+
 			return m, tea.Quit
 		}
 	}

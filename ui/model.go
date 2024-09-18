@@ -28,13 +28,14 @@ var TERMINALSIZE = struct {
 }
 
 const (
-	PLAYER_VIEW   = "PLAYER_VIEW"
-	PLAYLIST_VIEW = "PLAYLIST_VIEW"
-	REFRESH_VIEW  = "REFRESH_VIEW"
-	HELP_VIEW     = "HELP_VIEW"
-	PAUSED        = "Paused"
-	NO_PLAYER     = "Player Inactive"
-	NOW_PLAYING   = "Now Playing"
+	PLAYER_VIEW         = "PLAYER_VIEW"
+	PLAYLIST_VIEW       = "PLAYLIST_VIEW"
+	PLAYLIST_TRACK_VIEW = "PLAYLIST_TRACK_VIEW"
+	REFRESH_VIEW        = "REFRESH_VIEW"
+	HELP_VIEW           = "HELP_VIEW"
+	PAUSED              = "Paused"
+	NO_PLAYER           = "Player Inactive"
+	NOW_PLAYING         = "Now Playing"
 )
 
 type Model struct {
@@ -100,20 +101,20 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			vol := m.Views.Player.State.Device.VolumePercent
 			m.Views.Player.Player.SetVolume(m.Session, vol+VOLUME_INCREMENT_PERCENT)
 
-		case "f1":
+		case "f1", "1":
 			m.CurrentView = PLAYER_VIEW
 
-		case "f2":
+		case "f2", "2":
 			m.CurrentView = PLAYLIST_VIEW
 
-		case "f5":
+		case "f5", "5":
 			m.CurrentView = HELP_VIEW
 
 		case "enter":
 			if m.CurrentView == PLAYLIST_VIEW {
-				i, ok := m.Views.Playlist.ListModel.list.SelectedItem().(Item)
-				if ok {
+				if i, ok := m.Views.Playlist.ListModel.list.SelectedItem().(Item); ok {
 					m.Views.Playlist.ListModel.choice = string(i)
+					m.Player.Play(m.Views.Playlist.PlaylistsMap[m.Views.Playlist.ListModel.choice].URI, "", m.Session)
 				}
 			}
 
@@ -130,9 +131,13 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmd.Run()
 			}()
 
+		case "t":
+			if m.CurrentView == PLAYLIST_VIEW {
+				m.CurrentView = PLAYLIST_TRACK_VIEW
+			}
 		}
 
-		if m.CurrentView == PLAYLIST_VIEW {
+		if m.CurrentView == PLAYLIST_VIEW && m.Views.Playlist.ListModel.choice != "" {
 			var cmd tea.Cmd
 			m.Views.Playlist.ListModel.list, cmd = m.Views.Playlist.ListModel.list.Update(msg)
 			return m, cmd
@@ -173,11 +178,17 @@ func (m *Model) View() string {
 	case PLAYER_VIEW:
 		return m.Views.Player.View(m.Terminal.Height)
 	case PLAYLIST_VIEW:
-		return m.Views.Playlist.View(m.Views.Player, m.Terminal.Width)
-	case REFRESH_VIEW:
-		return "Refreshing..."
+		return m.Views.Playlist.View(m.Views.Player, m.Terminal.Height)
+
 	case HELP_VIEW:
 		return MainControlsView(HELP_VIEW) + "\n\n" + padLines(m.Config.HelpString(), TAB_WIDTH)
+
+	case PLAYLIST_TRACK_VIEW:
+		return "tracks lol"
+
+	case REFRESH_VIEW:
+		return "Refreshing..."
+
 	default:
 		return "TODO"
 	}
@@ -211,8 +222,6 @@ func updateTerminalSize(width *int, height *int) {
 				cmd.Stdout = os.Stdout
 				cmd.Run()
 
-				// Avoids bubbletea glitching out the ascii.
-				// time.Sleep(POLLING_RATE_MS * 2)
 			}
 			*width, *height = w, h
 		}

@@ -11,6 +11,7 @@ var ASCII_FLAGS_NORMAL aic_package.Flags = func() aic_package.Flags {
 	flags.Colored = true
 	flags.Dimensions = []int{40, 20}
 	flags.Braille = true
+	flags.Threshold = 20
 
 	return flags
 }()
@@ -19,6 +20,16 @@ var ASCII_FLAGS_SMALL aic_package.Flags = func() aic_package.Flags {
 	flags := aic_package.DefaultFlags()
 	flags.Colored = true
 	flags.Dimensions = []int{20, 10}
+	flags.Braille = true
+	flags.Threshold = 20
+
+	return flags
+}()
+
+var ASCII_FLAGS_TINY aic_package.Flags = func() aic_package.Flags {
+	flags := aic_package.DefaultFlags()
+	flags.Colored = true
+	flags.Dimensions = []int{16, 8}
 	flags.Braille = true
 
 	return flags
@@ -75,7 +86,7 @@ var AsciiView = func(filepath string, flags aic_package.Flags) string {
 		return "invalid ascii filepath or flags"
 	}
 
-	ascii = padLines(ascii, 4)
+	ascii = padLines(ascii, TAB_WIDTH)
 
 	return ascii
 }
