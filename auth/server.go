@@ -1,4 +1,4 @@
-package session
+package auth
 
 import (
 	"fmt"
@@ -26,6 +26,8 @@ func startAuth(w http.ResponseWriter, r *http.Request) {
 		scopes.UserReadEmail,
 		scopes.UserReadPlaybackState,
 		scopes.UserModifyPlaybackState,
+		scopes.UserPlaylistRead,
+		scopes.UserReadCollab,
 	}, " "))
 	query.Set("state", state)
 

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/dionvu/spogo/icons"
 	"github.com/fatih/color"
 	"github.com/joomcode/errorx"
 )
@@ -46,12 +45,12 @@ var (
 // If the error is not nil: prints the error, and exits the program.
 func Catch(err error) {
 	if err != nil {
-		fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error:"), err.(*errorx.Error).Message())
+		fmt.Printf("%v %v\n", color.RedString("Error:"), err.(*errorx.Error).Message())
 		os.Exit(0)
 	}
 }
 
 // Prints the error even if it's nil.
 func Print(err error) {
-	fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error:"), err.(*errorx.Error).Message())
+	fmt.Printf("%v %v\n", color.RedString("Error:"), err.(*errorx.Error).Message())
 }

@@ -6,10 +6,10 @@ import (
 	"os/exec"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/dionvu/spogo/auth"
 	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/errors"
 	"github.com/dionvu/spogo/player"
-	"github.com/dionvu/spogo/session"
 	"github.com/dionvu/spogo/ui"
 )
 
@@ -18,7 +18,7 @@ func main() {
 	errors.Catch(err)
 	errors.Catch(c.Load())
 
-	session, err := session.New(c)
+	auth, err := auth.New(c)
 	errors.Catch(err)
 
 	player, err := player.New(c)
@@ -28,7 +28,7 @@ func main() {
 	cmd.Stdout = os.Stdout
 	cmd.Run()
 
-	tp := tea.NewProgram(ui.New(session, player, c))
+	tp := tea.NewProgram(ui.New(auth, player, c), tea.WithAltScreen())
 	if _, err := tp.Run(); err != nil {
 		log.Fatal(err)
 	}

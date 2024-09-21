@@ -26,15 +26,6 @@ var ASCII_FLAGS_SMALL aic_package.Flags = func() aic_package.Flags {
 	return flags
 }()
 
-var ASCII_FLAGS_TINY aic_package.Flags = func() aic_package.Flags {
-	flags := aic_package.DefaultFlags()
-	flags.Colored = true
-	flags.Dimensions = []int{16, 8}
-	flags.Braille = true
-
-	return flags
-}()
-
 var MainControlsView = func(view string) string {
 	if view == PLAYER_VIEW {
 		return padLines(CommonStyle.MainControls.Selected.Render("[ ")+
@@ -50,6 +41,12 @@ var MainControlsView = func(view string) string {
 	if view == HELP_VIEW {
 		return padLines(CommonStyle.MainControls.Normal.Render("[ F1 Player | F2 Playlists | F3 Search | F4 Devices ")+
 			CommonStyle.MainControls.Selected.Render("| F5 Help ]"), TAB_WIDTH)
+	}
+
+	if view == SEARCH_TYPE_VIEW {
+		return padLines(CommonStyle.MainControls.Normal.Render("[ F1 Player | F2 Playlists | ")+
+			CommonStyle.MainControls.Selected.Render("F3 Search")+
+			CommonStyle.MainControls.Normal.Render(" | F4 Devices | F5 Help ]"), TAB_WIDTH)
 	}
 
 	return "Unknown View"
@@ -68,8 +65,16 @@ var PlayerInfoView = func(pv *PlayerView) string {
 		progressMin, progressSec,
 		durationMin, durationSec := pv.State.Track.InfoString(pv.Config, pv.ProgressMs)
 
+	var shuffle string
+
+	if pv.State.ShuffleState {
+		shuffle = "on"
+	} else {
+		shuffle = "off"
+	}
+
 	return padLines(fmt.Sprintf(
-		"%s\n\n%s\n\n[%sm:%ss / %sm:%ss]\n\nvol: %v%%",
+		"%s - %s\n\n%sm:%ss / %sm:%ss\n\nvol: %v%% sfl: %v",
 		track,
 		artist,
 		progressMin,
@@ -77,14 +82,12 @@ var PlayerInfoView = func(pv *PlayerView) string {
 		durationMin,
 		durationSec,
 		pv.State.Device.VolumePercent,
+		shuffle,
 	), TAB_WIDTH)
 }
 
 var AsciiView = func(filepath string, flags aic_package.Flags) string {
-	ascii, err := aic_package.Convert(filepath, flags)
-	if err != nil {
-		return "invalid ascii filepath or flags"
-	}
+	ascii, _ := aic_package.Convert(filepath, flags)
 
 	ascii = padLines(ascii, TAB_WIDTH)
 

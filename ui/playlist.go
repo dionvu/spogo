@@ -8,46 +8,51 @@ import (
 	"path/filepath"
 
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/dionvu/spogo/auth"
 	"github.com/dionvu/spogo/config"
-	"github.com/dionvu/spogo/session"
 	"github.com/dionvu/spogo/spotify"
 )
 
 type PlaylistView struct {
-	Session *session.Session
+	Session *auth.Session
 	Config  *config.Config
 
 	UserPlaylists *[]spotify.Playlist
-	PlaylistsMap  map[string]*spotify.Playlist
+	playlistsMap  map[string]*spotify.Playlist
 
-	ListModel *ListModel
-	ItemsMap  map[list.Item]string
+	ItemsMap map[list.Item]string
+
+	PlaylistListModel *PlaylistListModel
 }
 
-func NewPlaylistView(s *session.Session, c *config.Config) *PlaylistView {
+func NewPlaylistView(s *auth.Session, c *config.Config) *PlaylistView {
 	items := []list.Item{}
 
 	pv := &PlaylistView{
-		Session:  s,
-		Config:   c,
-		ItemsMap: map[list.Item]string{},
+		Session: s,
+		Config:  c,
 	}
 
-	pv.PlaylistsMap = map[string]*spotify.Playlist{}
+	pv.ItemsMap = map[list.Item]string{}
+
+	pv.playlistsMap = map[string]*spotify.Playlist{}
 
 	pv.UserPlaylists, _ = spotify.UserPlaylists(pv.Session)
 
 	for _, playlist := range *pv.UserPlaylists {
-		items = append(items, Item(playlist.Name))
-		pv.ItemsMap[Item(playlist.Name)] = playlist.Name
+		item := Item(playlist.Name)
 
-		pv.PlaylistsMap[playlist.Name] = &playlist
+		items = append(items, item)
+
+		pv.playlistsMap[playlist.Name] = &playlist
+
+		pv.ItemsMap[items[len(items)-1]] = playlist.Name
 	}
 
-	pv.ListModel = NewListModel(items, TITLE_PLAYLIST_STYLE.Render("Playlists"))
+	pv.PlaylistListModel = NewPlaylistListModel(items, PlaylistViewStyle.Title.Render("Playlists"))
 
-	if len(pv.ListModel.list.Items()) > 0 {
-		pv.ListModel.choice = pv.ItemsMap[items[0]]
+	if len(pv.PlaylistListModel.list.Items()) > 0 {
+		pv.PlaylistListModel.choice = (*pv.UserPlaylists)[0].Name
 	}
 
 	return pv
@@ -60,8 +65,8 @@ func (pv *PlaylistView) View(playerView *PlayerView, terminalSize int) string {
 	imagePath := filepath.Join(pv.Config.CachePath(), "image.jpeg")
 	imageFile, _ := os.Create(imagePath)
 
-	if len(pv.PlaylistsMap[pv.ItemsMap[pv.ListModel.list.SelectedItem()]].Images) > 0 {
-		res, _ = http.Get(pv.PlaylistsMap[pv.ItemsMap[pv.ListModel.list.SelectedItem()]].Images[0].Url)
+	if len(pv.playlistsMap[pv.PlaylistListModel.choice].Images) > 0 {
+		res, _ = http.Get(pv.GetPlaylistFromChoice(pv.GetSelectedName()).Images[0].Url)
 	} else {
 		res, _ = http.Get(DEFAULT_IMAGE_URL)
 	}
@@ -69,12 +74,12 @@ func (pv *PlaylistView) View(playerView *PlayerView, terminalSize int) string {
 	io.Copy(imageFile, res.Body)
 
 	if terminalSize <= TERMINALSIZE.Small {
-		pv.ListModel.list.SetHeight(SMALL_LIST_HEIGHT)
+		pv.PlaylistListModel.list.SetHeight(SMALL_LIST_HEIGHT)
 
 		if len((*pv.UserPlaylists)) > 1 {
 			return fmt.Sprintf("\n\n%s\n\n%s",
 				AsciiView(imagePath, ASCII_FLAGS_SMALL),
-				pv.ListModel.View())
+				pv.PlaylistListModel.View())
 		}
 
 		return fmt.Sprintf("\n\n%s\n\n%s",
@@ -82,12 +87,12 @@ func (pv *PlaylistView) View(playerView *PlayerView, terminalSize int) string {
 			padLines("No playlists :(", TAB_WIDTH))
 	}
 
-	pv.ListModel.list.SetHeight(DEFAULT_LIST_HEIGHT)
+	pv.PlaylistListModel.list.SetHeight(DEFAULT_LIST_HEIGHT)
 
 	if len((*pv.UserPlaylists)) > 1 {
 		return fmt.Sprintf("%s\n\n%s\n\n%s", MainControlsView(PLAYLIST_VIEW),
 			AsciiView(imagePath, ASCII_FLAGS_NORMAL),
-			pv.ListModel.View())
+			pv.PlaylistListModel.View())
 	}
 
 	return fmt.Sprintf("%s\n\n%s\n\n%s", MainControlsView(PLAYLIST_VIEW),
@@ -95,11 +100,10 @@ func (pv *PlaylistView) View(playerView *PlayerView, terminalSize int) string {
 		padLines("No playlists :(", TAB_WIDTH))
 }
 
-// if pv.ListModel.choice != "" && len((*pv.UserPlaylists)) > 0 &&
-// 	len(pv.PlaylistsMap[pv.ListModel.choice].Images) > 0 &&
-// 	len(pv.PlaylistsMap[pv.ListModel.choice].Images) > 0 {
-// 	res, _ = http.Get(pv.PlaylistsMap[(pv.ListModel.choice)].Images[0].Url)
-// } else if len((*pv.UserPlaylists)) > 0 && len((*pv.UserPlaylists)[0].Images) > 0 {
-// 	res, _ = http.Get((*pv.UserPlaylists)[0].Images[0].Url)
-// } else {
-// }
+func (pv *PlaylistView) GetPlaylistFromChoice(choice string) *spotify.Playlist {
+	return pv.playlistsMap[choice]
+}
+
+func (pv *PlaylistView) GetSelectedName() string {
+	return pv.ItemsMap[pv.PlaylistListModel.list.SelectedItem()]
+}

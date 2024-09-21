@@ -9,13 +9,13 @@ import (
 	"path/filepath"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/dionvu/spogo/auth"
 	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/player"
-	"github.com/dionvu/spogo/session"
 )
 
 type PlayerView struct {
-	Session *session.Session
+	Session *auth.Session
 	Player  *player.Player
 	Config  *config.Config
 	State   *player.PlayerState
@@ -34,11 +34,11 @@ type PlayerView struct {
 }
 
 func NewPlayerView(
-	session *session.Session, player *player.Player,
+	auth *auth.Session, player *player.Player,
 	config *config.Config,
 ) *PlayerView {
 	pv := &PlayerView{
-		Session: session,
+		Session: auth,
 		Player:  player,
 		Config:  config,
 	}
@@ -89,9 +89,10 @@ func (pv *PlayerView) View(terminalSize int) string {
 			PlayerInfoView(pv))
 	}
 
-	// if terminalSize <= TERMINALSIZE.Small {
-	// 	return "\n\n" + PlayerStatusView(pv)
-	// }
+	if terminalSize <= TERMINALSIZE.Small {
+		return fmt.Sprintf("\n\n%s",
+			PlayerStatusView(pv))
+	}
 
 	return fmt.Sprintf("%s\n\n%s",
 		MainControlsView(PLAYER_VIEW),

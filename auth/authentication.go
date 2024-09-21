@@ -1,4 +1,4 @@
-package session
+package auth
 
 import (
 	"encoding/json"
@@ -7,13 +7,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 
 	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/errors"
-	"github.com/dionvu/spogo/icons"
-	"github.com/dionvu/spogo/utils"
 	"github.com/fatih/color"
 )
 
@@ -40,7 +40,7 @@ func (s *Session) Authenticate(c *config.Config) error {
 	if time.Now().After(s.AccessToken.Expiry) {
 		validCred, _ := c.Spotify.Valid()
 		if !validCred {
-			fmt.Printf("%v %v %v\n", color.RedString(icons.Warning+"Error:"),
+			fmt.Printf("%v %v %v\n", color.RedString("Error:"),
 				"invalid spotify client credentials:", color.YellowString(c.FilePath()))
 			os.Exit(0)
 		}
@@ -69,8 +69,8 @@ func getNewTokens(s *Session, c *config.Config) error {
 
 		startServer()
 
-		if err := utils.OpenURL(URI); err != nil {
-			fmt.Printf("%v %v\n", color.RedString(icons.Warning+"Error:"), err)
+		if err := OpenURL(URI); err != nil {
+			fmt.Printf("%v %v\n", color.RedString("Error:"), err)
 		}
 
 		// Awaits the authentication code from handlers.
@@ -110,6 +110,29 @@ func getNewTokens(s *Session, c *config.Config) error {
 	s.RefreshToken.Update(data["refresh_token"].(string), c)
 
 	os.Exit(0)
+
+	return nil
+}
+
+func OpenURL(url string) error {
+	var cmd *exec.Cmd
+
+	os := runtime.GOOS
+
+	switch {
+	case os == "windows":
+		cmd = exec.Command("start", url)
+	case os == "darwin":
+		cmd = exec.Command("open", url)
+	default:
+		cmd = exec.Command("xdg-open", url)
+	}
+
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+
+	fmt.Println(color.HiGreenString("Opening -> ", url))
 
 	return nil
 }

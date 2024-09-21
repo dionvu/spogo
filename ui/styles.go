@@ -58,9 +58,16 @@ var PlayerViewStyle = struct {
 	},
 }
 
-var TITLE_PLAYLIST_STYLE lg.Style = lg.NewStyle().Bold(true).Background(lg.Color("#d65d0e")).Foreground(lg.Color("#282828")).PaddingLeft(1).PaddingRight(1)
+var PlaylistViewStyle = struct {
+	Title        lg.Style
+	ItemSelected lg.Style
+	Item         lg.Style
+}{
+	Title:        lg.NewStyle().Bold(true).Background(lg.Color("#a89984")).Foreground(lg.Color("#282828")).PaddingLeft(1).PaddingRight(1),
+	ItemSelected: lg.NewStyle().PaddingLeft(2),
 
-var ITEM_SELECTED_STYLE lg.Style = lg.NewStyle().Bold(true).Foreground(lg.Color("#d65d0e"))
+	Item: lg.NewStyle().PaddingLeft(4).Faint(true),
+}
 
 func padLines(s string, padding int) string {
 	pad := strings.Repeat(" ", padding)

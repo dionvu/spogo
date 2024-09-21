@@ -1,10 +1,14 @@
 package spotify
 
 import (
-	"fmt"
+	"encoding/json"
+	"io"
+	"net/http"
 
-	"github.com/dionvu/spogo/config"
-	"github.com/dionvu/spogo/utils"
+	"github.com/dionvu/spogo/auth"
+	"github.com/dionvu/spogo/errors"
+	"github.com/dionvu/spogo/spotify/api/headers"
+	"github.com/dionvu/spogo/spotify/api/status"
 )
 
 type AlbumsResponse struct {
@@ -29,15 +33,41 @@ type Album struct {
 	Uri         string   `json:"uri"`
 }
 
-func (a *Album) String(c *config.Config) string {
-	artist := a.Artists[0].Name
+func AlbumTracks(s *auth.Session, albumID string) (*[]Track, error) {
+	url := "https://api.spotify.com/v1/albums/" + albumID + "/tracks"
 
-	if len(a.Artists) > 1 {
-		artist += " & more"
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, errors.HTTPRequest.Wrap(err, "failed to make request for playlists")
+	}
+	req.Header.Add(headers.Auth, "Bearer "+s.AccessToken.String())
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, errors.HTTP.WrapWithNoMessage(err)
 	}
 
-	return utils.Color(a.Name, c.Color.Album.Name) + " " +
-		utils.Color(artist, c.Color.Album.Artist) +
-		utils.Color(" Release: "+a.ReleaseDate, c.Color.Album.Other) +
-		utils.Color(fmt.Sprint(" Tracks: ", a.TotalTracks), c.Color.Album.Other)
+	if res.StatusCode == status.BadToken {
+		return nil, errors.Reauthentication.NewWithNoMessage()
+	}
+
+	if res.StatusCode >= 400 {
+		return nil, errors.HTTP.New("bad request")
+	}
+
+	b, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, errors.HTTP.Wrap(err, "failed to read response body")
+	}
+
+	var response struct {
+		Items []Track `json:"items"`
+	}
+
+	err = json.Unmarshal(b, &response)
+	if err != nil {
+		return nil, errors.JSONUnmarshal.Wrap(err, "failed to unmarshal playlists response")
+	}
+
+	return &response.Items, nil
 }

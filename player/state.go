@@ -4,25 +4,39 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/dionvu/spogo/device"
+	"github.com/dionvu/spogo/auth"
 	"github.com/dionvu/spogo/errors"
-	"github.com/dionvu/spogo/session"
 	"github.com/dionvu/spogo/spotify"
 	"github.com/dionvu/spogo/spotify/api/headers"
 	"github.com/dionvu/spogo/spotify/api/urls"
 )
 
+const (
+	TRACK_TYPE   = "track"
+	EPISODE_TYPE = "episode"
+	AD_TYPE      = "ad"
+	UNKNOWN_TYPE = "unknown"
+)
+
 type PlayerState struct {
-	Device       *device.Device `json:"device"`
-	ProgressMs   int            `json:"progress_ms"`
-	IsPlaying    bool           `json:"is_playing"`
-	ShuffleState bool           `json:"shuffle_state"`
-	Item         interface{}    `json:"item"`
-	Track        *spotify.Track
-	Episode      *spotify.Episode
+	CurrentPlayingType string `json:"currently_playing_type"`
+
+	Device       *Device `json:"device"`
+	ProgressMs   int     `json:"progress_ms"`
+	IsPlaying    bool    `json:"is_playing"`
+	ShuffleState bool    `json:"shuffle_state"`
+
+	// Each PlayerState will have either a nil track or episode,
+	// depending on what the user is playing.
+	Track   *spotify.Track
+	Episode *spotify.Episode
+
+	// Only used to retrieve the current item and
+	// transfer into either a track or episode.
+	Item interface{} `json:"item"`
 }
 
-func (p *Player) State(s *session.Session) (*PlayerState, error) {
+func (p *Player) State(s *auth.Session) (*PlayerState, error) {
 	ps := &PlayerState{}
 
 	req, err := http.NewRequest(http.MethodGet, urls.PLAYER, nil)
@@ -60,14 +74,12 @@ func (p *Player) State(s *session.Session) (*PlayerState, error) {
 	var track spotify.Track
 	var episode spotify.Episode
 
-	// Type of item is a track
 	if err := json.Unmarshal(itemBytes, &track); err == nil {
 		ps.Track = &track
 
 		return ps, nil
 	}
 
-	// Type of item is an episode
 	if err := json.Unmarshal(itemBytes, &episode); err == nil {
 		ps.Episode = &episode
 

@@ -1,13 +1,16 @@
-package device
+package player
 
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 
+	"github.com/dionvu/spogo/auth"
+	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/errors"
-	"github.com/dionvu/spogo/icons"
-	"github.com/dionvu/spogo/session"
 	"github.com/dionvu/spogo/spotify/api/headers"
 	"github.com/dionvu/spogo/spotify/api/urls"
 )
@@ -25,7 +28,7 @@ type Device struct {
 
 // Retrieves currently available playback devices, or an empty slice
 // if none are available.
-func GetDevices(s *session.Session) (*[]Device, error) {
+func GetDevices(s *auth.Session) (*[]Device, error) {
 	req, err := http.NewRequest(http.MethodGet, urls.PLAYERDEVICES, nil)
 	if err != nil {
 		return nil, errors.HTTPRequest.Wrap(err, "failed to create http request for playback devices")
@@ -53,10 +56,47 @@ func GetDevices(s *session.Session) (*[]Device, error) {
 	return &data.Devices, nil
 }
 
-func (d *Device) String() string {
-	return d.Name
+// Helper function for player new function to
+// see if the "device.json" cache file exists.
+func deviceCacheExist(c *config.Config) bool {
+	if _, err := os.ReadFile(filepath.Join(c.CachePath(), config.DEVICEFILE)); err != nil {
+		return false
+	}
+	return true
 }
 
-func (d *Device) StringDetailed() string {
-	return fmt.Sprintf("%v, %v, %v %v", d.Name, d.Type, d.VolumePercent, icons.VolumeMax)
+// Helper function for the player new function
+// to creates the "device.json" cache file.
+func createCache(c *config.Config) error {
+	file, err := os.Create(filepath.Join(c.CachePath(), config.DEVICEFILE))
+	if err != nil {
+		return errors.FileCreate.Wrap(err, fmt.Sprintf("creating file %v", c.FilePath()))
+	}
+	file.Close()
+
+	return nil
+}
+
+// Gets playback device stored in device cache file
+// "device.json". This function will error if no device
+// is found.
+func getCachedPlaybackDevice(c *config.Config) (*Device, error) {
+	d := &Device{}
+
+	f, err := os.Open(c.DeviceFile())
+	if err != nil {
+		return nil, errors.FileOpen.Wrap(err, "failed to open device cache file")
+	}
+	defer f.Close()
+
+	// Reached EOF before finished decoding into a device.
+	if err = json.NewDecoder(f).Decode(d); err == io.EOF {
+		return nil, errors.JSONDecode.Wrap(err, "invalid playback device")
+	}
+
+	if err != nil {
+		return nil, errors.JSONMarshal.Wrap(err, "failed to marshal device")
+	}
+
+	return d, nil
 }

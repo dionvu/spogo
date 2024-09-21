@@ -1,20 +1,19 @@
-package session
+package auth
 
 import (
 	"github.com/dionvu/spogo/config"
-	"github.com/dionvu/spogo/tokens"
 )
 
 type Session struct {
-	AccessToken  *tokens.AccessToken
-	RefreshToken *tokens.RefreshToken
+	AccessToken  *AccessToken
+	RefreshToken *RefreshToken
 }
 
 // Creates a new session, loading tokens from respective files, and authenticating.
 func New(c *config.Config) (*Session, error) {
 	s := &Session{
-		AccessToken:  &tokens.AccessToken{},
-		RefreshToken: &tokens.RefreshToken{},
+		AccessToken:  &AccessToken{},
+		RefreshToken: &RefreshToken{},
 	}
 
 	// Loads possible access token and refresh token from respective token files.

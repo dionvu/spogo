@@ -1,12 +1,20 @@
 package spotify
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/dionvu/spogo/config"
-	"github.com/dionvu/spogo/utils"
 )
+
+type TracksResponse struct {
+	Href     string  `json:"href"`
+	Limit    int     `json:"limit"`
+	Next     string  `json:"next"`
+	Offset   int     `json:"offset"`
+	Previous string  `json:"previous"`
+	Total    int     `json:"total"`
+	Items    []Track `json:"items"`
+}
 
 type Track struct {
 	Name       string   `json:"name"`
@@ -22,25 +30,15 @@ func (t *Track) InfoString(c *config.Config, progressMs int) (
 	progressMinutes string, progressSeconds string,
 	durationMinutes string, durationSeconds string,
 ) {
-	artists := ""
-
 	for i := 0; i < len(t.Artists); i++ {
-		artists += t.Artists[i].Name
+		artist += t.Artists[i].Name
 
 		if i != len(t.Artists)-1 {
-			artists += ", "
+			artist += ", "
 		}
 	}
 
-	track = "Track: " + t.Name
-
-	if len(t.Artists) == 1 {
-		artist += "Artist: "
-	} else {
-		artist += "Artists: "
-	}
-
-	artist += artists
+	track = t.Name
 
 	progressSeconds = strconv.Itoa(((progressMs / 1000) % 60))
 	progressMinutes = strconv.Itoa((progressMs / 1000) / 60)
@@ -56,22 +54,4 @@ func (t *Track) InfoString(c *config.Config, progressMs int) (
 	}
 
 	return track, artist, progressMinutes, progressSeconds, durationMinutes, durationSeconds
-}
-
-func (t *Track) String(c *config.Config) string {
-	artists := t.Artists[0].Name
-
-	if len(t.Artists) > 1 {
-		artists += "& more"
-	}
-
-	info := utils.Color(t.Name, c.Color.Track.Name) + " " + utils.Color(artists, c.Color.Track.Artist) + " "
-
-	durationSeconds := strconv.Itoa((t.DurationMs / 1000) % 60)
-	durationMinutes := strconv.Itoa((t.DurationMs / 1000) / 60)
-
-	duration := utils.Color(fmt.Sprintf("%s %vm:%vs", "Duration:",
-		durationMinutes, durationSeconds), c.Color.Track.Other)
-
-	return info + duration
 }

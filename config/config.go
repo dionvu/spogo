@@ -26,22 +26,8 @@ const (
 type Config struct {
 	path      string
 	cachePath string
-	Spotify   Spotify `yaml:"spotify"`
-	options   struct {
-		CommandMode bool `yaml:"command_mode"`
-	} `yaml:"options"`
-	Color struct {
-		Album struct {
-			Name   int `yaml:"name"`
-			Artist int `yaml:"artist"`
-			Other  int `yaml:"other"`
-		} `yaml:"album"`
-		Track struct {
-			Name   int `yaml:"name"`
-			Artist int `yaml:"artist"`
-			Other  int `yaml:"other"`
-		} `yaml:"track"`
-	} `yaml:"color"`
+	Spotify   Credentials `yaml:"spotify"`
+	options   struct{}    `yaml:"options"`
 }
 
 // Creates spogo config root directory, "config.yaml",
@@ -169,11 +155,22 @@ func (c *Config) HelpString() string {
 	h2 := lipgloss.NewStyle().Underline(true)
 
 	return h1.Render("CONTROLS") +
+		"\n\n" + h2.Render("Global") +
+		"\n\n" +
+		"r - refresh, fixes visual issues" +
+		"\n" +
+		"a - select track from album of current playing track" +
+		"\n" +
+		"s - toggle shuffling of album/playlist" +
 		"\n\n" + h2.Render("Player") +
 		"\n\n" +
 		"space - play / pause" +
 		"\n" +
 		"n - next track" +
 		"\n" +
-		"p - previous track"
+		"p - previous track" +
+		"\n" +
+		"[ - volume down" +
+		"\n" +
+		"] - volume up"
 }

@@ -8,9 +8,9 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/dionvu/spogo/auth"
 	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/player"
-	"github.com/dionvu/spogo/session"
 	"golang.org/x/term"
 )
 
@@ -18,6 +18,37 @@ const (
 	POLLING_RATE_MS          = 500 * time.Millisecond
 	VOLUME_INCREMENT_PERCENT = 5
 )
+
+const (
+	PAUSED      = "Paused"
+	NO_PLAYER   = "Player Inactive"
+	NOW_PLAYING = "Now Playing"
+)
+
+type Model struct {
+	Session     *auth.Session
+	Player      *player.Player
+	Config      *config.Config
+	CurrentView string
+	Views       struct {
+		// Tracks player state and current progress,
+		// displaying information in a media player.
+		Player     *PlayerView
+		Playlist   *PlaylistView
+		SearchType *SearchTypeView
+	}
+
+	Terminal Terminal
+
+	CurrentWarning string
+}
+
+type tickMsg struct{}
+
+type Terminal struct {
+	Height int
+	Width  int
+}
 
 var TERMINALSIZE = struct {
 	Small  int
@@ -27,132 +58,12 @@ var TERMINALSIZE = struct {
 	Normal: 40,
 }
 
-const (
-	PLAYER_VIEW         = "PLAYER_VIEW"
-	PLAYLIST_VIEW       = "PLAYLIST_VIEW"
-	PLAYLIST_TRACK_VIEW = "PLAYLIST_TRACK_VIEW"
-	REFRESH_VIEW        = "REFRESH_VIEW"
-	HELP_VIEW           = "HELP_VIEW"
-	PAUSED              = "Paused"
-	NO_PLAYER           = "Player Inactive"
-	NOW_PLAYING         = "Now Playing"
-)
-
-type Model struct {
-	Session     *session.Session
-	Player      *player.Player
-	Config      *config.Config
-	CurrentView string
-	Views       struct {
-		// Tracks player state and current progress,
-		// displaying information in a media player.
-		Player   *PlayerView
-		Playlist *PlaylistView
-	}
-
-	Terminal struct {
-		Height int
-		Width  int
-	}
-}
-
-type tickMsg struct{}
-
-func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	updateTerminalSize(&m.Terminal.Width, &m.Terminal.Height)
-
-	switch msg := msg.(type) {
-	case tickMsg:
-		m.Views.Player.UpdateStateAsync()
-
-		// If state is unaccessible, likely due to user closing
-		// their playerback device, and attempt reconnect to closed device.
-		if m.Views.Player.State == nil {
-			m.Views.Player.PlayingStatusStyle = &PlayerViewStyle.StatusBar.NoPlayer
-			m.Views.Player.PlayingStatus = NO_PLAYER
-
-			m.Player.Resume(m.Session, false)
-
-			return m, tea.Tick(4*POLLING_RATE_MS, func(time.Time) tea.Msg {
-				return tickMsg{}
-			})
-		}
-
-		m.Views.Player.EnsureSynced()
-
-		return m, tea.Tick(POLLING_RATE_MS, func(time.Time) tea.Msg {
-			return tickMsg{}
-		})
-
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c", "q":
-			return m, tea.Quit
-
-		case " ":
-			m.Views.Player.UpdateStateSync()
-			m.Views.Player.PlayPause()
-
-		case "[":
-			vol := m.Views.Player.State.Device.VolumePercent
-			m.Views.Player.Player.SetVolume(m.Session, vol-VOLUME_INCREMENT_PERCENT)
-
-		case "]":
-			vol := m.Views.Player.State.Device.VolumePercent
-			m.Views.Player.Player.SetVolume(m.Session, vol+VOLUME_INCREMENT_PERCENT)
-
-		case "f1", "1":
-			m.CurrentView = PLAYER_VIEW
-
-		case "f2", "2":
-			m.CurrentView = PLAYLIST_VIEW
-
-		case "f5", "5":
-			m.CurrentView = HELP_VIEW
-
-		case "enter":
-			if m.CurrentView == PLAYLIST_VIEW {
-				if i, ok := m.Views.Playlist.ListModel.list.SelectedItem().(Item); ok {
-					m.Views.Playlist.ListModel.choice = string(i)
-					m.Player.Play(m.Views.Playlist.PlaylistsMap[m.Views.Playlist.ListModel.choice].URI, "", m.Session)
-				}
-			}
-
-		case "r":
-			go func() {
-				view := m.CurrentView
-
-				m.CurrentView = REFRESH_VIEW
-				time.Sleep(POLLING_RATE_MS)
-				m.CurrentView = view
-
-				cmd := exec.Command("clear")
-				cmd.Stdout = os.Stdout
-				cmd.Run()
-			}()
-
-		case "t":
-			if m.CurrentView == PLAYLIST_VIEW {
-				m.CurrentView = PLAYLIST_TRACK_VIEW
-			}
-		}
-
-		if m.CurrentView == PLAYLIST_VIEW && m.Views.Playlist.ListModel.choice != "" {
-			var cmd tea.Cmd
-			m.Views.Playlist.ListModel.list, cmd = m.Views.Playlist.ListModel.list.Update(msg)
-			return m, cmd
-		}
-	}
-
-	return m, nil
-}
-
 func New(
-	session *session.Session, player *player.Player,
+	auth *auth.Session, player *player.Player,
 	config *config.Config,
 ) *Model {
 	m := &Model{
-		Session:     session,
+		Session:     auth,
 		Player:      player,
 		Config:      config,
 		CurrentView: PLAYER_VIEW,
@@ -160,44 +71,18 @@ func New(
 
 	// A nil state here could be due to an inactive device.
 	// Transfers playback to inactive player.
-	if initialState, _ := player.State(session); initialState == nil {
-		player.Resume(session, false)
+	if initialState, _ := player.State(auth); initialState == nil {
+		player.Resume(auth, false)
 	}
 
 	// A nil state due to invalid device will be handled
 	// after view is updated.
-	m.Views.Player = NewPlayerView(session, player, config)
-	m.Views.Playlist = NewPlaylistView(session, config)
+	m.Views.Player = NewPlayerView(auth, player, config)
+	m.Views.Playlist = NewPlaylistView(auth, config)
+	m.Views.SearchType = NewSearchTypeView(auth)
 
 	m.Terminal.Width, m.Terminal.Height = getTerminalSize()
 	return m
-}
-
-func (m *Model) View() string {
-	switch m.CurrentView {
-	case PLAYER_VIEW:
-		return m.Views.Player.View(m.Terminal.Height)
-	case PLAYLIST_VIEW:
-		return m.Views.Playlist.View(m.Views.Player, m.Terminal.Height)
-
-	case HELP_VIEW:
-		return MainControlsView(HELP_VIEW) + "\n\n" + padLines(m.Config.HelpString(), TAB_WIDTH)
-
-	case PLAYLIST_TRACK_VIEW:
-		return "tracks lol"
-
-	case REFRESH_VIEW:
-		return "Refreshing..."
-
-	default:
-		return "TODO"
-	}
-}
-
-func (m *Model) Init() tea.Cmd {
-	return tea.Tick(POLLING_RATE_MS, func(time.Time) tea.Msg {
-		return tickMsg{}
-	})
 }
 
 func getTerminalSize() (int, int) {
@@ -226,4 +111,10 @@ func updateTerminalSize(width *int, height *int) {
 			*width, *height = w, h
 		}
 	}()
+}
+
+func (m *Model) Init() tea.Cmd {
+	return tea.Tick(POLLING_RATE_MS, func(time.Time) tea.Msg {
+		return tickMsg{}
+	})
 }

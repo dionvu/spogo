@@ -1,4 +1,4 @@
-package user
+package spotify
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/dionvu/spogo/session"
+	"github.com/dionvu/spogo/auth"
 	"github.com/fatih/color"
 )
 
@@ -32,7 +32,7 @@ type User struct {
 	} `json:"images"`
 }
 
-func New(s *session.Session) (*User, error) {
+func New(s *auth.Session) (*User, error) {
 	ep := "https://api.spotify.com/v1/me"
 	req, _ := http.NewRequest(http.MethodGet, ep, nil)
 

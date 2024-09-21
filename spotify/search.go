@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/dionvu/spogo/auth"
 	"github.com/dionvu/spogo/errors"
-	"github.com/dionvu/spogo/session"
 	"github.com/dionvu/spogo/spotify/api/headers"
 	"github.com/dionvu/spogo/spotify/api/status"
 	"github.com/dionvu/spogo/spotify/api/urls"
@@ -21,16 +21,6 @@ type Response struct {
 	Playlists PlaylistsResponse `json:"playlists"`
 	Shows     ShowsResponse     `json:"shows"`
 	Episodes  EpisodesResponse  `json:"episodes"`
-}
-
-type TracksResponse struct {
-	Href     string  `json:"href"`
-	Limit    int     `json:"limit"`
-	Next     string  `json:"next"`
-	Offset   int     `json:"offset"`
-	Previous string  `json:"previous"`
-	Total    int     `json:"total"`
-	Items    []Track `json:"items"`
 }
 
 type ArtistsResponse struct {
@@ -63,7 +53,7 @@ type EpisodesResponse struct {
 	Items    []Episode `json:"items"`
 }
 
-func Search(input string, searchType []string, s *session.Session) (*Response, error) {
+func Search(input string, searchType []string, s *auth.Session) (*Response, error) {
 	r := &Response{}
 
 	query := url.Values{}
