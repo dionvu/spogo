@@ -64,16 +64,41 @@ func NewPlayerView(
 	return pv
 }
 
+func image(url string) (path string, err error) {
+	res, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+
+	cd, err := os.UserCacheDir()
+	if err != nil {
+		return "", err
+	}
+
+	path = filepath.Join(cd, config.APPNAME, "image.jpeg")
+
+	file, err := os.Create(path)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = io.Copy(file, res.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return path, nil
+}
+
 func (pv *PlayerView) View(terminalSize int) string {
 	if pv.State != nil {
-		res, _ := http.Get(pv.State.Track.Album.Images[0].Url)
-
-		cd, _ := os.UserCacheDir()
-		filepath := filepath.Join(cd, config.APPNAME, "image.jpeg")
-
-		file, _ := os.Create(filepath)
-
-		io.Copy(file, res.Body)
+		if len(pv.State.Track.Album.Images) < 1 {
+			return ""
+		}
+		filepath, err := image(pv.State.Track.Album.Images[0].Url)
+		if err != nil {
+			return ""
+		}
 
 		if terminalSize <= TERMINALSIZE.Small {
 			return fmt.Sprintf("\n\n%s\n\n%s\n\n%s",
@@ -82,7 +107,7 @@ func (pv *PlayerView) View(terminalSize int) string {
 				PlayerInfoView(pv))
 		}
 
-		return fmt.Sprintf("%s\n\n%s\n\n%s\n\n%s",
+		return fmt.Sprintf("\n\n%s\n\n%s\n\n%s\n\n%s",
 			MainControlsView(PLAYER_VIEW),
 			AsciiView(filepath, ASCII_FLAGS_NORMAL),
 			PlayerStatusView(pv),
@@ -94,7 +119,7 @@ func (pv *PlayerView) View(terminalSize int) string {
 			PlayerStatusView(pv))
 	}
 
-	return fmt.Sprintf("%s\n\n%s",
+	return fmt.Sprintf("\n\n%s\n\n%s",
 		MainControlsView(PLAYER_VIEW),
 		PlayerStatusView(pv))
 }
@@ -143,6 +168,10 @@ func (pv *PlayerView) UpdateStateSync() {
 }
 
 func (pv *PlayerView) PlayPause() {
+	if pv.State == nil {
+		return
+	}
+
 	if pv.State.IsPlaying {
 		pv.Player.Pause(pv.Session)
 	} else {

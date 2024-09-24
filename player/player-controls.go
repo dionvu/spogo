@@ -12,30 +12,31 @@ import (
 	"github.com/dionvu/spogo/spotify/api/headers"
 	"github.com/dionvu/spogo/spotify/api/status"
 	"github.com/dionvu/spogo/spotify/api/urls"
+	"github.com/dionvu/spogo/utils"
 )
 
-// Pass in either a contextUri or uri, not both. Context uri is used to
-// to play valid contexts of albums, artists, and playlists. Use uri to
-// play tracks.
+// ContextUri can be the uri of an album or playlist. Uri should be a track
+// contained in the album or playlist.
 func (p *Player) Play(contextUri string, uri string, s *auth.Session) error {
 	if p.device == nil {
 		return errors.NoDevice.New("no selected playback device")
 	}
 
-	data := map[string]interface{}{}
-
-	data["device_id"] = p.device.ID
-	data["position_ms"] = 0
-
-	if contextUri != "" {
-		data["context_uri"] = contextUri
+	payload := struct {
+		Context_uri string `json:"context_uri"`
+		Offset      struct {
+			Uri string `json:"uri"`
+		} `json:"offset"`
+	}{
+		Context_uri: contextUri,
+		Offset: struct {
+			Uri string `json:"uri"`
+		}{
+			Uri: uri,
+		},
 	}
 
-	if uri != "" {
-		data["uris"] = []string{uri}
-	}
-
-	j, err := json.Marshal(data)
+	j, err := json.Marshal(payload)
 	if err != nil {
 		return errors.JSONMarshal.WrapWithNoMessage(err)
 	}
@@ -50,6 +51,8 @@ func (p *Player) Play(contextUri string, uri string, s *auth.Session) error {
 	if err != nil {
 		return errors.HTTP.WrapWithNoMessage(err)
 	}
+
+	utils.PrintResponseBody(res.Body)
 
 	if res.StatusCode == status.BadToken {
 		return errors.Reauthentication.NewWithNoMessage()

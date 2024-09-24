@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/TheZoraiz/ascii-image-converter/aic_package"
+	"github.com/dionvu/spogo/player"
 )
 
 var ASCII_FLAGS_NORMAL aic_package.Flags = func() aic_package.Flags {
@@ -49,6 +50,11 @@ var MainControlsView = func(view string) string {
 			CommonStyle.MainControls.Normal.Render(" | F4 Devices | F5 Help ]"), TAB_WIDTH)
 	}
 
+	if view == DEVICE_VIEW {
+		return padLines(CommonStyle.MainControls.Normal.Render("[ F1 Player | F2 Playlists | F3 Search | ")+
+			CommonStyle.MainControls.Selected.Render("F4 Devices")+CommonStyle.MainControls.Normal.Render(" | F5 Help ]"), TAB_WIDTH)
+	}
+
 	return "Unknown View"
 }
 
@@ -86,10 +92,20 @@ var PlayerInfoView = func(pv *PlayerView) string {
 	), TAB_WIDTH)
 }
 
+var deviceView = func(dv *DeviceView, device *player.Device) string {
+	return padLines("Current Device: "+device.Name, 4) + "\n" + padLines("Type: "+device.Type, 4) + "\n\n" + dv.ListModel.View()
+}
+
 var AsciiView = func(filepath string, flags aic_package.Flags) string {
 	ascii, _ := aic_package.Convert(filepath, flags)
 
 	ascii = padLines(ascii, TAB_WIDTH)
+
+	return ascii
+}
+
+var AsciiViewNoPadding = func(filepath string, flags aic_package.Flags) string {
+	ascii, _ := aic_package.Convert(filepath, flags)
 
 	return ascii
 }

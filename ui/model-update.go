@@ -71,6 +71,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.CurrentView = SEARCH_TYPE_VIEW
 
 		case "f4", "4":
+			m.Views.Device = NewDeviceView(m.Session)
 			m.CurrentView = DEVICE_VIEW
 
 		case "f5", "5":
@@ -99,6 +100,15 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.CurrentView = SEARCH_PLAYLIST_VIEW
 					}
 				}
+			}
+
+			if m.CurrentView == DEVICE_VIEW {
+				device := m.Views.Device.GetSelectedDevice()
+
+				m.Player.SetDevice(device, m.Config)
+
+				// Transfers playlist
+				m.Player.Resume(m.Session, false)
 			}
 
 		case "r":
@@ -137,6 +147,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.CurrentView == SEARCH_TYPE_VIEW && m.Views.SearchType.ListModel.choice != "" {
 			var cmd tea.Cmd
 			m.Views.SearchType.ListModel.list, cmd = m.Views.SearchType.ListModel.list.Update(msg)
+			return m, cmd
+		}
+
+		if m.CurrentView == DEVICE_VIEW && m.Views.Device.ListModel.choice != "" {
+			var cmd tea.Cmd
+			m.Views.Device.ListModel.list, cmd = m.Views.Device.ListModel.list.Update(msg)
 			return m, cmd
 		}
 	}

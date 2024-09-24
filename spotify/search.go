@@ -14,6 +14,12 @@ import (
 	"github.com/dionvu/spogo/spotify/api/urls"
 )
 
+const (
+	TRACK_TYPE    = "track"
+	ALBUM_TYPE    = "album"
+	PLAYLIST_TYPE = "playlist"
+)
+
 type Response struct {
 	Tracks    TracksResponse    `json:"tracks"`
 	Artists   ArtistsResponse   `json:"artists"`
@@ -21,6 +27,25 @@ type Response struct {
 	Playlists PlaylistsResponse `json:"playlists"`
 	Shows     ShowsResponse     `json:"shows"`
 	Episodes  EpisodesResponse  `json:"episodes"`
+}
+
+type PlaylistsResponse struct {
+	Href     string     `json:"href"`
+	Limit    int        `json:"limit"`
+	Next     string     `json:"next"`
+	Offset   int        `json:"offset"`
+	Previous string     `json:"previous"`
+	Total    int        `json:"total"`
+	Items    []Playlist `json:"items"`
+}
+
+type SearchResult struct {
+	Tracks    []*Track
+	Albums    []*Album
+	Playlists []*Playlist
+	Artists   []*Artist
+	Shows     []*Show
+	Episodes  []*Episode
 }
 
 type ArtistsResponse struct {
@@ -53,7 +78,7 @@ type EpisodesResponse struct {
 	Items    []Episode `json:"items"`
 }
 
-func Search(input string, searchType []string, s *auth.Session) (*Response, error) {
+func Search(input string, searchType []string, s *auth.Session) (*SearchResult, error) {
 	r := &Response{}
 
 	query := url.Values{}
@@ -84,5 +109,38 @@ func Search(input string, searchType []string, s *auth.Session) (*Response, erro
 		return nil, err
 	}
 
-	return r, nil
+	searchResult := &SearchResult{
+		Tracks:    []*Track{},
+		Albums:    []*Album{},
+		Playlists: []*Playlist{},
+		Artists:   []*Artist{},
+		Shows:     []*Show{},
+		Episodes:  []*Episode{},
+	}
+
+	for _, track := range r.Tracks.Items {
+		searchResult.Tracks = append(searchResult.Tracks, &track)
+	}
+
+	for _, album := range r.Albums.Items {
+		searchResult.Albums = append(searchResult.Albums, &album)
+	}
+
+	for _, playlist := range r.Playlists.Items {
+		searchResult.Playlists = append(searchResult.Playlists, &playlist)
+	}
+
+	for _, artist := range r.Artists.Items {
+		searchResult.Artists = append(searchResult.Artists, &artist)
+	}
+
+	for _, show := range r.Shows.Items {
+		searchResult.Shows = append(searchResult.Shows, &show)
+	}
+
+	for _, episode := range r.Episodes.Items {
+		searchResult.Episodes = append(searchResult.Episodes, &episode)
+	}
+
+	return searchResult, nil
 }

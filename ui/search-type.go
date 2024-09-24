@@ -42,5 +42,5 @@ func (st *SearchTypeView) View(playerView *PlayerView, terminal Terminal) string
 		return "\n\n" + st.ListModel.View()
 	}
 
-	return mainControls + "\n\n" + st.ListModel.View()
+	return "\n\n" + mainControls + "\n\n" + st.ListModel.View()
 }

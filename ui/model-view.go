@@ -17,7 +17,9 @@ const (
 	HELP_VIEW             = "HELP_VIEW"
 	TERMINAL_WARNING_VIEW = "TERMINAL_WARNING_VIEW"
 
-	SEARCH_TYPE_VIEW     = "SEARCH_TYPE_VIEW"
+	SEARCH_TYPE_VIEW  = "SEARCH_TYPE_VIEW"
+	SEARCH_QUERY_VIEW = "SEARCH_QUERY_VIEW"
+
 	SEARCH_PLAYLIST_VIEW = "SEARCH_PLAYLIST_VIEW"
 	SEARCH_TRACK_VIEW    = "SEARCH_TRACK_VIEW"
 	SEARCH_ALBUM_VIEW    = "SEARCH_ALBUM_VIEW"
@@ -34,7 +36,7 @@ func (m *Model) View() string {
 		return m.Views.Playlist.View(m.Views.Player, m.Terminal.Height)
 
 	case HELP_VIEW:
-		return MainControlsView(HELP_VIEW) + "\n\n" + padLines(m.Config.HelpString(), TAB_WIDTH)
+		return "\n\n" + MainControlsView(HELP_VIEW) + "\n\n" + padLines(m.Config.HelpString(), TAB_WIDTH)
 
 	case PLAYLIST_TRACK_VIEW:
 		state := m.Views.Player.State.CurrentPlayingType
@@ -46,6 +48,11 @@ func (m *Model) View() string {
 			playlistName := m.Views.Playlist.ItemsMap[selectedItem]
 
 			playlist := m.Views.Playlist.playlistsMap[playlistName]
+
+			if playlist == nil {
+				m.CurrentView = PLAYLIST_VIEW
+				return ""
+			}
 
 			t, err := spotify.PlaylistTracks(m.Session, playlist.ID)
 			if t == nil || err != nil || len(*t) < 1 {
@@ -67,17 +74,29 @@ func (m *Model) View() string {
 
 					mins, secs := msToMinutesAndSeconds(tracks[i].DurationMs)
 
-					return fmt.Sprintf("Track: %s \nArtist: %s\nAlbum: %s\nDuration: %sm:%ss",
+					imagePath, _ := image(tracks[i].Album.Images[0].Url)
+
+					var ascii string
+					if m.Terminal.Height <= TERMINALSIZE.Small {
+						ascii = AsciiViewNoPadding(imagePath, ASCII_FLAGS_SMALL)
+					} else {
+						ascii = AsciiViewNoPadding(imagePath, ASCII_FLAGS_NORMAL)
+					}
+
+					return fmt.Sprintf("Track: %s \nArtist: %s\nAlbum: %s\nDuration: %sm:%ss\n\n%s",
 						tracks[i].Name,
 						tracks[i].Artists[0].Name,
 						tracks[i].Album.Name,
 						mins,
 						secs,
+						ascii,
 					)
 				}))
 
 			if len(idx) > 0 && idx[0] < len(tracks) {
-				m.Player.Play("", tracks[idx[0]].Uri, m.Session)
+				// m.Player.Play(m.Views.Playlist.GetPlaylistFromChoice(m.Views.Playlist.GetSelectedName()).URI, "", m.Session)
+				contextUri := m.Views.Playlist.GetSelectedPlaylist().URI
+				m.Player.Play(contextUri, tracks[idx[0]].Uri, m.Session)
 			}
 
 			m.CurrentView = PLAYLIST_VIEW
@@ -95,6 +114,11 @@ func (m *Model) View() string {
 		}
 
 	case ALBUM_TRACK_VIEW:
+		if m.Views.Player.State == nil {
+			m.CurrentView = PLAYER_VIEW
+			return ""
+		}
+
 		albumID := m.Views.Player.State.Track.Album.ID
 
 		t, _ := spotify.AlbumTracks(m.Session, albumID)
@@ -121,7 +145,7 @@ func (m *Model) View() string {
 			}))
 
 		if len(idx) > 0 && idx[0] < len(tracks) {
-			m.Player.Play("", tracks[idx[0]].Uri, m.Session)
+			m.Player.Play(m.Views.Player.State.Track.Album.Uri, tracks[idx[0]].Uri, m.Session)
 		}
 
 		fmt.Print("\033[?25l") // Hide cursor after fzf showing fuzzyfinder
@@ -139,6 +163,9 @@ func (m *Model) View() string {
 	case SEARCH_TYPE_VIEW:
 		return m.Views.SearchType.View(m.Views.Player, m.Terminal)
 
+	case SEARCH_QUERY_VIEW:
+		return "todo query"
+
 	case SEARCH_ALBUM_VIEW:
 		return "TODO album"
 
@@ -149,7 +176,7 @@ func (m *Model) View() string {
 		return "TODO playlist"
 
 	case DEVICE_VIEW:
-		return "todo"
+		return m.Views.Device.View(m.Terminal, m.Views.Player.State.Device)
 
 	default:
 		return "TODO"

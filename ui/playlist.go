@@ -65,8 +65,8 @@ func (pv *PlaylistView) View(playerView *PlayerView, terminalSize int) string {
 	imagePath := filepath.Join(pv.Config.CachePath(), "image.jpeg")
 	imageFile, _ := os.Create(imagePath)
 
-	if len(pv.playlistsMap[pv.PlaylistListModel.choice].Images) > 0 {
-		res, _ = http.Get(pv.GetPlaylistFromChoice(pv.GetSelectedName()).Images[0].Url)
+	if len(pv.playlistsMap) > 0 && len(pv.playlistsMap[pv.PlaylistListModel.choice].Images) > 0 {
+		res, _ = http.Get(pv.GetSelectedPlaylist().Images[0].Url)
 	} else {
 		res, _ = http.Get(DEFAULT_IMAGE_URL)
 	}
@@ -76,7 +76,7 @@ func (pv *PlaylistView) View(playerView *PlayerView, terminalSize int) string {
 	if terminalSize <= TERMINALSIZE.Small {
 		pv.PlaylistListModel.list.SetHeight(SMALL_LIST_HEIGHT)
 
-		if len((*pv.UserPlaylists)) > 1 {
+		if len((*pv.UserPlaylists)) > 0 {
 			return fmt.Sprintf("\n\n%s\n\n%s",
 				AsciiView(imagePath, ASCII_FLAGS_SMALL),
 				pv.PlaylistListModel.View())
@@ -89,13 +89,13 @@ func (pv *PlaylistView) View(playerView *PlayerView, terminalSize int) string {
 
 	pv.PlaylistListModel.list.SetHeight(DEFAULT_LIST_HEIGHT)
 
-	if len((*pv.UserPlaylists)) > 1 {
-		return fmt.Sprintf("%s\n\n%s\n\n%s", MainControlsView(PLAYLIST_VIEW),
+	if len((*pv.UserPlaylists)) > 0 {
+		return fmt.Sprintf("\n\n%s\n\n%s\n\n%s", MainControlsView(PLAYLIST_VIEW),
 			AsciiView(imagePath, ASCII_FLAGS_NORMAL),
 			pv.PlaylistListModel.View())
 	}
 
-	return fmt.Sprintf("%s\n\n%s\n\n%s", MainControlsView(PLAYLIST_VIEW),
+	return fmt.Sprintf("\n\n%s\n\n%s\n\n%s", MainControlsView(PLAYLIST_VIEW),
 		AsciiView(imagePath, ASCII_FLAGS_NORMAL),
 		padLines("No playlists :(", TAB_WIDTH))
 }
@@ -106,4 +106,8 @@ func (pv *PlaylistView) GetPlaylistFromChoice(choice string) *spotify.Playlist {
 
 func (pv *PlaylistView) GetSelectedName() string {
 	return pv.ItemsMap[pv.PlaylistListModel.list.SelectedItem()]
+}
+
+func (pv *PlaylistView) GetSelectedPlaylist() *spotify.Playlist {
+	return pv.GetPlaylistFromChoice(pv.GetSelectedName())
 }

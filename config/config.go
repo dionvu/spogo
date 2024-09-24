@@ -109,8 +109,6 @@ func (c *Config) create() error {
 		return errors.FileCreate.Wrap(err, "reading config template file")
 	}
 
-	fmt.Println(string(b))
-
 	_, err = file.WriteString(string(b))
 	if err != nil {
 		return errors.FileWrite.Wrap(err, fmt.Sprintf("writing to file: %v", file.Name()))

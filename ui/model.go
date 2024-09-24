@@ -36,6 +36,7 @@ type Model struct {
 		Player     *PlayerView
 		Playlist   *PlaylistView
 		SearchType *SearchTypeView
+		Device     *DeviceView
 	}
 
 	Terminal Terminal
@@ -80,6 +81,7 @@ func New(
 	m.Views.Player = NewPlayerView(auth, player, config)
 	m.Views.Playlist = NewPlaylistView(auth, config)
 	m.Views.SearchType = NewSearchTypeView(auth)
+	m.Views.Device = NewDeviceView(m.Session)
 
 	m.Terminal.Width, m.Terminal.Height = getTerminalSize()
 	return m

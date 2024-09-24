@@ -33,7 +33,7 @@ type Album struct {
 	Uri         string   `json:"uri"`
 }
 
-func AlbumTracks(s *auth.Session, albumID string) (*[]Track, error) {
+func AlbumTracks(s *auth.Session, albumID string) (*[]AlbumTrack, error) {
 	url := "https://api.spotify.com/v1/albums/" + albumID + "/tracks"
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -61,7 +61,7 @@ func AlbumTracks(s *auth.Session, albumID string) (*[]Track, error) {
 	}
 
 	var response struct {
-		Items []Track `json:"items"`
+		Items []AlbumTrack `json:"items"`
 	}
 
 	err = json.Unmarshal(b, &response)

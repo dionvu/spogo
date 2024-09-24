@@ -57,3 +57,7 @@ func (p *Player) SetDevice(d *Device, c *config.Config) error {
 
 	return nil
 }
+
+func (p *Player) Device() *Device {
+	return p.device
+}
