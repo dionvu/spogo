@@ -1,5 +1,0 @@
-spotify:
-  client_id: "YOUR_CLIENT_ID" # Replace with your spotify client id
-  client_secret: "YOUR_CLIENT_SECRET" # Replace with your spotify client secret
-
-options:
