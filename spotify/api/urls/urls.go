@@ -1,4 +1,4 @@
-package urls
+package spotifyurls
 
 const (
 	PLAYER        = "https://api.spotify.com/v1/me/player"
@@ -13,10 +13,8 @@ const (
 	PLAYERCURRENT = "https://api.spotify.com/v1/me/player/currently-playing"
 
 	PLAYLISTS = "https://api.spotify.com/v1/me/playlists"
-)
 
-const SEARCH = "https://api.spotify.com/v1/search"
+	SEARCH = "https://api.spotify.com/v1/search"
 
-const (
 	SPOTIFYAUTHURL = "https://accounts.spotify.com/authorize"
 )

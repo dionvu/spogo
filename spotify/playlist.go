@@ -8,7 +8,6 @@ import (
 	"github.com/dionvu/spogo/auth"
 	"github.com/dionvu/spogo/errors"
 	"github.com/dionvu/spogo/spotify/api/headers"
-	"github.com/dionvu/spogo/spotify/api/status"
 	"github.com/dionvu/spogo/spotify/api/urls"
 )
 
@@ -38,7 +37,7 @@ type Followers struct {
 }
 
 func UserPlaylists(s *auth.Session) (*[]Playlist, error) {
-	req, err := http.NewRequest(http.MethodGet, urls.PLAYLISTS, nil)
+	req, err := http.NewRequest(http.MethodGet, spotifyurls.PLAYLISTS, nil)
 	if err != nil {
 		return nil, errors.HTTPRequest.Wrap(err, "failed to make request for playlists")
 	}
@@ -49,11 +48,11 @@ func UserPlaylists(s *auth.Session) (*[]Playlist, error) {
 		return nil, errors.HTTP.WrapWithNoMessage(err)
 	}
 
-	if res.StatusCode == status.BadToken {
+	if res.StatusCode == 401 {
 		return nil, errors.Reauthentication.NewWithNoMessage()
 	}
 
-	if res.StatusCode >= 400 {
+	if res.StatusCode >= http.StatusBadRequest {
 		return nil, errors.HTTP.New("bad request")
 	}
 
@@ -90,11 +89,11 @@ func PlaylistTracks(s *auth.Session, playlistID string) (*[]Track, error) {
 		return nil, errors.HTTP.WrapWithNoMessage(err)
 	}
 
-	if res.StatusCode == status.BadToken {
+	if res.StatusCode == 401 {
 		return nil, errors.Reauthentication.NewWithNoMessage()
 	}
 
-	if res.StatusCode >= 400 {
+	if res.StatusCode >= http.StatusBadRequest {
 		return nil, errors.HTTP.New("bad request")
 	}
 

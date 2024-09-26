@@ -31,7 +31,7 @@ func startAuth(w http.ResponseWriter, r *http.Request) {
 	}, " "))
 	query.Set("state", state)
 
-	req, err := http.NewRequest(http.MethodGet, urls.SPOTIFYAUTHURL, strings.NewReader(query.Encode()))
+	req, err := http.NewRequest(http.MethodGet, spotifyurls.SPOTIFYAUTHURL, strings.NewReader(query.Encode()))
 	if err != nil {
 		log.Fatal(errors.HTTPRequest.Wrap(err, "unable to create new http request for spotify authentication url"))
 	}
@@ -40,7 +40,7 @@ func startAuth(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(errors.HTTP.Wrap(err, "unable to do http request"))
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("%s?%s", urls.SPOTIFYAUTHURL, query.Encode()), http.StatusTemporaryRedirect)
+	http.Redirect(w, r, fmt.Sprintf("%s?%s", spotifyurls.SPOTIFYAUTHURL, query.Encode()), http.StatusTemporaryRedirect)
 }
 
 // After user is redirected to the redirect uri, ensures valid state

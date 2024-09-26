@@ -10,7 +10,6 @@ import (
 	"github.com/dionvu/spogo/auth"
 	"github.com/dionvu/spogo/errors"
 	"github.com/dionvu/spogo/spotify/api/headers"
-	"github.com/dionvu/spogo/spotify/api/status"
 	"github.com/dionvu/spogo/spotify/api/urls"
 )
 
@@ -86,7 +85,7 @@ func Search(input string, searchType []string, s *auth.Session) (*SearchResult, 
 	query.Set("type", strings.Join(searchType, ","))
 	query.Set("limit", "20")
 
-	req, err := http.NewRequest(http.MethodGet, urls.SEARCH+"?"+query.Encode(), nil)
+	req, err := http.NewRequest(http.MethodGet, spotifyurls.SEARCH+"?"+query.Encode(), nil)
 	if err != nil {
 		return nil, errors.HTTPRequest.Wrap(err, fmt.Sprintf("failed to make request for search query: %v", input))
 	}
@@ -97,11 +96,11 @@ func Search(input string, searchType []string, s *auth.Session) (*SearchResult, 
 		return nil, errors.HTTPRequest.WrapWithNoMessage(err)
 	}
 
-	if res.StatusCode == status.BadToken {
+	if res.StatusCode >= http.StatusBadRequest {
 		return nil, errors.Reauthentication.NewWithNoMessage()
 	}
 
-	if res.StatusCode != status.Ok {
+	if res.StatusCode != http.StatusOK {
 		return nil, errors.HTTP.New("bad request")
 	}
 

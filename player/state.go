@@ -39,7 +39,7 @@ type PlayerState struct {
 func (p *Player) State(s *auth.Session) (*PlayerState, error) {
 	ps := &PlayerState{}
 
-	req, err := http.NewRequest(http.MethodGet, urls.PLAYER, nil)
+	req, err := http.NewRequest(http.MethodGet, spotifyurls.PLAYER, nil)
 	if err != nil {
 		return nil, errors.HTTPRequest.Wrap(err, "failed to make new request for player state")
 	}

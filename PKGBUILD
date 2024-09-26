@@ -1,6 +1,6 @@
 # Maintainer: Dion Vu
 pkgname=spogo
-pkgver=0.1.1
+pkgver=0.2.0
 pkgrel=1
 pkgdesc="A command-line tool with Spotify integration"
 arch=('aarch64' 'x86_64')

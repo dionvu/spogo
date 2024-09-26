@@ -10,7 +10,6 @@ import (
 	"github.com/dionvu/spogo/auth"
 	"github.com/dionvu/spogo/errors"
 	"github.com/dionvu/spogo/spotify/api/headers"
-	"github.com/dionvu/spogo/spotify/api/status"
 	"github.com/dionvu/spogo/spotify/api/urls"
 	"github.com/dionvu/spogo/utils"
 )
@@ -41,7 +40,7 @@ func (p *Player) Play(contextUri string, uri string, s *auth.Session) error {
 		return errors.JSONMarshal.WrapWithNoMessage(err)
 	}
 
-	req, err := http.NewRequest(http.MethodPut, urls.PLAYERPLAY, strings.NewReader(string(j)))
+	req, err := http.NewRequest(http.MethodPut, spotifyurls.PLAYERPLAY, strings.NewReader(string(j)))
 	if err != nil {
 		return errors.HTTPRequest.Wrap(err, "failed to make new request to play: %v", uri)
 	}
@@ -54,7 +53,7 @@ func (p *Player) Play(contextUri string, uri string, s *auth.Session) error {
 
 	utils.PrintResponseBody(res.Body)
 
-	if res.StatusCode == status.BadToken {
+	if res.StatusCode == 401 {
 		return errors.Reauthentication.NewWithNoMessage()
 	}
 
@@ -62,7 +61,7 @@ func (p *Player) Play(contextUri string, uri string, s *auth.Session) error {
 		return errors.NoDevice.New("playback device is not active")
 	}
 
-	if res.StatusCode >= 400 {
+	if res.StatusCode >= http.StatusBadRequest {
 		return errors.HTTP.New("bad request")
 	}
 
@@ -87,7 +86,7 @@ func (p *Player) Resume(s *auth.Session, play bool) error {
 		return errors.JSONMarshal.WrapWithNoMessage(err)
 	}
 
-	req, err := http.NewRequest(http.MethodPut, urls.PLAYER, strings.NewReader(string(j)))
+	req, err := http.NewRequest(http.MethodPut, spotifyurls.PLAYER, strings.NewReader(string(j)))
 	if err != nil {
 		return errors.HTTPRequest.WrapWithNoMessage(err)
 	}
@@ -98,15 +97,15 @@ func (p *Player) Resume(s *auth.Session, play bool) error {
 		return errors.HTTP.WrapWithNoMessage(err)
 	}
 
-	if res.StatusCode == status.BadToken {
+	if res.StatusCode == 401 {
 		return errors.Reauthentication.NewWithNoMessage()
 	}
 
-	if res.StatusCode == 404 {
+	if res.StatusCode == http.StatusBadRequest {
 		return errors.NoDevice.New("playback device is not active")
 	}
 
-	if res.StatusCode >= 400 {
+	if res.StatusCode >= http.StatusOK {
 		return errors.HTTP.New("bad request")
 	}
 
@@ -119,7 +118,7 @@ func (p *Player) SkipNext(s *auth.Session) error {
 		return errors.NoDevice.New("no selected playback device")
 	}
 
-	req, err := http.NewRequest(http.MethodPost, urls.PLAYERNEXT, nil)
+	req, err := http.NewRequest(http.MethodPost, spotifyurls.PLAYERNEXT, nil)
 	if err != nil {
 		return errors.HTTPRequest.WrapWithNoMessage(err)
 	}
@@ -130,11 +129,11 @@ func (p *Player) SkipNext(s *auth.Session) error {
 		return errors.HTTP.WrapWithNoMessage(err)
 	}
 
-	if res.StatusCode == status.BadToken {
+	if res.StatusCode == 401 {
 		return errors.Reauthentication.NewWithNoMessage()
 	}
 
-	if res.StatusCode >= 400 {
+	if res.StatusCode >= http.StatusOK {
 		return errors.HTTP.New("bad request")
 	}
 
@@ -146,7 +145,7 @@ func (p *Player) SkipPrev(s *auth.Session) error {
 		return errors.NoDevice.New("no selected playback device")
 	}
 
-	req, err := http.NewRequest(http.MethodPost, urls.PLAYERPREV, nil)
+	req, err := http.NewRequest(http.MethodPost, spotifyurls.PLAYERPREV, nil)
 	if err != nil {
 		return errors.HTTPRequest.WrapWithNoMessage(err)
 	}
@@ -157,11 +156,11 @@ func (p *Player) SkipPrev(s *auth.Session) error {
 		return errors.HTTP.WrapWithNoMessage(err)
 	}
 
-	if res.StatusCode == status.BadToken {
+	if res.StatusCode == 401 {
 		return errors.Reauthentication.NewWithNoMessage()
 	}
 
-	if res.StatusCode >= 400 {
+	if res.StatusCode >= http.StatusOK {
 		return errors.HTTP.New("bad request")
 	}
 
@@ -174,7 +173,7 @@ func (p *Player) Pause(s *auth.Session) error {
 		return errors.NoDevice.New("no selected playback device")
 	}
 
-	req, err := http.NewRequest(http.MethodPut, urls.PLAYERPAUSE, nil)
+	req, err := http.NewRequest(http.MethodPut, spotifyurls.PLAYERPAUSE, nil)
 	if err != nil {
 		return errors.HTTP.WrapWithNoMessage(err)
 	}
@@ -186,7 +185,7 @@ func (p *Player) Pause(s *auth.Session) error {
 		return errors.HTTP.WrapWithNoMessage(err)
 	}
 
-	if res.StatusCode == status.BadToken {
+	if res.StatusCode == 401 {
 		return errors.Reauthentication.NewWithNoMessage()
 	}
 
@@ -195,7 +194,7 @@ func (p *Player) Pause(s *auth.Session) error {
 		return nil
 	}
 
-	if res.StatusCode >= 400 {
+	if res.StatusCode >= http.StatusOK {
 		return errors.HTTP.New("bad request")
 	}
 
@@ -212,7 +211,7 @@ func (p *Player) SeekToPosition(s *auth.Session, pos int) error {
 	query.Set("position_ms", strconv.Itoa(pos))
 	query.Set("device_id", p.device.ID)
 
-	req, err := http.NewRequest(http.MethodPut, urls.PLAYERSEEK+"?"+query.Encode(), nil)
+	req, err := http.NewRequest(http.MethodPut, spotifyurls.PLAYERSEEK+"?"+query.Encode(), nil)
 	if err != nil {
 		return errors.HTTPRequest.WrapWithNoMessage(err)
 	}
@@ -224,11 +223,11 @@ func (p *Player) SeekToPosition(s *auth.Session, pos int) error {
 		return errors.HTTP.WrapWithNoMessage(err)
 	}
 
-	if res.StatusCode == status.BadToken {
+	if res.StatusCode == 401 {
 		return errors.Reauthentication.NewWithNoMessage()
 	}
 
-	if res.StatusCode >= 400 {
+	if res.StatusCode >= http.StatusOK {
 		return errors.HTTP.New("bad request")
 	}
 
@@ -244,7 +243,7 @@ func (p *Player) Shuffle(state bool, s *auth.Session) error {
 	query := &url.Values{}
 	query.Set("state", strconv.FormatBool(state))
 
-	url := urls.PLAYERSHUFFLE + "?" + query.Encode()
+	url := spotifyurls.PLAYERSHUFFLE + "?" + query.Encode()
 	req, err := http.NewRequest(http.MethodPut, url, nil)
 	if err != nil {
 		return errors.HTTPRequest.WrapWithNoMessage(err)
@@ -256,11 +255,11 @@ func (p *Player) Shuffle(state bool, s *auth.Session) error {
 		return errors.HTTP.WrapWithNoMessage(err)
 	}
 
-	if res.StatusCode == status.BadToken {
+	if res.StatusCode == 401 {
 		return errors.Reauthentication.NewWithNoMessage()
 	}
 
-	if res.StatusCode >= 400 {
+	if res.StatusCode >= http.StatusOK {
 		return errors.HTTP.New("bad request")
 	}
 
@@ -274,7 +273,7 @@ func (p *Player) SetVolume(s *auth.Session, val int) error {
 	query := url.Values{}
 	query.Set("volume_percent", strconv.Itoa(val))
 
-	req, err := http.NewRequest(http.MethodPut, urls.PLAYERVOLUME+"?"+query.Encode(), nil)
+	req, err := http.NewRequest(http.MethodPut, spotifyurls.PLAYERVOLUME+"?"+query.Encode(), nil)
 	if err != nil {
 		return errors.HTTPRequest.Wrap(err, "failed to make request to change player volume")
 	}
@@ -287,11 +286,11 @@ func (p *Player) SetVolume(s *auth.Session, val int) error {
 		return errors.HTTP.WrapWithNoMessage(err)
 	}
 
-	if res.StatusCode == status.BadToken {
+	if res.StatusCode == 401 {
 		return errors.Reauthentication.NewWithNoMessage()
 	}
 
-	if res.StatusCode >= 400 {
+	if res.StatusCode >= http.StatusOK {
 		return errors.HTTP.New("Bad request, likely invalid player")
 	}
 

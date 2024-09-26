@@ -8,7 +8,6 @@ import (
 	"github.com/dionvu/spogo/auth"
 	"github.com/dionvu/spogo/errors"
 	"github.com/dionvu/spogo/spotify/api/headers"
-	"github.com/dionvu/spogo/spotify/api/status"
 )
 
 type AlbumsResponse struct {
@@ -47,11 +46,11 @@ func AlbumTracks(s *auth.Session, albumID string) (*[]AlbumTrack, error) {
 		return nil, errors.HTTP.WrapWithNoMessage(err)
 	}
 
-	if res.StatusCode == status.BadToken {
+	if res.StatusCode == 401 {
 		return nil, errors.Reauthentication.NewWithNoMessage()
 	}
 
-	if res.StatusCode >= 400 {
+	if res.StatusCode >= http.StatusBadRequest {
 		return nil, errors.HTTP.New("bad request")
 	}
 

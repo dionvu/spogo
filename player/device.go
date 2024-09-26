@@ -29,7 +29,7 @@ type Device struct {
 // Retrieves currently available playback devices, or an empty slice
 // if none are available.
 func GetDevices(s *auth.Session) (*[]Device, error) {
-	req, err := http.NewRequest(http.MethodGet, urls.PLAYERDEVICES, nil)
+	req, err := http.NewRequest(http.MethodGet, spotifyurls.PLAYERDEVICES, nil)
 	if err != nil {
 		return nil, errors.HTTPRequest.Wrap(err, "failed to create http request for playback devices")
 	}
