@@ -70,7 +70,7 @@ func (dv *DeviceView) UpdateDevices() {
 }
 
 func (dv *DeviceView) View(terminal Terminal, device *player.Device) string {
-	if terminal.Height < TERMINALSIZE.Small {
+	if terminal.IsSizeSmall() {
 		return "\n\n" + RenderDeviceView(dv, device)
 	}
 

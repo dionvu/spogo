@@ -51,16 +51,6 @@ type Terminal struct {
 	Width  int
 }
 
-// The minimum terminal size to be considered
-// small or normal.
-var TERMINALSIZE = struct {
-	Small  int
-	Normal int
-}{
-	Small:  30,
-	Normal: 40,
-}
-
 func New(
 	auth *auth.Session, player *player.Player,
 	config *config.Config,

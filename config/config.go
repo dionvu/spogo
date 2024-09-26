@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/dionvu/spogo/errors"
 	"github.com/fatih/color"
 	"gopkg.in/yaml.v3"
@@ -146,29 +145,4 @@ func (c *Config) Exists() bool {
 		return false
 	}
 	return true
-}
-
-func (c *Config) HelpString() string {
-	h1 := lipgloss.NewStyle().Underline(true).Foreground(lipgloss.Color("#458588"))
-	h2 := lipgloss.NewStyle().Underline(true)
-
-	return h1.Render("CONTROLS") +
-		"\n\n" + h2.Render("Global") +
-		"\n\n" +
-		"r - refresh, fixes visual issues" +
-		"\n" +
-		"a - select track from album of current playing track" +
-		"\n" +
-		"s - toggle shuffling of album/playlist" +
-		"\n\n" + h2.Render("Player") +
-		"\n\n" +
-		"space - play / pause" +
-		"\n" +
-		"n - next track" +
-		"\n" +
-		"p - previous track" +
-		"\n" +
-		"[ - volume down" +
-		"\n" +
-		"] - volume up"
 }

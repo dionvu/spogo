@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/dionvu/spogo/spotify"
-	"github.com/fatih/color"
 	"github.com/ktr0731/go-fuzzyfinder"
 )
 
@@ -36,7 +35,7 @@ func (m *Model) View() string {
 		return m.Views.Playlist.View(m.Views.Player, m.Terminal)
 
 	case HELP_VIEW:
-		return "\n\n" + MainControlsRender(HELP_VIEW) + "\n\n" + padLines(m.Config.HelpString(), TAB_WIDTH)
+		return "\n\n" + MainControlsRender(HELP_VIEW) + "\n\n" + padLines(HelpString(), TAB_WIDTH)
 
 	case PLAYLIST_TRACK_VIEW:
 		state := m.Views.Player.State.CurrentPlayingType
@@ -79,7 +78,7 @@ func (m *Model) View() string {
 					imagePath, _ := cacheImage(tracks[i].Album.Images[0].Url)
 
 					var ascii string
-					if m.Terminal.Height <= TERMINALSIZE.Small {
+					if m.Terminal.IsSizeSmall() {
 						ascii = AsciiRender(imagePath, ASCII_FLAGS_SMALL)
 					} else {
 						ascii = AsciiRender(imagePath, ASCII_FLAGS_NORMAL)
@@ -190,15 +189,4 @@ func msToMinutesAndSeconds(ms int) (minutes string, seconds string) {
 	seconds = fmt.Sprint(s)
 
 	return minutes, seconds
-}
-
-// Returns the error message associated with the terminal being
-// below the required dimensions.
-func terminalWarningView(terminal Terminal) string {
-	return color.RedString(
-		fmt.Sprint(
-			"Terminal of size ",
-			terminal.Height, "x", terminal.Width,
-			" is prone to visual glitches.\nMinimum required height is ",
-			MIN_TERMINAL_HEIGHT, "x", MIN_TERMINAL_WIDTH, "."))
 }

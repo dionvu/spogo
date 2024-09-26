@@ -83,7 +83,7 @@ func (pv *PlaylistView) View(playerView *PlayerView, terminal Terminal) string {
 
 	io.Copy(imageFile, res.Body)
 
-	if terminal.Height <= TERMINALSIZE.Small {
+	if terminal.IsSizeSmall() {
 		return pv.viewSmall(imagePath, terminal)
 	}
 

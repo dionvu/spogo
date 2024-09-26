@@ -2,6 +2,8 @@ package ui
 
 import (
 	"github.com/TheZoraiz/ascii-image-converter/aic_package"
+	"github.com/charmbracelet/lipgloss"
+	lg "github.com/charmbracelet/lipgloss"
 )
 
 var ASCII_FLAGS_NORMAL aic_package.Flags = func() aic_package.Flags {
@@ -59,4 +61,29 @@ func AsciiRender(filepath string, flags aic_package.Flags) string {
 	ascii = ascii
 
 	return ascii
+}
+
+func HelpString() string {
+	h1 := lg.NewStyle().Underline(true).Foreground(lipgloss.Color("#458588"))
+	h2 := lg.NewStyle().Underline(true)
+
+	return h1.Render("CONTROLS") +
+		"\n\n" + h2.Render("Global") +
+		"\n\n" +
+		"r - refresh, fixes visual issues" +
+		"\n" +
+		"a - select track from album of current playing track" +
+		"\n" +
+		"s - toggle shuffling of album/playlist" +
+		"\n\n" + h2.Render("Player") +
+		"\n\n" +
+		"space - play / pause" +
+		"\n" +
+		"n - next track" +
+		"\n" +
+		"p - previous track" +
+		"\n" +
+		"[ - volume down" +
+		"\n" +
+		"] - volume up"
 }

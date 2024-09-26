@@ -8,24 +8,15 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-const (
-	MIN_TERMINAL_HEIGHT = 21
-	MIN_TERMINAL_WIDTH  = 38
-)
-
 // Handles updates associate with the current selected view.
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	updateTerminalSize(&m.Terminal)
 
-	// Warns user if their terminal is too small.
-	if m.Terminal.Height < MIN_TERMINAL_HEIGHT || m.Terminal.Width < MIN_TERMINAL_WIDTH {
+	if !m.Terminal.IsValid() {
 		m.CurrentView = TERMINAL_WARNING_VIEW
 	}
 
-	// Allows access to the tui once their terminal size is allowed.
-	if m.CurrentView == TERMINAL_WARNING_VIEW &&
-		m.Terminal.Height >= MIN_TERMINAL_HEIGHT &&
-		m.Terminal.Width >= MIN_TERMINAL_WIDTH {
+	if m.CurrentView == TERMINAL_WARNING_VIEW && m.Terminal.IsValid() {
 		m.CurrentView = PLAYER_VIEW
 	}
 

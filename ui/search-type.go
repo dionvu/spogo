@@ -46,7 +46,7 @@ func NewSearchTypeView(s *auth.Session) *SearchTypeView {
 func (st *SearchTypeView) View(playerView *PlayerView, terminal Terminal) string {
 	mainControls := MainControlsRender(SEARCH_TYPE_VIEW)
 
-	if terminal.Height < TERMINALSIZE.Small {
+	if terminal.IsSizeSmall() {
 		return "\n\n" + st.ListModel.View()
 	}
 

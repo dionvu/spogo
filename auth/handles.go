@@ -58,13 +58,3 @@ func completeAuth(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Fprintln(w, "authentication success!")
 }
-
-// Starts the fucking server :DD.
-func startServer() {
-	go func() {
-		err := http.ListenAndServe(":"+PORT, nil)
-		if err != nil {
-			log.Fatalf("failed to start server on port: %v", PORT)
-		}
-	}()
-}

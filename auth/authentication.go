@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -135,4 +136,14 @@ func OpenURL(url string) error {
 	fmt.Println(color.HiGreenString("Opening -> ", url))
 
 	return nil
+}
+
+// Starts the fucking server :DD.
+func startServer() {
+	go func() {
+		err := http.ListenAndServe(":"+PORT, nil)
+		if err != nil {
+			log.Fatalf("failed to start server on port: %v", PORT)
+		}
+	}()
 }

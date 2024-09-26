@@ -91,7 +91,7 @@ func cacheImage(url string) (path string, err error) {
 }
 
 func (pv *PlayerView) View(terminal Terminal) string {
-	if terminal.Height <= TERMINALSIZE.Small {
+	if terminal.IsSizeSmall() {
 		return pv.viewSmall()
 	}
 
