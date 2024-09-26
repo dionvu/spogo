@@ -2,7 +2,7 @@
 pkgname=spogo
 pkgver=0.2.0
 pkgrel=1
-pkgdesc="A command-line tool with Spotify integration"
+pkgdesc="A Spotify terminal interface with clean aesthetic"
 arch=('aarch64' 'x86_64')
 url="https://github.com/dionvu/spogo"
 license=('MIT')
@@ -12,11 +12,11 @@ source=("$pkgname-$pkgver.tar.gz::https://github.com/dionvu/spogo/archive/refs/t
 sha256sums=('SKIP')
 
 build() {
-    cd "spogo-$pkgver/cmd/spogo"
+    cd "spogo-$pkgver/"
     go build -o spogo main.go
 }
 
 package() {
-    cd "spogo-$pkgver/cmd/spogo"
+    cd "spogo-$pkgver/"
     install -Dm755 spogo "$pkgdir/usr/bin/spogo"
 }
