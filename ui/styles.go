@@ -69,6 +69,17 @@ var PlaylistViewStyle = struct {
 	Item: lg.NewStyle().PaddingLeft(4).Faint(true),
 }
 
+var DeviceViewStyle = struct {
+	Title        lg.Style
+	ItemSelected lg.Style
+	Item         lg.Style
+}{
+	Title:        lg.NewStyle().Bold(true).Background(lg.Color("#a89984")).Foreground(lg.Color("#282828")).PaddingLeft(1).PaddingRight(1),
+	ItemSelected: lg.NewStyle().PaddingLeft(2),
+
+	Item: lg.NewStyle().PaddingLeft(4).Faint(true),
+}
+
 func padLines(s string, padding int) string {
 	pad := strings.Repeat(" ", padding)
 	lines := strings.Split(s, "\n")

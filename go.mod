@@ -27,6 +27,7 @@ require (
 	github.com/gookit/color v1.5.4 // indirect
 	github.com/h2non/bimg v1.1.9 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
+	github.com/jedib0t/go-pretty/v6 v6.5.9 // indirect
 	github.com/ktr0731/go-ansisgr v0.1.0 // indirect
 	github.com/ktr0731/go-fuzzyfinder v0.8.0 // indirect
 	github.com/logrusorgru/aurora v2.0.3+incompatible // indirect

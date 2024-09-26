@@ -9,6 +9,13 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+const (
+	LIST_HEIGHT         = 10
+	DEFAULT_WIDTH       = 40
+	DEFAULT_LIST_HEIGHT = 20 // 7 Selections per page
+	SMALL_LIST_HEIGHT   = 9  // 5 Selections per page
+)
+
 type Item string
 
 type itemDelegate struct{}

@@ -64,7 +64,7 @@ func NewPlayerView(
 	return pv
 }
 
-func image(url string) (path string, err error) {
+func cacheImage(url string) (path string, err error) {
 	res, err := http.Get(url)
 	if err != nil {
 		return "", err
@@ -90,42 +90,48 @@ func image(url string) (path string, err error) {
 	return path, nil
 }
 
-func (pv *PlayerView) View(terminalSize int) string {
+func (pv *PlayerView) View(terminal Terminal) string {
+	if terminal.Height <= TERMINALSIZE.Small {
+		return pv.viewSmall()
+	}
+
 	if pv.State != nil {
-		if len(pv.State.Track.Album.Images) < 1 {
-			return ""
-		}
-		filepath, err := image(pv.State.Track.Album.Images[0].Url)
+		filepath, err := cacheImage(pv.State.Track.Album.Images[0].Url)
 		if err != nil {
 			return ""
 		}
 
-		if terminalSize <= TERMINALSIZE.Small {
-			return fmt.Sprintf("\n\n%s\n\n%s\n\n%s",
-				AsciiView(filepath, ASCII_FLAGS_SMALL),
-				PlayerStatusView(pv),
-				PlayerInfoView(pv))
-		}
-
 		return fmt.Sprintf("\n\n%s\n\n%s\n\n%s\n\n%s",
-			MainControlsView(PLAYER_VIEW),
-			AsciiView(filepath, ASCII_FLAGS_NORMAL),
+			MainControlsRender(PLAYER_VIEW),
+			padLines(AsciiRender(filepath, ASCII_FLAGS_NORMAL), TAB_WIDTH),
 			PlayerStatusView(pv),
 			PlayerInfoView(pv))
 	}
 
-	if terminalSize <= TERMINALSIZE.Small {
-		return fmt.Sprintf("\n\n%s",
-			PlayerStatusView(pv))
+	return fmt.Sprintf("\n\n%s\n\n%s",
+		MainControlsRender(PLAYER_VIEW),
+		PlayerStatusView(pv))
+}
+
+func (pv *PlayerView) viewSmall() string {
+	filepath, err := cacheImage(pv.State.Track.Album.Images[0].Url)
+	if err != nil {
+		return ""
 	}
 
-	return fmt.Sprintf("\n\n%s\n\n%s",
-		MainControlsView(PLAYER_VIEW),
+	if pv.State != nil {
+		return fmt.Sprintf("\n\n%s\n\n%s\n\n%s",
+			padLines(AsciiRender(filepath, ASCII_FLAGS_SMALL), TAB_WIDTH),
+			PlayerStatusView(pv),
+			PlayerInfoView(pv))
+	}
+
+	return fmt.Sprintf("\n\n%s",
 		PlayerStatusView(pv))
 }
 
 // Ensures that player time progress is within 2 * polling rate.
-func (pv *PlayerView) EnsureSynced() {
+func (pv *PlayerView) EnsureProgressSynced() {
 	// Checks pv state for external pausing or playing not captured by
 	// the update method.
 	if pv.State != nil {
@@ -187,4 +193,38 @@ func (pv *PlayerView) PlayPause() {
 		pv.PlayingStatusStyle = &PlayerViewStyle.StatusBar.Paused
 		pv.PlayingStatus = PAUSED
 	}
+}
+
+var PlayerStatusView = func(pv *PlayerView) string {
+	return padLines(pv.PlayingStatusStyle.Render(pv.PlayingStatus), 4)
+}
+
+var PlayerInfoView = func(pv *PlayerView) string {
+	if pv.State == nil {
+		return "invalid player state"
+	}
+
+	track, artist,
+		progressMin, progressSec,
+		durationMin, durationSec := pv.State.Track.InfoString(pv.Config, pv.ProgressMs)
+
+	var shuffle string
+
+	if pv.State.ShuffleState {
+		shuffle = "on"
+	} else {
+		shuffle = "off"
+	}
+
+	return padLines(fmt.Sprintf(
+		"%s - %s\n\n%sm:%ss / %sm:%ss\n\nvol: %v%% sfl: %v",
+		track,
+		artist,
+		progressMin,
+		progressSec,
+		durationMin,
+		durationSec,
+		pv.State.Device.VolumePercent,
+		shuffle,
+	), TAB_WIDTH)
 }

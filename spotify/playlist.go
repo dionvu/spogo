@@ -17,7 +17,7 @@ type Playlist struct {
 	Description  string         `json:"description"`
 	ID           string         `json:"id"`
 	Name         string         `json:"name"`
-	Total        int            `json:"total"`
+	Followers    Followers      `json:"followers"`
 	Public       bool           `json:"public"`
 	Tracks       TracksResponse `json:"tracks"`
 	URI          string         `json:"uri"`

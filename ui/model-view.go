@@ -30,13 +30,13 @@ const (
 func (m *Model) View() string {
 	switch m.CurrentView {
 	case PLAYER_VIEW:
-		return m.Views.Player.View(m.Terminal.Height)
+		return m.Views.Player.View(m.Terminal)
 
 	case PLAYLIST_VIEW:
-		return m.Views.Playlist.View(m.Views.Player, m.Terminal.Height)
+		return m.Views.Playlist.View(m.Views.Player, m.Terminal)
 
 	case HELP_VIEW:
-		return "\n\n" + MainControlsView(HELP_VIEW) + "\n\n" + padLines(m.Config.HelpString(), TAB_WIDTH)
+		return "\n\n" + MainControlsRender(HELP_VIEW) + "\n\n" + padLines(m.Config.HelpString(), TAB_WIDTH)
 
 	case PLAYLIST_TRACK_VIEW:
 		state := m.Views.Player.State.CurrentPlayingType
@@ -62,7 +62,9 @@ func (m *Model) View() string {
 
 			tracks := *t
 
-			idx, _ := fuzzyfinder.FindMulti(
+			// Fzf tracks from the playlist currently slected
+			// and plays the selected track.
+			idx, _ := fuzzyfinder.Find(
 				tracks,
 				func(i int) string {
 					return tracks[i].Name + " - " + tracks[i].Artists[0].Name
@@ -74,13 +76,13 @@ func (m *Model) View() string {
 
 					mins, secs := msToMinutesAndSeconds(tracks[i].DurationMs)
 
-					imagePath, _ := image(tracks[i].Album.Images[0].Url)
+					imagePath, _ := cacheImage(tracks[i].Album.Images[0].Url)
 
 					var ascii string
 					if m.Terminal.Height <= TERMINALSIZE.Small {
-						ascii = AsciiViewNoPadding(imagePath, ASCII_FLAGS_SMALL)
+						ascii = AsciiRender(imagePath, ASCII_FLAGS_SMALL)
 					} else {
-						ascii = AsciiViewNoPadding(imagePath, ASCII_FLAGS_NORMAL)
+						ascii = AsciiRender(imagePath, ASCII_FLAGS_NORMAL)
 					}
 
 					return fmt.Sprintf("Track: %s \nArtist: %s\nAlbum: %s\nDuration: %sm:%ss\n\n%s",
@@ -93,18 +95,14 @@ func (m *Model) View() string {
 					)
 				}))
 
-			if len(idx) > 0 && idx[0] < len(tracks) {
-				// m.Player.Play(m.Views.Playlist.GetPlaylistFromChoice(m.Views.Playlist.GetSelectedName()).URI, "", m.Session)
-				contextUri := m.Views.Playlist.GetSelectedPlaylist().URI
-				m.Player.Play(contextUri, tracks[idx[0]].Uri, m.Session)
-			}
+			contextUri := m.Views.Playlist.GetSelectedPlaylist().URI
+			m.Player.Play(contextUri, tracks[idx].Uri, m.Session)
 
 			m.CurrentView = PLAYLIST_VIEW
 
-			// Hide cursor after fzf showing fuzzyfinder
-			fmt.Print("\033[?25l")
+			fmt.Print("\033[?25l") // Hide cursor after fzf showing fuzzyfinder
 
-			return "changing views..."
+			return ""
 
 		case "episode":
 			return "TODO"
@@ -114,18 +112,19 @@ func (m *Model) View() string {
 		}
 
 	case ALBUM_TRACK_VIEW:
-		if m.Views.Player.State == nil {
+		if m.Views.Player.State == nil || m.Views.Player.State.Track == nil {
 			m.CurrentView = PLAYER_VIEW
 			return ""
 		}
 
-		albumID := m.Views.Player.State.Track.Album.ID
+		album := &m.Views.Player.State.Track.Album
 
-		t, _ := spotify.AlbumTracks(m.Session, albumID)
-
+		t, _ := spotify.AlbumTracks(m.Session, album.ID)
 		tracks := *t
 
-		idx, _ := fuzzyfinder.FindMulti(
+		// Fzf tracks from the album currently playing
+		// and plays the selected track.
+		idx, _ := fuzzyfinder.Find(
 			tracks,
 			func(i int) string {
 				return tracks[i].Name
@@ -144,9 +143,7 @@ func (m *Model) View() string {
 				)
 			}))
 
-		if len(idx) > 0 && idx[0] < len(tracks) {
-			m.Player.Play(m.Views.Player.State.Track.Album.Uri, tracks[idx[0]].Uri, m.Session)
-		}
+		m.Player.Play(album.Uri, tracks[idx].Uri, m.Session)
 
 		fmt.Print("\033[?25l") // Hide cursor after fzf showing fuzzyfinder
 
@@ -158,7 +155,7 @@ func (m *Model) View() string {
 		return "Refreshing..."
 
 	case TERMINAL_WARNING_VIEW:
-		return color.RedString(fmt.Sprint("Terminal of size ", m.Terminal.Height, "x", m.Terminal.Width, " is prone to visual glitches.\nMinimum required height is ", MIN_TERMINAL_HEIGHT, "."))
+		return terminalWarningView(m.Terminal)
 
 	case SEARCH_TYPE_VIEW:
 		return m.Views.SearchType.View(m.Views.Player, m.Terminal)
@@ -183,9 +180,25 @@ func (m *Model) View() string {
 	}
 }
 
-func msToMinutesAndSeconds(ms int) (string, string) {
-	minutes := ms / 60000
-	seconds := (ms % 60000) / 1000
+// Converts the number of milliseconds into two string values
+// of minutes and addittional seconds.
+func msToMinutesAndSeconds(ms int) (minutes string, seconds string) {
+	m := ms / 60000
+	s := (ms % 60000) / 1000
 
-	return fmt.Sprint(minutes), fmt.Sprint(seconds)
+	minutes = fmt.Sprint(m)
+	seconds = fmt.Sprint(s)
+
+	return minutes, seconds
+}
+
+// Returns the error message associated with the terminal being
+// below the required dimensions.
+func terminalWarningView(terminal Terminal) string {
+	return color.RedString(
+		fmt.Sprint(
+			"Terminal of size ",
+			terminal.Height, "x", terminal.Width,
+			" is prone to visual glitches.\nMinimum required height is ",
+			MIN_TERMINAL_HEIGHT, "x", MIN_TERMINAL_WIDTH, "."))
 }

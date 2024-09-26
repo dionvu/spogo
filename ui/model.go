@@ -51,6 +51,8 @@ type Terminal struct {
 	Width  int
 }
 
+// The minimum terminal size to be considered
+// small or normal.
 var TERMINALSIZE = struct {
 	Small  int
 	Normal int
@@ -76,43 +78,46 @@ func New(
 		player.Resume(auth, false)
 	}
 
-	// A nil state due to invalid device will be handled
-	// after view is updated.
+	m.Terminal.Width, m.Terminal.Height = getTerminalSize()
+
 	m.Views.Player = NewPlayerView(auth, player, config)
 	m.Views.Playlist = NewPlaylistView(auth, config)
 	m.Views.SearchType = NewSearchTypeView(auth)
 	m.Views.Device = NewDeviceView(m.Session)
 
-	m.Terminal.Width, m.Terminal.Height = getTerminalSize()
 	return m
 }
 
-func getTerminalSize() (int, int) {
-	width, height, err := term.GetSize(int(os.Stdout.Fd()))
-	if err != nil {
-		return -1, -1
-	}
-	return width, height
-}
-
-func updateTerminalSize(width *int, height *int) {
+// Asyncronously updates the terminal dimensions.
+func updateTerminalSize(terminal *Terminal) {
 	// Channel to receive terminal size change signals (SIGWINCH)
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGWINCH)
 
-	// Listen for size change events
+	// If their is a change in terminal dimensions, updates terminal.
 	go func() {
 		for range sigCh {
 			w, h := getTerminalSize()
-			if w != *width || h != *height {
+			if w != terminal.Width || h != terminal.Height {
 				cmd := exec.Command("clear")
 				cmd.Stdout = os.Stdout
 				cmd.Run()
 
 			}
-			*width, *height = w, h
+
+			terminal.Width, terminal.Height = w, h
 		}
 	}()
+}
+
+// Gets the current dimensions of the user's terminal.
+func getTerminalSize() (int, int) {
+	width, height, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		return -1, -1
+	}
+
+	return width, height
 }
 
 func (m *Model) Init() tea.Cmd {
