@@ -10,16 +10,6 @@ import (
 	"github.com/dionvu/spogo/spotify/api/headers"
 )
 
-type AlbumsResponse struct {
-	Href     string  `json:"href"`
-	Limit    int     `json:"limit"`
-	Next     string  `json:"next"`
-	Offset   int     `json:"offset"`
-	Previous string  `json:"previous"`
-	Total    int     `json:"total"`
-	Items    []Album `json:"items"`
-}
-
 type Album struct {
 	Images      []Image  `json:"images"`
 	Artists     []Artist `json:"artists"`
@@ -30,6 +20,12 @@ type Album struct {
 	ReleaseDate string   `json:"release_date"`
 	Type        string   `json:"type"`
 	Uri         string   `json:"uri"`
+}
+
+type Image struct {
+	Url    string `json:"url"`
+	Height int    `json:"height"`
+	Width  int    `json:"width"`
 }
 
 func AlbumTracks(s *auth.Session, albumID string) (*[]AlbumTrack, error) {

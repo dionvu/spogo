@@ -12,14 +12,16 @@ import (
 )
 
 type Playlist struct {
-	Images       []Image        `json:"images"`
-	Description  string         `json:"description"`
-	ID           string         `json:"id"`
-	Name         string         `json:"name"`
-	Followers    Followers      `json:"followers"`
-	Public       bool           `json:"public"`
-	Tracks       TracksResponse `json:"tracks"`
-	URI          string         `json:"uri"`
+	Images      []Image   `json:"images"`
+	Description string    `json:"description"`
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	Followers   Followers `json:"followers"`
+	Public      bool      `json:"public"`
+	Tracks      struct {
+		Total int `json:"total"`
+	} `json:"tracks"`
+	URI          string `json:"uri"`
 	ExternalUrls struct {
 		Spotify string `json:"spotify"`
 	} `json:"external_urls"`
@@ -61,7 +63,7 @@ func UserPlaylists(s *auth.Session) (*[]Playlist, error) {
 		return nil, errors.HTTP.Wrap(err, "failed to read response body")
 	}
 
-	pr := &PlaylistsResponse{}
+	pr := &playlistsSearchResponse{}
 
 	err = json.Unmarshal(b, pr)
 	if err != nil {

@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"log"
 	"os"
 	"os/exec"
 	"time"
@@ -44,6 +45,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		})
 
 	case tea.KeyMsg:
+
+		// Prevents search query from activating any commands.
+		if m.CurrentView == SEARCH_QUERY_VIEW && msg.String() != "enter" {
+			var cmd tea.Cmd
+			m.Views.Squery.textInput, cmd = m.Views.Squery.textInput.Update(msg)
+			return m, cmd
+		}
+
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
@@ -86,23 +95,17 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case PLAYLIST_VIEW:
 				if i, ok := m.Views.Playlist.PlaylistListModel.list.SelectedItem().(Item); ok {
 					m.Views.Playlist.PlaylistListModel.choice = string(i)
-					m.Player.Play(m.Views.Playlist.playlistsMap[string(i)].URI, "", m.Session)
+					err := m.Player.Play(m.Views.Playlist.playlistsMap[string(i)].URI, "", m.Session)
+					if err != nil {
+						log.Fatal(string(i), m.Views.Playlist.playlistsMap[string(i)].URI)
+					}
 				}
 
 			case SEARCH_TYPE_VIEW:
 				if i, ok := m.Views.SearchType.ListModel.list.SelectedItem().(Item); ok {
 					m.Views.SearchType.ListModel.choice = string(i)
 
-					switch m.Views.SearchType.ListModel.choice {
-					case "album":
-						m.CurrentView = SEARCH_ALBUM_VIEW
-
-					case "track":
-						m.CurrentView = SEARCH_TRACK_VIEW
-
-					default:
-						m.CurrentView = SEARCH_PLAYLIST_VIEW
-					}
+					m.CurrentView = SEARCH_QUERY_VIEW
 				}
 
 			case DEVICE_VIEW:
@@ -113,6 +116,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// Transfers playback to the newly select device.
 				m.Player.Resume(m.Session, false)
 
+			case SEARCH_QUERY_VIEW:
+				if m.Views.Squery.Query() != "" {
+					m.CurrentView = PLAYER_VIEW
+				}
+
+				m.Views.Squery = NewSearchQuery()
 			}
 
 		case "r":

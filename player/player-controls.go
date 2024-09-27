@@ -11,7 +11,6 @@ import (
 	"github.com/dionvu/spogo/errors"
 	"github.com/dionvu/spogo/spotify/api/headers"
 	"github.com/dionvu/spogo/spotify/api/urls"
-	"github.com/dionvu/spogo/utils"
 )
 
 // ContextUri can be the uri of an album or playlist. Uri should be a track
@@ -21,18 +20,40 @@ func (p *Player) Play(contextUri string, uri string, s *auth.Session) error {
 		return errors.NoDevice.New("no selected playback device")
 	}
 
-	payload := struct {
-		Context_uri string `json:"context_uri"`
-		Offset      struct {
-			Uri string `json:"uri"`
-		} `json:"offset"`
-	}{
-		Context_uri: contextUri,
-		Offset: struct {
-			Uri string `json:"uri"`
+	var payload interface{}
+
+	if contextUri != "" && uri != "" {
+		payload = struct {
+			Context_uri string `json:"context_uri"`
+			Offset      struct {
+				Uri string `json:"uri"`
+			} `json:"offset"`
 		}{
-			Uri: uri,
-		},
+			Context_uri: contextUri,
+			Offset: struct {
+				Uri string `json:"uri"`
+			}{
+				Uri: uri,
+			},
+		}
+	} else if uri == "" {
+		payload = struct {
+			Context_uri string `json:"context_uri"`
+		}{
+			Context_uri: contextUri,
+		}
+	} else {
+		payload = struct {
+			Offset struct {
+				Uri string `json:"uri"`
+			} `json:"offset"`
+		}{
+			Offset: struct {
+				Uri string `json:"uri"`
+			}{
+				Uri: uri,
+			},
+		}
 	}
 
 	j, err := json.Marshal(payload)
@@ -50,8 +71,6 @@ func (p *Player) Play(contextUri string, uri string, s *auth.Session) error {
 	if err != nil {
 		return errors.HTTP.WrapWithNoMessage(err)
 	}
-
-	utils.PrintResponseBody(res.Body)
 
 	if res.StatusCode == 401 {
 		return errors.Reauthentication.NewWithNoMessage()

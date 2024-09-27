@@ -36,7 +36,10 @@ type Model struct {
 		Player     *PlayerView
 		Playlist   *PlaylistView
 		SearchType *SearchTypeView
-		Device     *DeviceView
+		// SearchQuery *SearchQueryView
+		Device *DeviceView
+
+		Squery SearchQuery
 	}
 
 	Terminal Terminal
@@ -74,6 +77,9 @@ func New(
 	m.Views.Playlist = NewPlaylistView(auth, config)
 	m.Views.SearchType = NewSearchTypeView(auth)
 	m.Views.Device = NewDeviceView(m.Session)
+	// m.Views.SearchQuery = NewSearchQueryView(m.Session)
+
+	m.Views.Squery = NewSearchQuery()
 
 	return m
 }

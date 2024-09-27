@@ -19,25 +19,6 @@ const (
 	PLAYLIST_TYPE = "playlist"
 )
 
-type Response struct {
-	Tracks    TracksResponse    `json:"tracks"`
-	Artists   ArtistsResponse   `json:"artists"`
-	Albums    AlbumsResponse    `json:"albums"`
-	Playlists PlaylistsResponse `json:"playlists"`
-	Shows     ShowsResponse     `json:"shows"`
-	Episodes  EpisodesResponse  `json:"episodes"`
-}
-
-type PlaylistsResponse struct {
-	Href     string     `json:"href"`
-	Limit    int        `json:"limit"`
-	Next     string     `json:"next"`
-	Offset   int        `json:"offset"`
-	Previous string     `json:"previous"`
-	Total    int        `json:"total"`
-	Items    []Playlist `json:"items"`
-}
-
 type SearchResult struct {
 	Tracks    []*Track
 	Albums    []*Album
@@ -47,7 +28,46 @@ type SearchResult struct {
 	Episodes  []*Episode
 }
 
-type ArtistsResponse struct {
+type searchResponse struct {
+	Tracks    tracksSearchResponse    `json:"tracks"`
+	Artists   artistsSearchResponse   `json:"artists"`
+	Albums    albumsSearchResponse    `json:"albums"`
+	Playlists playlistsSearchResponse `json:"playlists"`
+	Shows     showsSearchResponse     `json:"shows"`
+	Episodes  EpisodesSearchResponse  `json:"episodes"`
+}
+
+type tracksSearchResponse struct {
+	Href     string  `json:"href"`
+	Limit    int     `json:"limit"`
+	Next     string  `json:"next"`
+	Offset   int     `json:"offset"`
+	Previous string  `json:"previous"`
+	Total    int     `json:"total"`
+	Items    []Track `json:"items"`
+}
+
+type albumsSearchResponse struct {
+	Href     string  `json:"href"`
+	Limit    int     `json:"limit"`
+	Next     string  `json:"next"`
+	Offset   int     `json:"offset"`
+	Previous string  `json:"previous"`
+	Total    int     `json:"total"`
+	Items    []Album `json:"items"`
+}
+
+type playlistsSearchResponse struct {
+	Href     string     `json:"href"`
+	Limit    int        `json:"limit"`
+	Next     string     `json:"next"`
+	Offset   int        `json:"offset"`
+	Previous string     `json:"previous"`
+	Total    int        `json:"total"`
+	Items    []Playlist `json:"items"`
+}
+
+type artistsSearchResponse struct {
 	Href     string   `json:"href"`
 	Limit    int      `json:"limit"`
 	Next     string   `json:"next"`
@@ -57,7 +77,7 @@ type ArtistsResponse struct {
 	Items    []Artist `json:"items"`
 }
 
-type ShowsResponse struct {
+type showsSearchResponse struct {
 	Href     string `json:"href"`
 	Limit    int    `json:"limit"`
 	Next     string `json:"next"`
@@ -67,7 +87,7 @@ type ShowsResponse struct {
 	Items    []Show `json:"items"`
 }
 
-type EpisodesResponse struct {
+type EpisodesSearchResponse struct {
 	Href     string    `json:"href"`
 	Limit    int       `json:"limit"`
 	Next     string    `json:"next"`
@@ -78,7 +98,7 @@ type EpisodesResponse struct {
 }
 
 func Search(input string, searchType []string, s *auth.Session) (*SearchResult, error) {
-	r := &Response{}
+	r := &searchResponse{}
 
 	query := url.Values{}
 	query.Set("q", input)

@@ -19,6 +19,10 @@ type SearchTypeListModel struct {
 	quitting bool
 }
 
+func (s *SearchTypeView) ChoiceType() string {
+	return s.ListModel.choice
+}
+
 func NewSearchTypeView(s *auth.Session) *SearchTypeView {
 	types := []string{
 		"album",

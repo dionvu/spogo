@@ -2,7 +2,10 @@ package ui
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
+	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/spotify"
 	"github.com/ktr0731/go-fuzzyfinder"
 )
@@ -63,7 +66,7 @@ func (m *Model) View() string {
 
 			// Fzf tracks from the playlist currently slected
 			// and plays the selected track.
-			idx, _ := fuzzyfinder.Find(
+			idx, err := fuzzyfinder.Find(
 				tracks,
 				func(i int) string {
 					return tracks[i].Name + " - " + tracks[i].Artists[0].Name
@@ -75,13 +78,16 @@ func (m *Model) View() string {
 
 					mins, secs := msToMinutesAndSeconds(tracks[i].DurationMs)
 
-					imagePath, _ := cacheImage(tracks[i].Album.Images[0].Url)
+					cd, _ := os.UserCacheDir()
+					imagePath := filepath.Join(cd, config.APPNAME, "temp.jpeg")
+
+					_ = cacheImage(tracks[i].Album.Images[0].Url, imagePath)
 
 					var ascii string
 					if m.Terminal.IsSizeSmall() {
-						ascii = AsciiRender(imagePath, ASCII_FLAGS_SMALL)
+						ascii = AsciiRender(imagePath, AsciiFlagsSmall())
 					} else {
-						ascii = AsciiRender(imagePath, ASCII_FLAGS_NORMAL)
+						ascii = AsciiRender(imagePath, AsciiFlagsNormal())
 					}
 
 					return fmt.Sprintf("Track: %s \nArtist: %s\nAlbum: %s\nDuration: %sm:%ss\n\n%s",
@@ -95,7 +101,11 @@ func (m *Model) View() string {
 				}))
 
 			contextUri := m.Views.Playlist.GetSelectedPlaylist().URI
-			m.Player.Play(contextUri, tracks[idx].Uri, m.Session)
+
+			// Prevents user pressing Esc from playing the first track.
+			if err == nil {
+				m.Player.Play(contextUri, tracks[idx].Uri, m.Session)
+			}
 
 			m.CurrentView = PLAYLIST_VIEW
 
@@ -123,7 +133,7 @@ func (m *Model) View() string {
 
 		// Fzf tracks from the album currently playing
 		// and plays the selected track.
-		idx, _ := fuzzyfinder.Find(
+		idx, err := fuzzyfinder.Find(
 			tracks,
 			func(i int) string {
 				return tracks[i].Name
@@ -142,7 +152,10 @@ func (m *Model) View() string {
 				)
 			}))
 
-		m.Player.Play(album.Uri, tracks[idx].Uri, m.Session)
+		// Prevents user pressing Esc from playing the first track.
+		if err == nil {
+			m.Player.Play(album.Uri, tracks[idx].Uri, m.Session)
+		}
 
 		fmt.Print("\033[?25l") // Hide cursor after fzf showing fuzzyfinder
 
@@ -160,7 +173,7 @@ func (m *Model) View() string {
 		return m.Views.SearchType.View(m.Views.Player, m.Terminal)
 
 	case SEARCH_QUERY_VIEW:
-		return "todo query"
+		return m.Views.Squery.View()
 
 	case SEARCH_ALBUM_VIEW:
 		return "TODO album"

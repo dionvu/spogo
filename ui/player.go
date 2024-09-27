@@ -31,6 +31,9 @@ type PlayerView struct {
 
 	// Kept to track if progressMs is in sync with the song.
 	TrackID string
+
+	// Tracks the current ascii uri
+	AsciiCurrentUrl string
 }
 
 func NewPlayerView(
@@ -64,46 +67,23 @@ func NewPlayerView(
 	return pv
 }
 
-func cacheImage(url string) (path string, err error) {
-	res, err := http.Get(url)
-	if err != nil {
-		return "", err
-	}
-
-	cd, err := os.UserCacheDir()
-	if err != nil {
-		return "", err
-	}
-
-	path = filepath.Join(cd, config.APPNAME, "image.jpeg")
-
-	file, err := os.Create(path)
-	if err != nil {
-		return "", err
-	}
-
-	_, err = io.Copy(file, res.Body)
-	if err != nil {
-		return "", err
-	}
-
-	return path, nil
-}
-
 func (pv *PlayerView) View(terminal Terminal) string {
 	if terminal.IsSizeSmall() {
 		return pv.viewSmall()
 	}
 
 	if pv.State != nil {
-		filepath, err := cacheImage(pv.State.Track.Album.Images[0].Url)
-		if err != nil {
-			return ""
+		if pv.State.Track.Album.Images[0].Url != pv.AsciiCurrentUrl {
+			err := cacheImage(pv.State.Track.Album.Images[0].Url, pv.CachedImagePath())
+			if err != nil {
+				return ""
+			}
+			pv.AsciiCurrentUrl = pv.State.Track.Album.Images[0].Url
 		}
 
 		return fmt.Sprintf("\n\n%s\n\n%s\n\n%s\n\n%s",
 			MainControlsRender(PLAYER_VIEW),
-			padLines(AsciiRender(filepath, ASCII_FLAGS_NORMAL), TAB_WIDTH),
+			padLines(AsciiRender(pv.CachedImagePath(), AsciiFlagsNormal()), TAB_WIDTH),
 			PlayerStatusView(pv),
 			PlayerInfoView(pv))
 	}
@@ -114,14 +94,17 @@ func (pv *PlayerView) View(terminal Terminal) string {
 }
 
 func (pv *PlayerView) viewSmall() string {
-	filepath, err := cacheImage(pv.State.Track.Album.Images[0].Url)
-	if err != nil {
-		return ""
+	if pv.State.Track.Album.Images[0].Url != pv.AsciiCurrentUrl {
+		err := cacheImage(pv.State.Track.Album.Images[0].Url, pv.CachedImagePath())
+		if err != nil {
+			return ""
+		}
+		pv.AsciiCurrentUrl = pv.State.Track.Album.Images[0].Url
 	}
 
 	if pv.State != nil {
 		return fmt.Sprintf("\n\n%s\n\n%s\n\n%s",
-			padLines(AsciiRender(filepath, ASCII_FLAGS_SMALL), TAB_WIDTH),
+			padLines(AsciiRender(pv.CachedImagePath(), AsciiFlagsSmall()), TAB_WIDTH),
 			PlayerStatusView(pv),
 			PlayerInfoView(pv))
 	}
@@ -227,4 +210,29 @@ var PlayerInfoView = func(pv *PlayerView) string {
 		pv.State.Device.VolumePercent,
 		shuffle,
 	), TAB_WIDTH)
+}
+
+func cacheImage(url string, path string) error {
+	res, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(file, res.Body)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (pv *PlayerView) CachedImagePath() string {
+	cd, _ := os.UserCacheDir()
+	path := filepath.Join(cd, config.APPNAME, "player_ascii.jpeg")
+	return path
 }

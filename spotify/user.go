@@ -2,12 +2,10 @@ package spotify
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/dionvu/spogo/auth"
-	"github.com/fatih/color"
+	"github.com/dionvu/spogo/errors"
 )
 
 type User struct {
@@ -42,13 +40,10 @@ func New(s *auth.Session) (*User, error) {
 
 	u := &User{}
 
-	_ = json.NewDecoder(res.Body).Decode(u)
+	err := json.NewDecoder(res.Body).Decode(u)
+	if err != nil {
+		return nil, errors.JSONDecode.Wrap(err, "failed to decode user response")
+	}
 
 	return u, nil
-}
-
-func (u *User) Print() {
-	a := strconv.Itoa(u.Followers.Total)
-
-	fmt.Printf("%v | %v | %v\n", color.RedString(u.DisplayName), color.BlueString(a+" Followers"), color.YellowString(u.Email))
 }

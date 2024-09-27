@@ -8,17 +8,15 @@ import (
 
 const (
 	MIN_TERMINAL_HEIGHT = 21
-	MIN_TERMINAL_WIDTH  = 38
+	MIN_TERMINAL_WIDTH  = 42
+
+	MAX_TERMINAL_HEIGHT_SMALL  = 30
+	MIN_TERMINAL_HEIGHT_NORMAL = 40
 )
 
 func (t Terminal) IsValid() bool {
 	return t.Height >= MIN_TERMINAL_HEIGHT && t.Width >= MIN_TERMINAL_WIDTH
 }
-
-const (
-	MAX_TERMINAL_HEIGHT_SMALL  = 30
-	MIN_TERMINAL_HEIGHT_NORMAL = 40
-)
 
 func (t Terminal) IsSizeSmall() bool {
 	return t.Height <= MAX_TERMINAL_HEIGHT_SMALL
