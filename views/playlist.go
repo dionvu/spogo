@@ -88,10 +88,11 @@ func (pv *PlaylistView) View(playerView *PlayerView, terminal Terminal) string {
 		return pv.viewSmall(pv.CachedImagePath(), terminal)
 	}
 
-	ascii, err := AsciiRender(pv.CachedImagePath(), AsciiFlagsSmall())
-	if err != nil {
-		ascii = "Ascii image unavailable"
-	}
+	// ascii, err := AsciiRender(pv.CachedImagePath(), AsciiFlagsSmall())
+	ascii := ""
+	// if err != nil {
+	// 	ascii = "Ascii image unavailable"
+	// }
 
 	if len((*pv.UserPlaylists)) < 1 {
 		return fmt.Sprintf("\n\n%s\n\n%s\n\n%s", MainControlsRender(PLAYLIST_VIEW),
@@ -143,10 +144,11 @@ func (pv *PlaylistView) viewSmall(imagePath string, terminal Terminal) string {
 
 	var ascii string
 
-	ascii, err := AsciiRender(imagePath, AsciiFlagsSmall())
-	if err != nil {
-		ascii = "Ascii image unavailable"
-	}
+	// ascii, err := AsciiRender(imagePath, AsciiFlagsSmall())
+	ascii = ""
+	// if err != nil {
+	// 	ascii = "Ascii image unavailable"
+	// }
 
 	if len((*pv.UserPlaylists)) < 1 {
 		return fmt.Sprintf("\n\n%s\n\n%s",

@@ -28,8 +28,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// If state is unaccessible, likely due to user closing
 		// their playerback device, and attempt reconnect to closed device.
 		if m.Views.Player.State == nil {
-			m.Views.Player.PlayingStatusStyle = &PlayerViewStyle.StatusBar.NoPlayer
-			m.Views.Player.PlayingStatus = NO_PLAYER
+			// m.Views.Player.PlayingStatusStyle = &PlayerViewStyle.StatusBar.NoPlayer
+			// m.Views.Player.PlayingStatus = NO_PLAYER
+			m.Views.Player.StatusBar.Update(m.Views.Player.State)
 
 			m.Player.Resume(m.Session, false)
 

@@ -84,11 +84,11 @@ func (m *Model) View() string {
 					_ = cacheImage(tracks[i].Album.Images[0].Url, imagePath)
 
 					var ascii string
-					if m.Terminal.IsSizeSmall() {
-						ascii, _ = AsciiRender(imagePath, AsciiFlagsSmall())
-					} else {
-						ascii, _ = AsciiRender(imagePath, AsciiFlagsNormal())
-					}
+					// if m.Terminal.IsSizeSmall() {
+					// 	ascii, _ = AsciiRender(imagePath, AsciiFlagsSmall())
+					// } else {
+					// 	ascii, _ = AsciiRender(imagePath, AsciiFlagsNormal())
+					// }
 
 					return fmt.Sprintf("Track: %s \nArtist: %s\nAlbum: %s\nDuration: %sm:%ss\n\n%s",
 						tracks[i].Name,

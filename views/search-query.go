@@ -7,10 +7,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// type (
-// 	errMsg error
-// )
-
 type SearchQuery struct {
 	textInput textinput.Model
 	err       error
