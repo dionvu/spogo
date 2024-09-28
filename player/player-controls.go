@@ -17,7 +17,9 @@ import (
 // contained in the album or playlist.
 func (p *Player) Play(contextUri string, uri string, s *auth.Session) error {
 	if p.device == nil {
-		return errors.NoDevice.New("no selected playback device")
+		err := errors.NoDevice.New("no selected playback device")
+		errors.LogError(err)
+		return err
 	}
 
 	var payload interface{}
@@ -58,32 +60,44 @@ func (p *Player) Play(contextUri string, uri string, s *auth.Session) error {
 
 	j, err := json.Marshal(payload)
 	if err != nil {
-		return errors.JSONMarshal.WrapWithNoMessage(err)
+		err = errors.JSONMarshal.WrapWithNoMessage(err)
+		errors.LogError(err)
+		return err
 	}
 
 	req, err := http.NewRequest(http.MethodPut, spotifyurls.PLAYERPLAY, strings.NewReader(string(j)))
 	if err != nil {
-		return errors.HTTPRequest.Wrap(err, "failed to make new request to play: %v", uri)
+		err = errors.HTTPRequest.Wrap(err, "failed to make new request to play: %v", uri)
+		errors.LogError(err)
+		return err
 	}
 	req.Header.Add(headers.Auth, "Bearer "+s.AccessToken.String())
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return errors.HTTP.WrapWithNoMessage(err)
+		err = errors.HTTP.WrapWithNoMessage(err)
+		errors.LogError(err)
+		return err
 	}
 
 	errors.LogApiCall(spotifyurls.PLAYERPLAY, res.StatusCode)
 
 	if res.StatusCode == 401 {
-		return errors.Reauthentication.NewWithNoMessage()
+		err = errors.Reauthentication.NewWithNoMessage()
+		errors.LogError(err)
+		return err
 	}
 
 	if res.StatusCode == 404 {
-		return errors.NoDevice.New("playback device is not active")
+		err = errors.NoDevice.New("playback device is not active")
+		errors.LogError(err)
+		return err
 	}
 
 	if res.StatusCode >= http.StatusBadRequest {
-		return errors.HTTP.New("bad request")
+		err = errors.HTTP.New("bad request")
+		errors.LogError(err)
+		return err
 	}
 
 	return nil
@@ -94,7 +108,9 @@ func (p *Player) Play(contextUri string, uri string, s *auth.Session) error {
 // selected device before the players resumes playback.
 func (p *Player) Resume(s *auth.Session, play bool) error {
 	if p.device == nil {
-		return errors.NoDevice.New("no selected playback device")
+		err := errors.NoDevice.New("no selected playback device")
+		errors.LogError(err)
+		return err
 	}
 
 	data := map[string]interface{}{}
@@ -104,32 +120,44 @@ func (p *Player) Resume(s *auth.Session, play bool) error {
 
 	j, err := json.Marshal(data)
 	if err != nil {
-		return errors.JSONMarshal.WrapWithNoMessage(err)
+		err = errors.JSONMarshal.WrapWithNoMessage(err)
+		errors.LogError(err)
+		return err
 	}
 
 	req, err := http.NewRequest(http.MethodPut, spotifyurls.PLAYER, strings.NewReader(string(j)))
 	if err != nil {
-		return errors.HTTPRequest.WrapWithNoMessage(err)
+		err = errors.HTTPRequest.WrapWithNoMessage(err)
+		errors.LogError(err)
+		return err
 	}
 	req.Header.Add(headers.Auth, "Bearer "+s.AccessToken.String())
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return errors.HTTP.WrapWithNoMessage(err)
+		err = errors.HTTP.WrapWithNoMessage(err)
+		errors.LogError(err)
+		return err
 	}
 
 	errors.LogApiCall(spotifyurls.PLAYER, res.StatusCode)
 
 	if res.StatusCode == 401 {
-		return errors.Reauthentication.NewWithNoMessage()
+		err = errors.Reauthentication.NewWithNoMessage()
+		errors.LogError(err)
+		return err
 	}
 
 	if res.StatusCode == http.StatusBadRequest {
-		return errors.NoDevice.New("playback device is not active")
+		err = errors.NoDevice.New("playback device is not active")
+		errors.LogError(err)
+		return err
 	}
 
 	if res.StatusCode >= http.StatusOK {
-		return errors.HTTP.New("bad request")
+		err = errors.HTTP.New("bad request")
+		errors.LogError(err)
+		return err
 	}
 
 	return nil
@@ -138,28 +166,38 @@ func (p *Player) Resume(s *auth.Session, play bool) error {
 // Skips the the next track in the queue.
 func (p *Player) SkipNext(s *auth.Session) error {
 	if p.device == nil {
-		return errors.NoDevice.New("no selected playback device")
+		err := errors.NoDevice.New("no selected playback device")
+		errors.LogError(err)
+		return err
 	}
 
 	req, err := http.NewRequest(http.MethodPost, spotifyurls.PLAYERNEXT, nil)
 	if err != nil {
-		return errors.HTTPRequest.WrapWithNoMessage(err)
+		err = errors.HTTPRequest.WrapWithNoMessage(err)
+		errors.LogError(err)
+		return err
 	}
 	req.Header.Add(headers.Auth, "Bearer "+s.AccessToken.String())
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return errors.HTTP.WrapWithNoMessage(err)
+		err = errors.HTTP.WrapWithNoMessage(err)
+		errors.LogError(err)
+		return err
 	}
 
 	errors.LogApiCall(spotifyurls.PLAYERNEXT, res.StatusCode)
 
 	if res.StatusCode == 401 {
-		return errors.Reauthentication.NewWithNoMessage()
+		err = errors.Reauthentication.NewWithNoMessage()
+		errors.LogError(err)
+		return err
 	}
 
 	if res.StatusCode >= http.StatusOK {
-		return errors.HTTP.New("bad request")
+		err = errors.HTTP.New("bad request")
+		errors.LogError(err)
+		return err
 	}
 
 	return nil
@@ -167,28 +205,38 @@ func (p *Player) SkipNext(s *auth.Session) error {
 
 func (p *Player) SkipPrev(s *auth.Session) error {
 	if p.device == nil {
-		return errors.NoDevice.New("no selected playback device")
+		err := errors.NoDevice.New("no selected playback device")
+		errors.LogError(err)
+		return err
 	}
 
 	req, err := http.NewRequest(http.MethodPost, spotifyurls.PLAYERPREV, nil)
 	if err != nil {
-		return errors.HTTPRequest.WrapWithNoMessage(err)
+		err = errors.HTTPRequest.WrapWithNoMessage(err)
+		errors.LogError(err)
+		return err
 	}
 	req.Header.Add(headers.Auth, "Bearer "+s.AccessToken.String())
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return errors.HTTP.WrapWithNoMessage(err)
+		err = errors.HTTP.WrapWithNoMessage(err)
+		errors.LogError(err)
+		return err
 	}
 
 	errors.LogApiCall(spotifyurls.PLAYERPREV, res.StatusCode)
 
 	if res.StatusCode == 401 {
-		return errors.Reauthentication.NewWithNoMessage()
+		err = errors.Reauthentication.NewWithNoMessage()
+		errors.LogError(err)
+		return err
 	}
 
 	if res.StatusCode >= http.StatusOK {
-		return errors.HTTP.New("bad request")
+		err = errors.HTTP.New("bad request")
+		errors.LogError(err)
+		return err
 	}
 
 	return nil
@@ -202,20 +250,26 @@ func (p *Player) Pause(s *auth.Session) error {
 
 	req, err := http.NewRequest(http.MethodPut, spotifyurls.PLAYERPAUSE, nil)
 	if err != nil {
-		return errors.HTTP.WrapWithNoMessage(err)
+		err = errors.HTTP.WrapWithNoMessage(err)
+		errors.LogError(err)
+		return err
 	}
 
 	req.Header.Set(headers.Auth, "Bearer "+s.AccessToken.String())
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return errors.HTTP.WrapWithNoMessage(err)
+		err = errors.HTTP.WrapWithNoMessage(err)
+		errors.LogError(err)
+		return err
 	}
 
 	errors.LogApiCall(spotifyurls.PLAYERPAUSE, res.StatusCode)
 
 	if res.StatusCode == 401 {
-		return errors.Reauthentication.NewWithNoMessage()
+		err = errors.Reauthentication.NewWithNoMessage()
+		errors.LogError(err)
+		return err
 	}
 
 	// Spotify returns 403 for some reason if track is already paused
@@ -224,7 +278,9 @@ func (p *Player) Pause(s *auth.Session) error {
 	}
 
 	if res.StatusCode >= http.StatusOK {
-		return errors.HTTP.New("bad request")
+		err = errors.HTTP.New("bad request")
+		errors.LogError(err)
+		return err
 	}
 
 	return nil
@@ -277,23 +333,31 @@ func (p *Player) Shuffle(state bool, s *auth.Session) error {
 	url := spotifyurls.PLAYERSHUFFLE + "?" + query.Encode()
 	req, err := http.NewRequest(http.MethodPut, url, nil)
 	if err != nil {
-		return errors.HTTPRequest.WrapWithNoMessage(err)
+		err = errors.HTTPRequest.WrapWithNoMessage(err)
+		errors.LogError(err)
+		return err
 	}
 	req.Header.Add(headers.Auth, "Bearer "+s.AccessToken.String())
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return errors.HTTP.WrapWithNoMessage(err)
+		err = errors.HTTP.WrapWithNoMessage(err)
+		errors.LogError(err)
+		return err
 	}
 
 	errors.LogApiCall(spotifyurls.PLAYERSHUFFLE, res.StatusCode)
 
 	if res.StatusCode == 401 {
-		return errors.Reauthentication.NewWithNoMessage()
+		err = errors.Reauthentication.NewWithNoMessage()
+		errors.LogError(err)
+		return err
 	}
 
 	if res.StatusCode >= http.StatusOK {
-		return errors.HTTP.New("bad request")
+		err = errors.HTTP.New("bad request")
+		errors.LogError(err)
+		return err
 	}
 
 	return nil
@@ -308,7 +372,8 @@ func (p *Player) SetVolume(s *auth.Session, val int) error {
 
 	req, err := http.NewRequest(http.MethodPut, spotifyurls.PLAYERVOLUME+"?"+query.Encode(), nil)
 	if err != nil {
-		return errors.HTTPRequest.Wrap(err, "failed to make request to change player volume")
+		err = errors.HTTPRequest.Wrap(err, "failed to make request to change player volume")
+		return err
 	}
 
 	req.Header.Set(headers.Auth, "Bearer "+s.AccessToken.String())
@@ -316,17 +381,23 @@ func (p *Player) SetVolume(s *auth.Session, val int) error {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return errors.HTTP.WrapWithNoMessage(err)
+		err = errors.HTTP.WrapWithNoMessage(err)
+		errors.LogError(err)
+		return err
 	}
 
 	errors.LogApiCall(spotifyurls.PLAYERVOLUME, res.StatusCode)
 
 	if res.StatusCode == 401 {
-		return errors.Reauthentication.NewWithNoMessage()
+		err = errors.Reauthentication.NewWithNoMessage()
+		errors.LogError(err)
+		return err
 	}
 
 	if res.StatusCode >= http.StatusOK {
-		return errors.HTTP.New("Bad request, likely invalid player")
+		err = errors.HTTP.New("Bad request, likely invalid player")
+		errors.LogError(err)
+		return err
 	}
 
 	return nil

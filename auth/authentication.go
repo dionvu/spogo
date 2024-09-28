@@ -48,6 +48,8 @@ func (s *Session) Authenticate(c *config.Config) error {
 
 		if err := s.AccessToken.Refresh(s.RefreshToken, c); err != nil {
 			if err := getNewTokens(s, c); err != nil {
+				err = err
+				errors.LogError(err)
 				return err
 			}
 		}
@@ -86,7 +88,9 @@ func getNewTokens(s *Session, c *config.Config) error {
 	ep := "https://accounts.spotify.com/api/token"
 	req, err := http.NewRequest(http.MethodPost, ep, strings.NewReader(query.Encode()))
 	if err != nil {
-		return errors.HTTPRequest.Wrap(err, "unable to create new http request for new token")
+		err = errors.HTTPRequest.Wrap(err, "unable to create new http request for new token")
+		errors.LogError(err)
+		return err
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -94,17 +98,23 @@ func getNewTokens(s *Session, c *config.Config) error {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return errors.HTTP.Wrap(err, "unable to get http response")
+		err = errors.HTTP.Wrap(err, "unable to get http response")
+		errors.LogError(err)
+		return err
 	}
 
 	b, err := io.ReadAll(res.Body)
 	if err != nil {
-		return errors.FileRead.Wrap(err, "failed to read response body")
+		err = errors.FileRead.Wrap(err, "failed to read response body")
+		errors.LogError(err)
+		return err
 	}
 
 	data := map[string]interface{}{}
 	if err = json.Unmarshal(b, &data); err != nil {
-		return errors.JSONUnmarshal.Wrap(err, "failed to unmarshal response body: %v", string(b))
+		err = errors.JSONUnmarshal.Wrap(err, "failed to unmarshal response body: %v", string(b))
+		errors.LogError(err)
+		return err
 	}
 
 	s.AccessToken.Update(data["access_token"].(string), c)
@@ -130,6 +140,8 @@ func OpenURL(url string) error {
 	}
 
 	if err := cmd.Start(); err != nil {
+		err = err
+		errors.LogError(err)
 		return err
 	}
 
@@ -143,7 +155,9 @@ func startServer() {
 	go func() {
 		err := http.ListenAndServe(":"+PORT, nil)
 		if err != nil {
-			log.Fatalf("failed to start server on port: %v", PORT)
+			err = errors.HTTP.Wrap(err, fmt.Sprint("failed to start server on port: %v", PORT))
+			errors.LogError(err)
+			log.Fatal(err)
 		}
 	}()
 }

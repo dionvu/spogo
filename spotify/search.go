@@ -107,24 +107,34 @@ func Search(input string, searchType []string, s *auth.Session) (*SearchResult, 
 
 	req, err := http.NewRequest(http.MethodGet, spotifyurls.SEARCH+"?"+query.Encode(), nil)
 	if err != nil {
-		return nil, errors.HTTPRequest.Wrap(err, fmt.Sprintf("failed to make request for search query: %v", input))
+		err = errors.HTTPRequest.Wrap(err, fmt.Sprintf("failed to make request for search query: %v", input))
+		errors.LogError(err)
+		return nil, err
 	}
 	req.Header.Add(headers.Auth, "Bearer "+s.AccessToken.String())
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, errors.HTTPRequest.WrapWithNoMessage(err)
+		err = errors.HTTPRequest.WrapWithNoMessage(err)
+		errors.LogError(err)
+		return nil, err
 	}
 
 	if res.StatusCode >= http.StatusBadRequest {
-		return nil, errors.Reauthentication.NewWithNoMessage()
+		err = errors.Reauthentication.NewWithNoMessage()
+		errors.LogError(err)
+		return nil, err
 	}
 
 	if res.StatusCode != http.StatusOK {
-		return nil, errors.HTTP.New("bad request")
+		err = errors.HTTP.New("bad request")
+		errors.LogError(err)
+		return nil, err
 	}
 
 	if err = json.NewDecoder(res.Body).Decode(r); err != nil {
+		err = errors.JSONDecode.WrapWithNoMessage(err)
+		errors.LogError(err)
 		return nil, err
 	}
 

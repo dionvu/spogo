@@ -29,18 +29,24 @@ func (t *RefreshToken) Load(c *config.Config) error {
 
 	file, err := os.Open(path)
 	if err != nil {
-		return errors.FileOpen.Wrap(err, fmt.Sprintf("Failed to open token file path: %v", path))
+		err = errors.FileOpen.Wrap(err, fmt.Sprintf("Failed to open token file path: %v", path))
+		errors.LogError(err)
+		return err
 	}
 	defer file.Close()
 
 	b, err := io.ReadAll(file)
 	if err != nil {
-		return errors.FileRead.Wrap(err, fmt.Sprintf("Failed to read token file: %v", path))
+		err = errors.FileRead.Wrap(err, fmt.Sprintf("Failed to read token file: %v", path))
+		errors.LogError(err)
+		return err
 	}
 
 	err = json.Unmarshal(b, t)
 	if err != nil {
-		return errors.JSONUnmarshal.Wrap(err, "Failed to unmarshal token from file body: %v", string(b))
+		err = errors.JSONUnmarshal.Wrap(err, "Failed to unmarshal token from file body: %v", string(b))
+		errors.LogError(err)
+		return err
 	}
 
 	return nil
@@ -53,18 +59,24 @@ func (t *RefreshToken) Update(tok string, c *config.Config) error {
 	filePath := filepath.Join(c.CachePath(), config.REQUESTTOKENFILE)
 	file, err := os.Create(filePath)
 	if err != nil {
-		return errors.FileCreate.Wrap(err, fmt.Sprintf("Failed to open token file path: %v", filePath))
+		err = errors.FileCreate.Wrap(err, fmt.Sprintf("Failed to open token file path: %v", filePath))
+		errors.LogError(err)
+		return err
 	}
 	defer file.Close()
 
 	b, err := json.Marshal(t)
 	if err != nil {
-		return errors.JSONMarshal.Wrap(err, fmt.Sprintf("Failed to marshal token body: %v", *t))
+		err = errors.JSONMarshal.Wrap(err, fmt.Sprintf("Failed to marshal token body: %v", *t))
+		errors.LogError(err)
+		return err
 	}
 
 	_, err = file.Write(b)
 	if err != nil {
-		return errors.FileWrite.Wrap(err, fmt.Sprintf("Failed to write new token to file: %v", filePath))
+		err = errors.FileWrite.Wrap(err, fmt.Sprintf("Failed to write new token to file: %v", filePath))
+		errors.LogError(err)
+		return err
 	}
 
 	return nil

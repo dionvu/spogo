@@ -48,21 +48,29 @@ func (p *Player) State(s *auth.Session) (*PlayerState, error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, errors.HTTP.WrapWithNoMessage(err)
+		err = errors.HTTP.WrapWithNoMessage(err)
+		errors.LogError(err)
+		return nil, err
 	}
 
 	// errors.LogApiCall(spotifyurls.PLAYER, res.StatusCode)
 
 	if res.StatusCode == 204 {
-		return nil, errors.NoDevice.New("playback device is not active")
+		err = errors.NoDevice.New("playback device is not active")
+		errors.LogError(err)
+		return nil, err
 	}
 
 	if res.StatusCode > 204 {
-		return nil, errors.HTTP.New("bad request")
+		err = errors.HTTP.New("bad request")
+		errors.LogError(err)
+		return nil, err
 	}
 
 	if err := json.NewDecoder(res.Body).Decode(ps); err != nil {
-		return nil, errors.JSONDecode.Wrap(err, "failed to decode player state response body")
+		err = errors.JSONDecode.Wrap(err, "failed to decode player state response body")
+		errors.LogError(err)
+		return nil, err
 	}
 	defer res.Body.Close()
 
@@ -70,7 +78,9 @@ func (p *Player) State(s *auth.Session) (*PlayerState, error) {
 
 	itemBytes, err := json.Marshal(itemMap)
 	if err != nil {
-		return nil, errors.JSONMarshal.Wrap(err, "failed to marshaling response: %v", itemMap)
+		err = errors.JSONMarshal.Wrap(err, "failed to marshaling response: %v", itemMap)
+		errors.LogError(err)
+		return nil, err
 	}
 
 	var track spotify.Track
@@ -88,5 +98,7 @@ func (p *Player) State(s *auth.Session) (*PlayerState, error) {
 		return ps, nil
 	}
 
-	return ps, errors.HTTP.New("response body is neither type track or episode")
+	err = errors.HTTP.New("response body is neither type track or episode")
+	errors.LogError(err)
+	return nil, err
 }

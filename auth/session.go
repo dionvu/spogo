@@ -2,6 +2,7 @@ package auth
 
 import (
 	"github.com/dionvu/spogo/config"
+	"github.com/dionvu/spogo/errors"
 )
 
 type Session struct {
@@ -23,8 +24,9 @@ func New(c *config.Config) (*Session, error) {
 	// Authenticates valid access token, or valid access token and refresh token.
 	err := s.Authenticate(c)
 	if err != nil {
+		errors.LogError(err)
 		return nil, err
 	}
 
-	return s, err
+	return s, nil
 }

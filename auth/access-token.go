@@ -32,18 +32,24 @@ func (t *AccessToken) Load(c *config.Config) error {
 	path := filepath.Join(c.CachePath(), config.ACCESSTOKENFILE)
 	file, err := os.Open(path)
 	if err != nil {
-		return errors.FileOpen.Wrap(err, fmt.Sprintf("failed to open token file path: %v", path))
+		err = errors.FileOpen.Wrap(err, fmt.Sprintf("failed to open token file path: %v", path))
+		errors.LogError(err)
+		return err
 	}
 	defer file.Close()
 
 	b, err := io.ReadAll(file)
 	if err != nil {
-		return errors.FileRead.Wrap(err, fmt.Sprintf("failed to read token file: %v", path))
+		err = errors.FileRead.Wrap(err, fmt.Sprintf("failed to read token file: %v", path))
+		errors.LogError(err)
+		return err
 	}
 
 	err = json.Unmarshal(b, t)
 	if err != nil {
-		return errors.JSONUnmarshal.Wrap(err, fmt.Sprintf("failed to unmarshal token body %v", string(b)))
+		err = errors.JSONUnmarshal.Wrap(err, fmt.Sprintf("failed to unmarshal token body %v", string(b)))
+		errors.LogError(err)
+		return err
 	}
 
 	return nil
@@ -59,7 +65,9 @@ func (t *AccessToken) Refresh(refreshToken *RefreshToken, c *config.Config) erro
 	ep := "https://accounts.spotify.com/api/token"
 	req, err := http.NewRequest(http.MethodPost, ep, strings.NewReader(query.Encode()))
 	if err != nil {
-		return errors.HTTPRequest.Wrap(err, "failed to make a request for new access token")
+		err = errors.HTTPRequest.Wrap(err, "failed to make a request for new access token")
+		errors.LogError(err)
+		return err
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -67,16 +75,22 @@ func (t *AccessToken) Refresh(refreshToken *RefreshToken, c *config.Config) erro
 
 	res, err := http.DefaultClient.Do(req)
 	if res.StatusCode != 200 || err != nil {
-		return errors.Reauthentication.Wrap(err, "bad refresh token")
+		err = errors.Reauthentication.Wrap(err, "bad refresh token")
+		errors.LogError(err)
+		return err
 	}
 
 	b, err := io.ReadAll(res.Body)
 	if err != nil {
-		return errors.FileRead.Wrap(err, fmt.Sprintf("failed to read response body"))
+		err = errors.FileRead.Wrap(err, fmt.Sprintf("failed to read response body"))
+		errors.LogError(err)
+		return err
 	}
 
 	if err = json.Unmarshal(b, t); err != nil {
-		return errors.JSONUnmarshal.Wrap(err, fmt.Sprintf("failed to unmarshal response body: %v", string(b)))
+		err = errors.JSONUnmarshal.Wrap(err, fmt.Sprintf("failed to unmarshal response body: %v", string(b)))
+		errors.LogError(err)
+		return err
 	}
 
 	t.Update(t.String(), c)

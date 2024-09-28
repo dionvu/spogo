@@ -31,20 +31,26 @@ type Device struct {
 func GetDevices(s *auth.Session) (*[]Device, error) {
 	req, err := http.NewRequest(http.MethodGet, spotifyurls.PLAYERDEVICES, nil)
 	if err != nil {
-		return nil, errors.HTTPRequest.Wrap(err, "failed to create http request for playback devices")
+		err = errors.HTTPRequest.Wrap(err, "failed to create http request for playback devices")
+		errors.LogError(err)
+		return nil, err
 	}
 	req.Header.Set(headers.Auth, "Bearer "+s.AccessToken.String())
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, errors.HTTP.Wrap(err, "failed to get response for playback devices")
+		err = errors.HTTP.Wrap(err, "failed to get response for playback devices")
+		errors.LogError(err)
+		return nil, err
 	}
 	defer res.Body.Close()
 
 	errors.LogApiCall(spotifyurls.PLAYERDEVICES, res.StatusCode)
 
 	if res.StatusCode != 200 {
-		return nil, errors.Reauthentication.Wrap(err, "bad token")
+		err = errors.Reauthentication.Wrap(err, "bad token")
+		errors.LogError(err)
+		return nil, err
 	}
 
 	data := &struct {
@@ -52,7 +58,9 @@ func GetDevices(s *auth.Session) (*[]Device, error) {
 	}{}
 
 	if err = json.NewDecoder(res.Body).Decode(data); err != nil {
-		return nil, errors.JSONDecode.Wrap(err, "failed to decode json response for playback devices")
+		err = errors.JSONDecode.Wrap(err, "failed to decode json response for playback devices")
+		errors.LogError(err)
+		return nil, err
 	}
 
 	return &data.Devices, nil
@@ -72,7 +80,9 @@ func deviceCacheExist(c *config.Config) bool {
 func createCache(c *config.Config) error {
 	file, err := os.Create(filepath.Join(c.CachePath(), config.DEVICEFILE))
 	if err != nil {
-		return errors.FileCreate.Wrap(err, fmt.Sprintf("creating file %v", c.FilePath()))
+		err = errors.FileCreate.Wrap(err, fmt.Sprintf("creating file %v", c.FilePath()))
+		errors.LogError(err)
+		return err
 	}
 	file.Close()
 
@@ -87,17 +97,23 @@ func getCachedPlaybackDevice(c *config.Config) (*Device, error) {
 
 	f, err := os.Open(c.DeviceFile())
 	if err != nil {
-		return nil, errors.FileOpen.Wrap(err, "failed to open device cache file")
+		err = errors.FileOpen.Wrap(err, "failed to open device cache file")
+		errors.LogError(err)
+		return nil, err
 	}
 	defer f.Close()
 
 	// Reached EOF before finished decoding into a device.
 	if err = json.NewDecoder(f).Decode(d); err == io.EOF {
-		return nil, errors.JSONDecode.Wrap(err, "invalid playback device")
+		err = errors.JSONDecode.Wrap(err, "invalid playback device")
+		errors.LogError(err)
+		return nil, err
 	}
 
 	if err != nil {
-		return nil, errors.JSONMarshal.Wrap(err, "failed to marshal device")
+		err = errors.JSONMarshal.Wrap(err, "failed to marshal device")
+		errors.LogError(err)
+		return nil, err
 	}
 
 	return d, nil

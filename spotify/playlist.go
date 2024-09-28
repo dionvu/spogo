@@ -47,27 +47,37 @@ func UserPlaylists(s *auth.Session) (*[]Playlist, error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, errors.HTTP.WrapWithNoMessage(err)
+		err = errors.HTTP.WrapWithNoMessage(err)
+		errors.LogError(err)
+		return nil, err
 	}
 
 	if res.StatusCode == 401 {
-		return nil, errors.Reauthentication.NewWithNoMessage()
+		err = errors.Reauthentication.NewWithNoMessage()
+		errors.LogError(err)
+		return nil, err
 	}
 
 	if res.StatusCode >= http.StatusBadRequest {
-		return nil, errors.HTTP.New("bad request")
+		err = errors.HTTP.New("bad request")
+		errors.LogError(err)
+		return nil, err
 	}
 
 	b, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, errors.HTTP.Wrap(err, "failed to read response body")
+		err = errors.HTTP.Wrap(err, "failed to read response body")
+		errors.LogError(err)
+		return nil, err
 	}
 
 	pr := &playlistsSearchResponse{}
 
 	err = json.Unmarshal(b, pr)
 	if err != nil {
-		return nil, errors.JSONUnmarshal.Wrap(err, "failed to unmarshal playlists response")
+		err = errors.JSONUnmarshal.Wrap(err, "failed to unmarshal playlists response")
+		errors.LogError(err)
+		return nil, err
 	}
 
 	return &pr.Items, nil
@@ -82,26 +92,36 @@ func PlaylistTracks(s *auth.Session, playlistID string) (*[]Track, error) {
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		return nil, errors.HTTPRequest.Wrap(err, "failed to make request for playlists")
+		err = errors.HTTPRequest.Wrap(err, "failed to make request for playlists")
+		errors.LogError(err)
+		return nil, err
 	}
 	req.Header.Add(headers.Auth, "Bearer "+s.AccessToken.String())
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, errors.HTTP.WrapWithNoMessage(err)
+		err = errors.HTTP.WrapWithNoMessage(err)
+		errors.LogError(err)
+		return nil, err
 	}
 
 	if res.StatusCode == 401 {
-		return nil, errors.Reauthentication.NewWithNoMessage()
+		err = errors.Reauthentication.NewWithNoMessage()
+		errors.LogError(err)
+		return nil, err
 	}
 
 	if res.StatusCode >= http.StatusBadRequest {
-		return nil, errors.HTTP.New("bad request")
+		err = errors.HTTP.New("bad request")
+		errors.LogError(err)
+		return nil, err
 	}
 
 	b, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, errors.HTTP.Wrap(err, "failed to read response body")
+		err = errors.HTTP.Wrap(err, "failed to read response body")
+		errors.LogError(err)
+		return nil, err
 	}
 
 	var response struct {
@@ -110,7 +130,9 @@ func PlaylistTracks(s *auth.Session, playlistID string) (*[]Track, error) {
 
 	err = json.Unmarshal(b, &response)
 	if err != nil {
-		return nil, errors.JSONUnmarshal.Wrap(err, "failed to unmarshal playlists response")
+		err = errors.JSONUnmarshal.Wrap(err, "failed to unmarshal playlists response")
+		errors.LogError(err)
+		return nil, err
 	}
 
 	tracks := []Track{}

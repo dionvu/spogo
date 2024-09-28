@@ -37,24 +37,32 @@ func New() (*Config, error) {
 	// Sets the root config path.
 	path, err := os.UserConfigDir()
 	if err != nil {
-		return nil, errors.FileOpen.Wrap(err, "failed to get user's home directory")
+		err = errors.FileOpen.Wrap(err, "failed to get user's home directory")
+		errors.LogError(err)
+		return nil, err
 	}
 
 	cd, err := os.UserCacheDir()
 	if err != nil {
-		return nil, errors.FileOpen.Wrap(err, "failed to get user's cache directory")
+		err = errors.FileOpen.Wrap(err, "failed to get user's cache directory")
+		errors.LogError(err)
+		return nil, err
 	}
 
 	// Ensures ".config/spogo" exists.
 	c.path = filepath.Join(path, APPNAME)
 	if err := os.MkdirAll(c.path, os.ModePerm); err != nil {
-		return nil, errors.FileCreate.Wrap(err, fmt.Sprintf("creating file path %v", c.path))
+		err = errors.FileCreate.Wrap(err, fmt.Sprintf("creating file path %v", c.path))
+		errors.LogError(err)
+		return nil, err
 	}
 
 	// Ensures ".cache/spogo" exists.
 	c.cachePath = filepath.Join(cd, APPNAME)
 	if err := os.MkdirAll(c.cachePath, os.ModePerm); err != nil {
-		return nil, errors.FileCreate.Wrap(err, fmt.Sprintf("creating file path %v", c.cachePath))
+		err = errors.FileCreate.Wrap(err, fmt.Sprintf("creating file path %v", c.cachePath))
+		errors.LogError(err)
+		return nil, err
 	}
 
 	// Creates "config.yaml" if it doesn't exist.
@@ -77,12 +85,16 @@ func (c *Config) Load() error {
 
 	b, err := io.ReadAll(file)
 	if err != nil {
-		return errors.FileRead.Wrap(err, fmt.Sprintf("failed to read config file: %v", c.FilePath()))
+		err = errors.FileRead.Wrap(err, fmt.Sprintf("failed to read config file: %v", c.FilePath()))
+		errors.LogError(err)
+		return err
 	}
 
 	err = yaml.Unmarshal(b, c)
 	if err != nil {
-		return errors.YAML.Wrap(err, fmt.Sprintf("failed to unmarshal yaml: %v", string(b)))
+		err = errors.YAML.Wrap(err, fmt.Sprintf("failed to unmarshal yaml: %v", string(b)))
+		errors.LogError(err)
+		return err
 	}
 
 	return nil
@@ -93,24 +105,32 @@ func (c *Config) Load() error {
 func (c *Config) create() error {
 	file, err := os.Create(c.FilePath())
 	if err != nil {
-		return errors.FileCreate.Wrap(err, fmt.Sprintf("creating file %v", c.FilePath()))
+		err = errors.FileCreate.Wrap(err, fmt.Sprintf("creating file %v", c.FilePath()))
+		errors.LogError(err)
+		return err
 	}
 	defer file.Close()
 
 	wd, err := os.Getwd()
 	if err != nil {
-		return errors.FileCreate.Wrap(err, "retrieving working directory")
+		err = errors.FileCreate.Wrap(err, "retrieving working directory")
+		errors.LogError(err)
+		return err
 	}
 
 	confileFile, _ := os.Open(filepath.Join(wd, "config", CONFIGFILE))
 	b, _ := io.ReadAll(confileFile)
 	if err != nil {
-		return errors.FileCreate.Wrap(err, "reading config template file")
+		err = errors.FileCreate.Wrap(err, "reading config template file")
+		errors.LogError(err)
+		return err
 	}
 
 	_, err = file.WriteString(string(b))
 	if err != nil {
-		return errors.FileWrite.Wrap(err, fmt.Sprintf("writing to file: %v", file.Name()))
+		err = errors.FileWrite.Wrap(err, fmt.Sprintf("writing to file: %v", file.Name()))
+		errors.LogError(err)
+		return err
 	}
 
 	fmt.Printf("Please enter your spotify client ID & client secret: %v\n", color.YellowString(c.FilePath()))

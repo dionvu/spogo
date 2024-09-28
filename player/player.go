@@ -22,6 +22,8 @@ func New(c *config.Config) (*Player, error) {
 
 	if !deviceCacheExist(c) {
 		if err := createCache(c); err != nil {
+			err = err
+			errors.LogError(err)
 			return nil, err
 		}
 	}
@@ -46,13 +48,17 @@ func (p *Player) SetDevice(d *Device, c *config.Config) error {
 
 	f, err := os.Create(c.DeviceFile())
 	if err != nil {
-		return errors.FileCreate.Wrap(err, "failed to open device cache file")
+		err = errors.FileCreate.Wrap(err, "failed to open device cache file")
+		errors.LogError(err)
+		return err
 	}
 	defer f.Close()
 
 	err = json.NewEncoder(f).Encode(d)
 	if err != nil {
-		errors.JSONEncode.Wrap(err, "failed to marshal device")
+		err = errors.JSONEncode.Wrap(err, "failed to marshal device")
+		errors.LogError(err)
+		return err
 	}
 
 	return nil
