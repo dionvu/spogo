@@ -62,15 +62,15 @@ func (pd *PlayerDetails) Render(track *spotify.Track, volumePercent int, shuffle
 		shuffle = "off"
 	}
 
-	line1 := CenterString(
+	line1 := CenterHorizontal(
 		fmt.Sprintf("%s - %s", pd.Track, pd.Artists),
 		terminal, -1)
 
-	line2 := CenterString(fmt.Sprintf("%sm:%ss / %sm:%ss",
+	line2 := CenterHorizontal(fmt.Sprintf("%sm:%ss / %sm:%ss",
 		pd.ProgressMin, pd.ProgressSec, pd.DurationMin, pd.DurationSec),
 		terminal, -1)
 
-	line3 := CenterString(fmt.Sprintf("vol: %s%% sfl: %v", pd.VolumePercent, shuffle),
+	line3 := CenterHorizontal(fmt.Sprintf("vol: %s%% sfl: %v", pd.VolumePercent, shuffle),
 		terminal, -1)
 
 	return line1 + "\n\n" + line2 + "\n\n" + line3
@@ -83,7 +83,7 @@ type StatusBar struct {
 }
 
 func (sb *StatusBar) Render(terminal Terminal) string {
-	return CenterString(sb.Style.Render(sb.Status), terminal)
+	return CenterHorizontal(sb.Style.Render(sb.Status), terminal)
 }
 
 func (sb *StatusBar) Update(state *player.PlayerState) {

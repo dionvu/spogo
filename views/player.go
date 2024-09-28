@@ -29,18 +29,14 @@ type PlayerView struct {
 
 	PlayerDetails *PlayerDetails
 
-	Ascii *Ascii
+	Image *Image
 
 	// Kept to track if progressMs is in sync with the song.
 	TrackID string
-
-	// // Tracks the current ascii uri
-	// AsciiCurrentUrl string
 }
 
 func NewPlayerView(
 	auth *auth.Session, player *player.Player,
-	// c *config.Config,
 ) *PlayerView {
 	cd, _ := os.UserCacheDir()
 	path := filepath.Join(cd, config.APPNAME, "player_ascii.jpeg")
@@ -48,11 +44,10 @@ func NewPlayerView(
 	pv := &PlayerView{
 		Session: auth,
 		Player:  player,
-		// Config:  c,
 
 		PlayerDetails: &PlayerDetails{},
 		StatusBar:     &StatusBar{},
-		Ascii:         &Ascii{FilePath: path},
+		Image:         &Image{FilePath: path},
 	}
 
 	pv.UpdateStateSync()
@@ -124,45 +119,51 @@ func (pv *PlayerView) View(terminal Terminal) string {
 		return pv.viewNoState(terminal)
 	}
 
-	pv.Ascii.UpdateImage(pv.State.Track.Album.Images[0].Url)
+	pv.Image.UpdateImage(pv.State.Track.Album.Images[0].Url)
 
-	return fmt.Sprintf("\n\n%s\n\n%s\n\n%s\n\n%s",
-		pv.Ascii.Center(AsciiFlagsNormal(), terminal),
+	view := View(fmt.Sprintf("\n\n%s\n\n%s\n\n%s\n\n%s",
+		pv.Image.AsciiNormal().Center(terminal),
 		pv.StatusBar.Render(terminal),
 		pv.PlayerDetails.Render(pv.State.Track, pv.State.Device.VolumePercent, pv.State.ShuffleState, pv.ProgressMs, terminal),
-		CenterString(MainControlsRender(PLAYER_VIEW), terminal),
-	)
+		CenterHorizontal(MainControlsRender(PLAYER_VIEW), terminal),
+	))
+
+	return view.CenterVertical(terminal).String()
 }
 
 func (pv *PlayerView) viewSmall(terminal Terminal) string {
-	pv.Ascii.UpdateImage(pv.State.Track.Album.Images[0].Url)
+	pv.Image.UpdateImage(pv.State.Track.Album.Images[0].Url)
 
 	t := table.NewWriter()
 	t.Style().Options.DrawBorder = false
 	t.Style().Options.SeparateColumns = false
 
-	// ascii = CenterString(ascii, terminal)
-	ascii := pv.Ascii.Center(AsciiFlagsSmall(), terminal)
-	statusBar := pv.StatusBar.Render(terminal)
-	playerInfo := pv.PlayerDetails.Render(pv.State.Track, pv.State.Device.VolumePercent, pv.State.ShuffleState, pv.ProgressMs, terminal)
-
 	t.AppendRows([]table.Row{
-		{"\n\n" + ascii}, {"\n" + statusBar + "\n"}, {playerInfo},
+		{pv.Image.AsciiSmall().Center(terminal)},
+		{"\n"},
+		{pv.StatusBar.Render(terminal)},
+		{"\n"},
+		{pv.PlayerDetails.Render(pv.State.Track, pv.State.Device.VolumePercent, pv.State.ShuffleState, pv.ProgressMs, terminal)},
 	})
 
-	return t.Render()
+	view := View(t.Render())
+
+	return view.CenterVertical(terminal).String()
 }
 
 // The player view when state is nil (player and device is not active).
 func (pv *PlayerView) viewNoState(terminal Terminal) string {
 	if terminal.IsSizeSmall() {
-		return fmt.Sprintf("\n\n%s",
-			pv.StatusBar.Render(terminal))
+		view := View(fmt.Sprintf("\n\n%s", pv.StatusBar.Render(terminal)))
+
+		return view.CenterVertical(terminal).CenterHorizontal(terminal).String()
 	}
 
-	return fmt.Sprintf("\n\n%s\n\n%s",
-		CenterString(MainControlsRender(PLAYER_VIEW), terminal),
-		pv.StatusBar.Render(terminal))
+	view := View(fmt.Sprintf("\n\n%s\n\n%s",
+		MainControlsRender(PLAYER_VIEW),
+		pv.StatusBar.Render(terminal)))
+
+	return view.CenterVertical(terminal).CenterHorizontal(terminal).String()
 }
 
 func cacheImage(url string, path string) error {
