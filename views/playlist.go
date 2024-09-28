@@ -96,8 +96,8 @@ func (pv *PlaylistView) View(playerView *PlayerView, terminal Terminal) string {
 
 	if len((*pv.UserPlaylists)) < 1 {
 		return fmt.Sprintf("\n\n%s\n\n%s\n\n%s", MainControlsRender(PLAYLIST_VIEW),
-			padLines(ascii, TAB_WIDTH),
-			padLines("No playlists :(", TAB_WIDTH))
+			PadLines(ascii, TAB_WIDTH),
+			PadLines("No playlists :(", TAB_WIDTH))
 	}
 
 	t := table.NewWriter()
@@ -105,7 +105,7 @@ func (pv *PlaylistView) View(playerView *PlayerView, terminal Terminal) string {
 	t.Style().Options.SeparateColumns = false
 
 	t.AppendRow(table.Row{
-		"\n\n" + padLines(ascii, TAB_WIDTH),
+		"\n\n" + PadLines(ascii, TAB_WIDTH),
 		"\n\n\n" + pv.PlaylistListModel.View(),
 	})
 
@@ -125,15 +125,15 @@ func (pv *PlaylistView) View(playerView *PlayerView, terminal Terminal) string {
 	}
 
 	t2.AppendRow(table.Row{
-		padLines(style.Render("\n\n"+plName), TAB_WIDTH) + "\n",
+		PadLines(style.Render("\n\n"+plName), TAB_WIDTH) + "\n",
 	})
 
 	t2.AppendRow(table.Row{
-		padLines("Tracks: "+fmt.Sprint(playlist.Tracks.Total), TAB_WIDTH) + "\n",
+		PadLines("Tracks: "+fmt.Sprint(playlist.Tracks.Total), TAB_WIDTH) + "\n",
 	})
 
 	t2.AppendRow(table.Row{
-		padLines("Owner: "+fmt.Sprint(playlist.Owner.DisplayName), TAB_WIDTH) + "\n",
+		PadLines("Owner: "+fmt.Sprint(playlist.Owner.DisplayName), TAB_WIDTH) + "\n",
 	})
 
 	return "\n\n" + MainControlsRender(PLAYLIST_VIEW) + "\n" + t.Render() + "\n" + t2.Render()
@@ -152,8 +152,8 @@ func (pv *PlaylistView) viewSmall(imagePath string, terminal Terminal) string {
 
 	if len((*pv.UserPlaylists)) < 1 {
 		return fmt.Sprintf("\n\n%s\n\n%s",
-			padLines(ascii, TAB_WIDTH),
-			padLines("No playlists :(", TAB_WIDTH))
+			PadLines(ascii, TAB_WIDTH),
+			PadLines("No playlists :(", TAB_WIDTH))
 	}
 
 	t := table.NewWriter()
@@ -161,7 +161,7 @@ func (pv *PlaylistView) viewSmall(imagePath string, terminal Terminal) string {
 	t.Style().Options.SeparateColumns = false
 
 	t.AppendRow(table.Row{
-		"\n\n\n" + padLines(ascii, TAB_WIDTH),
+		"\n\n\n" + PadLines(ascii, TAB_WIDTH),
 		"\n\n\n\n" + pv.PlaylistListModel.View(),
 	})
 
@@ -181,15 +181,15 @@ func (pv *PlaylistView) viewSmall(imagePath string, terminal Terminal) string {
 	}
 
 	t2.AppendRow(table.Row{
-		padLines(style.Render("\n\n"+plName), TAB_WIDTH) + "\n",
+		PadLines(style.Render("\n\n"+plName), TAB_WIDTH) + "\n",
 	})
 
 	t2.AppendRow(table.Row{
-		padLines("Tracks: "+fmt.Sprint(playlist.Tracks.Total), TAB_WIDTH) + "\n",
+		PadLines("Tracks: "+fmt.Sprint(playlist.Tracks.Total), TAB_WIDTH) + "\n",
 	})
 
 	t2.AppendRow(table.Row{
-		padLines("Owner: "+fmt.Sprint(playlist.Owner.DisplayName), TAB_WIDTH) + "\n",
+		PadLines("Owner: "+fmt.Sprint(playlist.Owner.DisplayName), TAB_WIDTH) + "\n",
 	})
 
 	return t.Render() + "\n\n" + t2.Render()
@@ -210,7 +210,7 @@ func (pv *PlaylistView) GetSelectedPlaylist() *spotify.Playlist {
 func NewPlaylistListModel(items []list.Item, title string) *PlaylistListModel {
 	l := list.New(items, itemDelegate{}, DEFAULT_WIDTH, LIST_HEIGHT)
 	l.SetFilteringEnabled(false)
-	l.Title = padLines(title, 2)
+	l.Title = PadLines(title, 2)
 	l.Styles.Title = lipgloss.NewStyle().MarginLeft(0)
 	l.SetShowStatusBar(false)
 	l.SetShowHelp(false)
@@ -251,4 +251,20 @@ func (pv *PlaylistView) CachedImagePath() string {
 	cd, _ := os.UserCacheDir()
 	path := filepath.Join(cd, config.APPNAME, "playlist_ascii.jpeg")
 	return path
+}
+
+// TEMP
+func PadLines(s string, count int) string {
+	if count < 0 {
+		return s
+	}
+
+	pad := strings.Repeat(" ", count)
+	lines := strings.Split(s, "\n")
+
+	for i, line := range lines {
+		lines[i] = pad + line
+	}
+
+	return strings.Join(lines, "\n")
 }

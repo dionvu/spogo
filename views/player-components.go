@@ -51,8 +51,9 @@ func (pd *PlayerDetails) Update(track *spotify.Track, progressMs int, volume int
 	pd.VolumePercent = strconv.Itoa(volume)
 }
 
-func (pd *PlayerDetails) Render(track *spotify.Track, volumePercent int, shuffleState bool, progressMs int, terminal Terminal) string {
-	pd.Update(track, progressMs, volumePercent)
+// Renders the player details as a string.
+func (pd *PlayerDetails) Render(track *spotify.Track, volume int, shuffleState bool, progressMs int) string {
+	pd.Update(track, progressMs, volume)
 
 	var shuffle string
 
@@ -62,18 +63,34 @@ func (pd *PlayerDetails) Render(track *spotify.Track, volumePercent int, shuffle
 		shuffle = "off"
 	}
 
-	line1 := CenterHorizontal(
-		fmt.Sprintf("%s - %s", pd.Track, pd.Artists),
-		terminal, -1)
+	title := Content(fmt.Sprintf("%s - %s", pd.Track, pd.Artists))
 
-	line2 := CenterHorizontal(fmt.Sprintf("%sm:%ss / %sm:%ss",
-		pd.ProgressMin, pd.ProgressSec, pd.DurationMin, pd.DurationSec),
-		terminal, -1)
+	timer := Content(fmt.Sprintf("%sm:%ss / %sm:%ss", pd.ProgressMin, pd.ProgressSec, pd.DurationMin, pd.DurationSec))
 
-	line3 := CenterHorizontal(fmt.Sprintf("vol: %s%% sfl: %v", pd.VolumePercent, shuffle),
-		terminal, -1)
+	options := Content(fmt.Sprintf("vol: %s%% sfl: %v", pd.VolumePercent, shuffle))
 
-	return line1 + "\n\n" + line2 + "\n\n" + line3
+	return Join([]Content{title, timer, options}, "\n\n").String()
+}
+
+// Renders the player details as a content string.
+func (pd *PlayerDetails) Content(track *spotify.Track, volume int, shuffleState bool, progressMs int) Content {
+	pd.Update(track, progressMs, volume)
+
+	var shuffle string
+
+	if shuffleState {
+		shuffle = "on"
+	} else {
+		shuffle = "off"
+	}
+
+	title := Content(fmt.Sprintf("%s - %s", pd.Track, pd.Artists))
+
+	timer := Content(fmt.Sprintf("%sm:%ss / %sm:%ss", pd.ProgressMin, pd.ProgressSec, pd.DurationMin, pd.DurationSec))
+
+	options := Content(fmt.Sprintf("vol: %s%% sfl: %v", pd.VolumePercent, shuffle))
+
+	return Join([]Content{title, timer, options}, "\n\n")
 }
 
 type StatusBar struct {
@@ -82,8 +99,14 @@ type StatusBar struct {
 	Style  *lg.Style
 }
 
-func (sb *StatusBar) Render(terminal Terminal) string {
-	return CenterHorizontal(sb.Style.Render(sb.Status), terminal)
+// Renders the status bar as a string.
+func (sb *StatusBar) Render() string {
+	return sb.Style.Render(sb.Status)
+}
+
+// Renders the status bar as a content string.
+func (sb *StatusBar) Content() Content {
+	return Content(sb.Style.Render(sb.Status))
 }
 
 func (sb *StatusBar) Update(state *player.PlayerState) {

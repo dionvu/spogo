@@ -38,7 +38,7 @@ func (m *Model) View() string {
 		return m.Views.Playlist.View(m.Views.Player, m.Terminal)
 
 	case HELP_VIEW:
-		return "\n\n" + MainControlsRender(HELP_VIEW) + "\n\n" + padLines(HelpString(), TAB_WIDTH)
+		return "\n\n" + MainControlsRender(HELP_VIEW) + "\n\n" + PadLines(HelpString(), TAB_WIDTH)
 
 	case PLAYLIST_TRACK_VIEW:
 		state := m.Views.Player.State.CurrentPlayingType

@@ -11,19 +11,20 @@ import (
 	"github.com/dionvu/spogo/auth"
 	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/player"
-	"github.com/jedib0t/go-pretty/v6/table"
 )
 
 type PlayerView struct {
 	Session *auth.Session
 	Player  *player.Player
-	Config  *config.Config
 	State   *player.PlayerState
 
 	// Tracks time independent of state progress
 	// to improve performance, periodically will
 	// be checked for error.
 	ProgressMs int
+
+	// The string of content to be displayed when player viewed.
+	Content Content
 
 	StatusBar *StatusBar
 
@@ -110,60 +111,67 @@ func (pv *PlayerView) PlayPause() {
 
 // Returns a string containing the entire player view, centered with
 // the size dynamic to the terminal size.
-func (pv *PlayerView) View(terminal Terminal) string {
-	if terminal.IsSizeSmall() {
-		return pv.viewSmall(terminal)
-	}
+func (pv *PlayerView) View(term Terminal) string {
+	pv.UpdateContent(term)
 
-	if pv.State == nil {
-		return pv.viewNoState(terminal)
-	}
-
-	pv.Image.UpdateImage(pv.State.Track.Album.Images[0].Url)
-
-	view := View(fmt.Sprintf("\n\n%s\n\n%s\n\n%s\n\n%s",
-		pv.Image.AsciiNormal().Center(terminal),
-		pv.StatusBar.Render(terminal),
-		pv.PlayerDetails.Render(pv.State.Track, pv.State.Device.VolumePercent, pv.State.ShuffleState, pv.ProgressMs, terminal),
-		CenterHorizontal(MainControlsRender(PLAYER_VIEW), terminal),
-	))
-
-	return view.CenterVertical(terminal).String()
+	return pv.Content.CenterHorizontal(term).CenterVertical(term).String()
 }
 
-func (pv *PlayerView) viewSmall(terminal Terminal) string {
-	pv.Image.UpdateImage(pv.State.Track.Album.Images[0].Url)
+// Updates the view content based on the state of the player,
+// and the current size of the terminal.
+func (pv *PlayerView) UpdateContent(term Terminal) {
+	switch term.IsSizeSmall() {
+	case true:
+		switch pv.State {
+		case nil:
+			pv.Content = Content(fmt.Sprintf("\n\n%s", pv.StatusBar.Render()))
+		default:
+			pv.Image.UpdateImage(pv.State.Track.Album.Images[0].Url)
 
-	t := table.NewWriter()
-	t.Style().Options.DrawBorder = false
-	t.Style().Options.SeparateColumns = false
+			pv.Image.UpdateImage(pv.State.Track.Album.Images[0].Url)
 
-	t.AppendRows([]table.Row{
-		{pv.Image.AsciiSmall().Center(terminal)},
-		{"\n"},
-		{pv.StatusBar.Render(terminal)},
-		{"\n"},
-		{pv.PlayerDetails.Render(pv.State.Track, pv.State.Device.VolumePercent, pv.State.ShuffleState, pv.ProgressMs, terminal)},
-	})
+			ascii := pv.Image.AsciiSmall().Content()
 
-	view := View(t.Render())
+			statusBar := pv.StatusBar.Content()
 
-	return view.CenterVertical(terminal).String()
-}
+			playerDetails := pv.PlayerDetails.Content(pv.State.Track,
+				pv.State.Device.VolumePercent,
+				pv.State.ShuffleState,
+				pv.ProgressMs)
 
-// The player view when state is nil (player and device is not active).
-func (pv *PlayerView) viewNoState(terminal Terminal) string {
-	if terminal.IsSizeSmall() {
-		view := View(fmt.Sprintf("\n\n%s", pv.StatusBar.Render(terminal)))
+			pv.Content = Join([]Content{
+				ascii, statusBar, playerDetails,
+			}, "\n\n")
 
-		return view.CenterVertical(terminal).CenterHorizontal(terminal).String()
+			// pv.Content = Content(container.Render())
+		}
+
+	case false:
+		switch pv.State {
+		case nil:
+			pv.Content = Content(fmt.Sprintf("\n\n%s\n\n%s",
+				MainControlsRender(PLAYER_VIEW),
+				pv.StatusBar.Render()))
+
+		default:
+			pv.Image.UpdateImage(pv.State.Track.Album.Images[0].Url)
+
+			ascii := pv.Image.AsciiNormal().Content()
+
+			statusBar := pv.StatusBar.Content()
+
+			playerDetails := pv.PlayerDetails.Content(pv.State.Track,
+				pv.State.Device.VolumePercent,
+				pv.State.ShuffleState,
+				pv.ProgressMs)
+
+			mainControls := MainControlsRender(PLAYER_VIEW)
+
+			pv.Content = Join([]Content{
+				ascii, statusBar, playerDetails, Content(mainControls),
+			}, "\n\n")
+		}
 	}
-
-	view := View(fmt.Sprintf("\n\n%s\n\n%s",
-		MainControlsRender(PLAYER_VIEW),
-		pv.StatusBar.Render(terminal)))
-
-	return view.CenterVertical(terminal).CenterHorizontal(terminal).String()
 }
 
 func cacheImage(url string, path string) error {

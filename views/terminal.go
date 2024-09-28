@@ -20,27 +20,9 @@ const (
 	MIN_TERMINAL_HEIGHT_NORMAL = 40
 )
 
-func (t Terminal) IsValid() bool {
-	return t.Height >= MIN_TERMINAL_HEIGHT && t.Width >= MIN_TERMINAL_WIDTH
-}
-
-func (t Terminal) IsSizeSmall() bool {
-	return t.Height <= MAX_TERMINAL_HEIGHT_SMALL || t.Width <= MAX_TERMINAL_WIDTH_SMALL
-}
-
-func (t Terminal) IsSizeNormal() bool {
-	return t.Height >= MIN_TERMINAL_HEIGHT_NORMAL
-}
-
-// Returns the error message associated with the terminal being
-// below the required dimensions.
-func (terminal *Terminal) WarningString() string {
-	return color.RedString(
-		fmt.Sprint(
-			"Terminal of size ",
-			terminal.Height, "x", terminal.Width,
-			" is prone to visual glitches.\nMinimum required height is ",
-			MIN_TERMINAL_HEIGHT, "x", MIN_TERMINAL_WIDTH, "."))
+type Terminal struct {
+	Height int
+	Width  int
 }
 
 // Asyncronously updates the terminal dimensions.
@@ -73,4 +55,30 @@ func getTerminalSize() (int, int) {
 	}
 
 	return width, height
+}
+
+// If the terminal is within the minimum dimensions.
+func (t Terminal) IsValid() bool {
+	return t.Height >= MIN_TERMINAL_HEIGHT && t.Width >= MIN_TERMINAL_WIDTH
+}
+
+// If the terminal is in minimum dimensions to be considered small.
+func (t Terminal) IsSizeSmall() bool {
+	return t.Height <= MAX_TERMINAL_HEIGHT_SMALL || t.Width <= MAX_TERMINAL_WIDTH_SMALL
+}
+
+// If the terminal exceeds the minimum dimensions to be considered normal.
+func (t Terminal) IsSizeNormal() bool {
+	return t.Height >= MIN_TERMINAL_HEIGHT_NORMAL
+}
+
+// Returns the error message associated with the terminal being
+// below the required dimensions.
+func (terminal *Terminal) WarningString() string {
+	return color.RedString(
+		fmt.Sprint(
+			"Terminal of size ",
+			terminal.Height, "x", terminal.Width,
+			" is prone to visual glitches.\nMinimum required height is ",
+			MIN_TERMINAL_HEIGHT, "x", MIN_TERMINAL_WIDTH, "."))
 }

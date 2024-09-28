@@ -4,32 +4,49 @@ import (
 	"github.com/TheZoraiz/ascii-image-converter/aic_package"
 )
 
+// Image is a struct that allows caching of the Image
+// and conversion to ascii. It also works with the Content
+// type to format the ascii content around a terminal.
 type Image struct {
+	// The url of the image.
 	ImageUrl string
+
+	// The cached image's path.
 	FilePath string
 }
 
+// A string of ascii.
 type Ascii string
 
-func (a *Ascii) String() string {
-	return string(*a)
+// Returns the ascii as a string.
+func (a Ascii) String() string {
+	return string(a)
 }
 
+// Returns the ascii as a content string.
+func (a Ascii) Content() Content {
+	return Content(a)
+}
+
+// Shorthand for rendering image as ascii with size
+// normal flags.
 func (i *Image) AsciiNormal() Ascii {
 	return i.Ascii(AsciiFlagsNormal())
 }
 
+// Shorthand for rendering image as ascii with size
+// small flags.
 func (i *Image) AsciiSmall() Ascii {
 	return i.Ascii(AsciiFlagsSmall())
 }
 
 // Renders the ascii as a string centered in the given terminal size.
 func (a Ascii) Center(terminal Terminal) Ascii {
-	return Ascii(CenterHorizontal(string(a), terminal))
+	return Ascii(Content(a).CenterHorizontal(terminal))
 }
 
 func (a Ascii) CenterV(terminal Terminal) Ascii {
-	return Ascii(CenterVertical(string(a), terminal))
+	return Ascii(Content(a).CenterVertical(terminal))
 }
 
 // Renders the ascii as a string.

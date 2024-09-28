@@ -44,11 +44,6 @@ type Model struct {
 
 type tickMsg struct{}
 
-type Terminal struct {
-	Height int
-	Width  int
-}
-
 func New(
 	auth *auth.Session, player *player.Player,
 	config *config.Config,

@@ -8,28 +8,28 @@ import (
 func MainControlsRender(view string) string {
 	switch view {
 	case PLAYER_VIEW:
-		return padLines(CommonStyle.MainControls.Selected.Render("[ ")+
-			CommonStyle.MainControls.Selected.Render("F1 Player")+
-			CommonStyle.MainControls.Normal.Render(" | F2 Playlists | F3 Search | F4 Devices | F5 Help ]"), 4)
+		return CommonStyle.MainControls.Selected.Render("[ ") +
+			CommonStyle.MainControls.Selected.Render("F1 Player") +
+			CommonStyle.MainControls.Normal.Render(" | F2 Playlists | F3 Search | F4 Devices | F5 Help ]")
 
 	case PLAYLIST_VIEW:
-		return padLines(CommonStyle.MainControls.Normal.Render("[ F1 Player | ")+
-			CommonStyle.MainControls.Selected.Render("F2 Playlists")+
-			CommonStyle.MainControls.Normal.Render(" | F3 Search | F4 Devices | F5 Help ]"), TAB_WIDTH)
+		return CommonStyle.MainControls.Normal.Render("[ F1 Player | ") +
+			CommonStyle.MainControls.Selected.Render("F2 Playlists") +
+			CommonStyle.MainControls.Normal.Render(" | F3 Search | F4 Devices | F5 Help ]")
 
 	case HELP_VIEW:
-		return padLines(CommonStyle.MainControls.Normal.Render("[ F1 Player | F2 Playlists | F3 Search | F4 Devices ")+
-			CommonStyle.MainControls.Selected.Render("| F5 Help ]"), TAB_WIDTH)
+		return CommonStyle.MainControls.Normal.Render("[ F1 Player | F2 Playlists | F3 Search | F4 Devices ") +
+			CommonStyle.MainControls.Selected.Render("| F5 Help ]")
 
 	case SEARCH_TYPE_VIEW:
-		return padLines(CommonStyle.MainControls.Normal.Render("[ F1 Player | F2 Playlists | ")+
-			CommonStyle.MainControls.Selected.Render("F3 Search")+
-			CommonStyle.MainControls.Normal.Render(" | F4 Devices | F5 Help ]"), TAB_WIDTH)
+		return CommonStyle.MainControls.Normal.Render("[ F1 Player | F2 Playlists | ") +
+			CommonStyle.MainControls.Selected.Render("F3 Search") +
+			CommonStyle.MainControls.Normal.Render(" | F4 Devices | F5 Help ]")
 
 	case DEVICE_VIEW:
-		return padLines(CommonStyle.MainControls.Normal.Render("[ F1 Player | F2 Playlists | F3 Search | ")+
-			CommonStyle.MainControls.Selected.Render("F4 Devices")+
-			CommonStyle.MainControls.Normal.Render(" | F5 Help ]"), TAB_WIDTH)
+		return CommonStyle.MainControls.Normal.Render("[ F1 Player | F2 Playlists | F3 Search | ") +
+			CommonStyle.MainControls.Selected.Render("F4 Devices") +
+			CommonStyle.MainControls.Normal.Render(" | F5 Help ]")
 
 	default:
 		return "Unknown View"

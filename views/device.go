@@ -94,7 +94,7 @@ func RenderDeviceView(dv *DeviceView, device *player.Device) string {
 
 	t.AppendRow(table.Row{
 		dv.ListModel.View(),
-		padLines("Current Device: "+device.Name+"\n\n"+"Type: "+device.Type, TAB_WIDTH*2),
+		PadLines("Current Device: "+device.Name+"\n\n"+"Type: "+device.Type, TAB_WIDTH*2),
 	})
 
 	return t.Render()
@@ -103,7 +103,7 @@ func RenderDeviceView(dv *DeviceView, device *player.Device) string {
 func NewDeviceListModel(items []list.Item) *DeviceListModel {
 	l := list.New(items, itemDelegate{}, DEFAULT_WIDTH, LIST_HEIGHT)
 	l.SetFilteringEnabled(false)
-	l.Title = padLines(DeviceViewStyle.Title.Render("Devices"), 2)
+	l.Title = PadLines(DeviceViewStyle.Title.Render("Devices"), 2)
 	l.Styles.Title = lg.NewStyle().MarginLeft(0)
 	l.SetShowStatusBar(false)
 	l.SetShowHelp(false)
