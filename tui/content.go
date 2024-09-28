@@ -11,21 +11,40 @@ import (
 // respect to given terminal's dimensions.
 type Content string
 
-// Joins subcontents into a since content, seperating
-// them by a single sep.
-func Join(contents []Content, sep string) Content {
-	s := ""
+// Joins either several strings or several subcontents into a since content,
+// seperating them by a single sep.
+func Join(contents interface{}, sep string) Content {
+	switch contents.(type) {
+	case []Content:
+		contents := contents.([]Content)
+		s := ""
 
-	for i, c := range contents {
-		s += string(c)
-		if i == len(contents)-1 {
-			break
+		for i, c := range contents {
+			s += string(c)
+			if i == len(contents)-1 {
+				break
+			}
+			s += sep
 		}
 
-		s += sep
+		return Content(s)
+
+	case []string:
+		s := ""
+		contents := contents.([]string)
+
+		for i, c := range contents {
+			s += c
+			if i == len(contents)-1 {
+				break
+			}
+			s += sep
+		}
+
+		return Content(s)
 	}
 
-	return Content(s)
+	return ""
 }
 
 // Splits into subcontents and seperateing

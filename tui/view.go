@@ -7,6 +7,7 @@ import (
 
 	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/spotify"
+	"github.com/dionvu/spogo/utils"
 	"github.com/ktr0731/go-fuzzyfinder"
 )
 
@@ -29,7 +30,7 @@ const (
 	DEVICE_VIEW = "DEVICE_VIEW"
 )
 
-func (m *Model) View() string {
+func (m *Program) View() string {
 	switch m.CurrentView {
 	case PLAYER_VIEW:
 		return m.Views.Player.View(m.Terminal)
@@ -81,7 +82,7 @@ func (m *Model) View() string {
 					cd, _ := os.UserCacheDir()
 					imagePath := filepath.Join(cd, config.APPNAME, "temp.jpeg")
 
-					_ = cacheImage(tracks[i].Album.Images[0].Url, imagePath)
+					_ = utils.CacheImage(tracks[i].Album.Images[0].Url, imagePath)
 
 					var ascii string
 					// if m.Terminal.IsSizeSmall() {

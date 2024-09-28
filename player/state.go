@@ -18,7 +18,7 @@ const (
 	UNKNOWN_TYPE = "unknown"
 )
 
-type PlayerState struct {
+type State struct {
 	CurrentPlayingType string `json:"currently_playing_type"`
 
 	Device       *Device `json:"device"`
@@ -26,7 +26,7 @@ type PlayerState struct {
 	IsPlaying    bool    `json:"is_playing"`
 	ShuffleState bool    `json:"shuffle_state"`
 
-	// Each PlayerState will have either a nil track or episode,
+	// Each State will have either a nil track or episode,
 	// depending on what the user is playing.
 	Track   *spotify.Track
 	Episode *spotify.Episode
@@ -36,8 +36,8 @@ type PlayerState struct {
 	Item interface{} `json:"item"`
 }
 
-func (p *Player) State(s *auth.Session) (*PlayerState, error) {
-	ps := &PlayerState{}
+func (p *Player) State(s *auth.Session) (*State, error) {
+	ps := &State{}
 
 	req, err := http.NewRequest(http.MethodGet, spotifyurls.PLAYER, nil)
 	if err != nil {

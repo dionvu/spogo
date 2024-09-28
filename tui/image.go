@@ -1,7 +1,12 @@
 package ui
 
 import (
+	"io"
+	"net/http"
+	"os"
+
 	"github.com/TheZoraiz/ascii-image-converter/aic_package"
+	"github.com/dionvu/spogo/errors"
 )
 
 // Image is a struct that allows caching of the Image
@@ -9,7 +14,7 @@ import (
 // type to format the ascii content around a terminal.
 type Image struct {
 	// The url of the image.
-	ImageUrl string
+	Url string
 
 	// The cached image's path.
 	FilePath string
@@ -40,14 +45,15 @@ func (i *Image) AsciiSmall() Ascii {
 	return i.Ascii(AsciiFlagsSmall())
 }
 
-// Renders the ascii as a string centered in the given terminal size.
-func (a Ascii) Center(terminal Terminal) Ascii {
-	return Ascii(Content(a).CenterHorizontal(terminal))
-}
-
-func (a Ascii) CenterV(terminal Terminal) Ascii {
-	return Ascii(Content(a).CenterVertical(terminal))
-}
+// // Renders the ascii as a string centered in the given terminal size.
+// func (a Ascii) CenterH(terminal Terminal) Ascii {
+// 	return Ascii(Content(a).CenterHorizontal(terminal))
+// }
+//
+// // Renders the ascii as a string centered in the given terminal size.
+// func (a Ascii) CenterV(terminal Terminal) Ascii {
+// 	return Ascii(Content(a).CenterVertical(terminal))
+// }
 
 // Renders the ascii as a string.
 func (a Image) Ascii(flags aic_package.Flags) Ascii {
@@ -60,11 +66,35 @@ func (a Image) Ascii(flags aic_package.Flags) Ascii {
 }
 
 // Updates the ascii image url, and caches the image if it is not the same.
-func (a *Image) UpdateImage(url string) {
-	if AsciiNewUrl := url; AsciiNewUrl != a.ImageUrl {
-		cacheImage(AsciiNewUrl, a.FilePath)
-		a.ImageUrl = AsciiNewUrl
+func (img *Image) Update(url string) {
+	if AsciiNewUrl := url; AsciiNewUrl != img.Url {
+		err := img.Cache()
+		if err != nil {
+			errors.LogError(errors.PlayerViewImageCache.Wrap(err, "failed to cache new image with url: %s", url))
+		}
+
+		img.Url = AsciiNewUrl
 	}
+}
+
+// Caches the image.
+func (img *Image) Cache() error {
+	res, err := http.Get(img.Url)
+	if err != nil {
+		return err
+	}
+
+	file, err := os.Create(img.FilePath)
+	if err != nil {
+		return err
+	}
+
+	_, err = io.Copy(file, res.Body)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func AsciiFlagsNormal() aic_package.Flags {

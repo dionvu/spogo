@@ -7,10 +7,11 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/dionvu/spogo/player"
 )
 
 // Handles updates associate with the current selected view.
-func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.Terminal.UpdateSize()
 
 	if !m.Terminal.IsValid() {
@@ -27,10 +28,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// If state is unaccessible, likely due to user closing
 		// their playerback device, and attempt reconnect to closed device.
-		if m.Views.Player.State == nil {
+		if m.PlayerState() == nil {
 			// m.Views.Player.PlayingStatusStyle = &PlayerViewStyle.StatusBar.NoPlayer
 			// m.Views.Player.PlayingStatus = NO_PLAYER
-			m.Views.Player.StatusBar.Update(m.Views.Player.State)
+			m.Views.Player.StatusBar.Update(m.PlayerState())
 
 			m.Player.Resume(m.Session, false)
 
@@ -63,11 +64,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.Views.Player.PlayPause()
 
 		case "[":
-			vol := m.Views.Player.State.Device.VolumePercent
+			vol := m.PlayerState().Device.VolumePercent
 			m.Views.Player.Player.SetVolume(m.Session, vol-VOLUME_INCREMENT_PERCENT)
 
 		case "]":
-			vol := m.Views.Player.State.Device.VolumePercent
+			vol := m.PlayerState().Device.VolumePercent
 			m.Views.Player.Player.SetVolume(m.Session, vol+VOLUME_INCREMENT_PERCENT)
 
 		case "f1", "1":
@@ -150,7 +151,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "s":
 			// Enables or disables shuffling on current album or playlist.
-			state := m.Views.Player.State.ShuffleState
+			state := m.PlayerState().ShuffleState
 			m.Player.Shuffle(!state, m.Session)
 
 		}
@@ -178,4 +179,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, nil
+}
+
+// Returns the player state from the model's player view.
+func (m *Program) PlayerState() *player.State {
+	return m.Views.Player.State
 }
