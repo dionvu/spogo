@@ -72,6 +72,8 @@ func (p *Player) Play(contextUri string, uri string, s *auth.Session) error {
 		return errors.HTTP.WrapWithNoMessage(err)
 	}
 
+	errors.LogApiCall(spotifyurls.PLAYERPLAY, res.StatusCode)
+
 	if res.StatusCode == 401 {
 		return errors.Reauthentication.NewWithNoMessage()
 	}
@@ -116,6 +118,8 @@ func (p *Player) Resume(s *auth.Session, play bool) error {
 		return errors.HTTP.WrapWithNoMessage(err)
 	}
 
+	errors.LogApiCall(spotifyurls.PLAYER, res.StatusCode)
+
 	if res.StatusCode == 401 {
 		return errors.Reauthentication.NewWithNoMessage()
 	}
@@ -148,6 +152,8 @@ func (p *Player) SkipNext(s *auth.Session) error {
 		return errors.HTTP.WrapWithNoMessage(err)
 	}
 
+	errors.LogApiCall(spotifyurls.PLAYERNEXT, res.StatusCode)
+
 	if res.StatusCode == 401 {
 		return errors.Reauthentication.NewWithNoMessage()
 	}
@@ -174,6 +180,8 @@ func (p *Player) SkipPrev(s *auth.Session) error {
 	if err != nil {
 		return errors.HTTP.WrapWithNoMessage(err)
 	}
+
+	errors.LogApiCall(spotifyurls.PLAYERPREV, res.StatusCode)
 
 	if res.StatusCode == 401 {
 		return errors.Reauthentication.NewWithNoMessage()
@@ -203,6 +211,8 @@ func (p *Player) Pause(s *auth.Session) error {
 	if err != nil {
 		return errors.HTTP.WrapWithNoMessage(err)
 	}
+
+	errors.LogApiCall(spotifyurls.PLAYERPAUSE, res.StatusCode)
 
 	if res.StatusCode == 401 {
 		return errors.Reauthentication.NewWithNoMessage()
@@ -242,6 +252,8 @@ func (p *Player) SeekToPosition(s *auth.Session, pos int) error {
 		return errors.HTTP.WrapWithNoMessage(err)
 	}
 
+	errors.LogApiCall(spotifyurls.PLAYERSEEK, res.StatusCode)
+
 	if res.StatusCode == 401 {
 		return errors.Reauthentication.NewWithNoMessage()
 	}
@@ -274,6 +286,8 @@ func (p *Player) Shuffle(state bool, s *auth.Session) error {
 		return errors.HTTP.WrapWithNoMessage(err)
 	}
 
+	errors.LogApiCall(spotifyurls.PLAYERSHUFFLE, res.StatusCode)
+
 	if res.StatusCode == 401 {
 		return errors.Reauthentication.NewWithNoMessage()
 	}
@@ -304,6 +318,8 @@ func (p *Player) SetVolume(s *auth.Session, val int) error {
 	if err != nil {
 		return errors.HTTP.WrapWithNoMessage(err)
 	}
+
+	errors.LogApiCall(spotifyurls.PLAYERVOLUME, res.StatusCode)
 
 	if res.StatusCode == 401 {
 		return errors.Reauthentication.NewWithNoMessage()

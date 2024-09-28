@@ -42,11 +42,6 @@ func (sq SearchQuery) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyEnter, tea.KeyCtrlC, tea.KeyEsc:
 			return sq, tea.Quit
 		}
-
-		// We handle errors just like any other message
-		// case errMsg:
-		// 	sq.err = msg
-		// 	return sq, nil
 	}
 
 	sq.textInput, cmd = sq.textInput.Update(msg)

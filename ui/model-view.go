@@ -85,9 +85,9 @@ func (m *Model) View() string {
 
 					var ascii string
 					if m.Terminal.IsSizeSmall() {
-						ascii = AsciiRender(imagePath, AsciiFlagsSmall())
+						ascii, _ = AsciiRender(imagePath, AsciiFlagsSmall())
 					} else {
-						ascii = AsciiRender(imagePath, AsciiFlagsNormal())
+						ascii, _ = AsciiRender(imagePath, AsciiFlagsNormal())
 					}
 
 					return fmt.Sprintf("Track: %s \nArtist: %s\nAlbum: %s\nDuration: %sm:%ss\n\n%s",
@@ -167,7 +167,7 @@ func (m *Model) View() string {
 		return "Refreshing..."
 
 	case TERMINAL_WARNING_VIEW:
-		return terminalWarningView(m.Terminal)
+		return m.Terminal.WarningString()
 
 	case SEARCH_TYPE_VIEW:
 		return m.Views.SearchType.View(m.Views.Player, m.Terminal)

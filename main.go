@@ -14,6 +14,8 @@ import (
 )
 
 func main() {
+	errors.Init()
+
 	c, err := config.New()
 	errors.Catch(err)
 	errors.Catch(c.Load())

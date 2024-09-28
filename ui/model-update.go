@@ -11,7 +11,7 @@ import (
 
 // Handles updates associate with the current selected view.
 func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	updateTerminalSize(&m.Terminal)
+	m.Terminal.UpdateSize()
 
 	if !m.Terminal.IsValid() {
 		m.CurrentView = TERMINAL_WARNING_VIEW

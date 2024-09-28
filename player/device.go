@@ -41,6 +41,8 @@ func GetDevices(s *auth.Session) (*[]Device, error) {
 	}
 	defer res.Body.Close()
 
+	errors.LogApiCall(spotifyurls.PLAYERDEVICES, res.StatusCode)
+
 	if res.StatusCode != 200 {
 		return nil, errors.Reauthentication.Wrap(err, "bad token")
 	}

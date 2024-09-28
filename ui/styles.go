@@ -8,6 +8,31 @@ import (
 
 const TAB_WIDTH = 4
 
+func CenterString(s string, t Terminal, offset ...int) string {
+	center := t.Width/2 - lg.Width(s)/2 - 2
+
+	if len(offset) > 0 {
+		center += offset[0]
+	}
+
+	return padLines(s, center)
+}
+
+func padLines(s string, padding int) string {
+	if padding < 0 {
+		return s
+	}
+
+	pad := strings.Repeat(" ", padding)
+	lines := strings.Split(s, "\n")
+
+	for i, line := range lines {
+		lines[i] = pad + line
+	}
+
+	return strings.Join(lines, "\n")
+}
+
 var CommonStyle = struct {
 	MainControls struct {
 		Selected lg.Style
@@ -78,15 +103,4 @@ var DeviceViewStyle = struct {
 	ItemSelected: lg.NewStyle().PaddingLeft(2),
 
 	Item: lg.NewStyle().PaddingLeft(4).Faint(true),
-}
-
-func padLines(s string, padding int) string {
-	pad := strings.Repeat(" ", padding)
-	lines := strings.Split(s, "\n")
-
-	for i, line := range lines {
-		lines[i] = pad + line
-	}
-
-	return strings.Join(lines, "\n")
 }

@@ -1,28 +1,9 @@
 package ui
 
 import (
-	"github.com/TheZoraiz/ascii-image-converter/aic_package"
 	"github.com/charmbracelet/lipgloss"
 	lg "github.com/charmbracelet/lipgloss"
 )
-
-func AsciiFlagsNormal() aic_package.Flags {
-	flags := aic_package.DefaultFlags()
-	flags.Colored = true
-	flags.Dimensions = []int{40, 20}
-	flags.Braille = true
-	flags.Threshold = 20
-	return flags
-}
-
-func AsciiFlagsSmall() aic_package.Flags {
-	flags := aic_package.DefaultFlags()
-	flags.Colored = true
-	flags.Dimensions = []int{20, 10}
-	flags.Braille = true
-	flags.Threshold = 20
-	return flags
-}
 
 func MainControlsRender(view string) string {
 	switch view {
@@ -53,14 +34,6 @@ func MainControlsRender(view string) string {
 	default:
 		return "Unknown View"
 	}
-}
-
-func AsciiRender(filepath string, flags aic_package.Flags) string {
-	ascii, _ := aic_package.Convert(filepath, flags)
-
-	ascii = ascii
-
-	return ascii
 }
 
 func HelpString() string {

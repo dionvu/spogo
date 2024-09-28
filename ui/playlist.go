@@ -88,9 +88,14 @@ func (pv *PlaylistView) View(playerView *PlayerView, terminal Terminal) string {
 		return pv.viewSmall(pv.CachedImagePath(), terminal)
 	}
 
+	ascii, err := AsciiRender(pv.CachedImagePath(), AsciiFlagsSmall())
+	if err != nil {
+		ascii = "Ascii image unavailable"
+	}
+
 	if len((*pv.UserPlaylists)) < 1 {
 		return fmt.Sprintf("\n\n%s\n\n%s\n\n%s", MainControlsRender(PLAYLIST_VIEW),
-			padLines(AsciiRender(pv.CachedImagePath(), AsciiFlagsNormal()), TAB_WIDTH),
+			padLines(ascii, TAB_WIDTH),
 			padLines("No playlists :(", TAB_WIDTH))
 	}
 
@@ -99,7 +104,7 @@ func (pv *PlaylistView) View(playerView *PlayerView, terminal Terminal) string {
 	t.Style().Options.SeparateColumns = false
 
 	t.AppendRow(table.Row{
-		"\n\n" + padLines(AsciiRender(pv.CachedImagePath(), AsciiFlagsNormal()), TAB_WIDTH),
+		"\n\n" + padLines(ascii, TAB_WIDTH),
 		"\n\n\n" + pv.PlaylistListModel.View(),
 	})
 
@@ -136,9 +141,16 @@ func (pv *PlaylistView) View(playerView *PlayerView, terminal Terminal) string {
 func (pv *PlaylistView) viewSmall(imagePath string, terminal Terminal) string {
 	pv.PlaylistListModel.list.SetHeight(SMALL_LIST_HEIGHT)
 
+	var ascii string
+
+	ascii, err := AsciiRender(imagePath, AsciiFlagsSmall())
+	if err != nil {
+		ascii = "Ascii image unavailable"
+	}
+
 	if len((*pv.UserPlaylists)) < 1 {
 		return fmt.Sprintf("\n\n%s\n\n%s",
-			padLines(AsciiRender(imagePath, AsciiFlagsSmall()), TAB_WIDTH),
+			padLines(ascii, TAB_WIDTH),
 			padLines("No playlists :(", TAB_WIDTH))
 	}
 
@@ -147,7 +159,7 @@ func (pv *PlaylistView) viewSmall(imagePath string, terminal Terminal) string {
 	t.Style().Options.SeparateColumns = false
 
 	t.AppendRow(table.Row{
-		"\n\n\n" + padLines(AsciiRender(imagePath, AsciiFlagsSmall()), TAB_WIDTH),
+		"\n\n\n" + padLines(ascii, TAB_WIDTH),
 		"\n\n\n\n" + pv.PlaylistListModel.View(),
 	})
 

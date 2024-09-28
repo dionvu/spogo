@@ -12,6 +12,7 @@ import (
 	"github.com/dionvu/spogo/auth"
 	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/player"
+	"github.com/jedib0t/go-pretty/v6/table"
 )
 
 type PlayerView struct {
@@ -69,48 +70,67 @@ func NewPlayerView(
 
 func (pv *PlayerView) View(terminal Terminal) string {
 	if terminal.IsSizeSmall() {
-		return pv.viewSmall()
+		return pv.viewSmall(terminal)
 	}
 
-	if pv.State != nil {
-		if pv.State.Track.Album.Images[0].Url != pv.AsciiCurrentUrl {
-			err := cacheImage(pv.State.Track.Album.Images[0].Url, pv.CachedImagePath())
-			if err != nil {
-				return ""
-			}
-			pv.AsciiCurrentUrl = pv.State.Track.Album.Images[0].Url
-		}
-
-		return fmt.Sprintf("\n\n%s\n\n%s\n\n%s\n\n%s",
-			MainControlsRender(PLAYER_VIEW),
-			padLines(AsciiRender(pv.CachedImagePath(), AsciiFlagsNormal()), TAB_WIDTH),
-			PlayerStatusView(pv),
-			PlayerInfoView(pv))
+	if pv.State == nil {
+		return fmt.Sprintf("\n\n%s\n\n%s",
+			CenterString(MainControlsRender(PLAYER_VIEW), terminal),
+			CenterString(PlayerStatusView(pv), terminal))
 	}
 
-	return fmt.Sprintf("\n\n%s\n\n%s",
-		MainControlsRender(PLAYER_VIEW),
-		PlayerStatusView(pv))
+	AsciiNewUrl := pv.State.Track.Album.Images[0].Url
+
+	if AsciiNewUrl != pv.AsciiCurrentUrl {
+		cacheImage(AsciiNewUrl, pv.CachedImagePath())
+
+		pv.AsciiCurrentUrl = AsciiNewUrl
+	}
+
+	ascii, _ := AsciiRender(pv.CachedImagePath(), AsciiFlagsNormal())
+
+	return fmt.Sprintf("\n\n%s\n\n%s\n\n%s\n\n%s",
+		CenterString(ascii, terminal),
+		CenterString(PlayerStatusView(pv), terminal),
+		PlayerInfoRender(pv, terminal),
+		CenterString(MainControlsRender(PLAYER_VIEW), terminal),
+	)
 }
 
-func (pv *PlayerView) viewSmall() string {
-	if pv.State.Track.Album.Images[0].Url != pv.AsciiCurrentUrl {
-		err := cacheImage(pv.State.Track.Album.Images[0].Url, pv.CachedImagePath())
-		if err != nil {
-			return ""
-		}
-		pv.AsciiCurrentUrl = pv.State.Track.Album.Images[0].Url
+func (pv *PlayerView) viewSmall(terminal Terminal) string {
+	if pv.State == nil {
+		return fmt.Sprintf("\n\n%s",
+			CenterString(PlayerStatusView(pv), terminal))
 	}
 
-	if pv.State != nil {
-		return fmt.Sprintf("\n\n%s\n\n%s\n\n%s",
-			padLines(AsciiRender(pv.CachedImagePath(), AsciiFlagsSmall()), TAB_WIDTH),
-			PlayerStatusView(pv),
-			PlayerInfoView(pv))
+	err := cacheImage(pv.State.Track.Album.Images[0].Url, pv.CachedImagePath())
+	if err != nil {
+		return ""
+	}
+	pv.AsciiCurrentUrl = pv.State.Track.Album.Images[0].Url
+
+	ascii, err := AsciiRender(pv.CachedImagePath(), AsciiFlagsSmall())
+	if err != nil {
+		ascii = "Ascii image unavailable"
 	}
 
-	return fmt.Sprintf("\n\n%s",
-		PlayerStatusView(pv))
+	t := table.NewWriter()
+	t.Style().Options.DrawBorder = false
+	t.Style().Options.SeparateColumns = false
+
+	line1 := CenterString(ascii,
+		terminal)
+	line2 := CenterString(PlayerStatusView(pv),
+		terminal, -1)
+	line3 := PlayerInfoRender(pv, terminal)
+
+	t.AppendRows([]table.Row{
+		{"\n\n" + line1},
+		{"\n" + line2 + "\n"},
+		{line3},
+	})
+
+	return t.Render()
 }
 
 // Ensures that player time progress is within 2 * polling rate.
@@ -144,18 +164,6 @@ func (pv *PlayerView) EnsureProgressSynced() {
 	}
 }
 
-// Updates state asyncchronously to improve progress timer smoothness.
-func (pv *PlayerView) UpdateStateAsync() {
-	go func() {
-		pv.State, _ = pv.Player.State(pv.Session)
-	}()
-}
-
-// Update state synchronously for percision.
-func (pv *PlayerView) UpdateStateSync() {
-	pv.State, _ = pv.Player.State(pv.Session)
-}
-
 func (pv *PlayerView) PlayPause() {
 	if pv.State == nil {
 		return
@@ -179,14 +187,10 @@ func (pv *PlayerView) PlayPause() {
 }
 
 var PlayerStatusView = func(pv *PlayerView) string {
-	return padLines(pv.PlayingStatusStyle.Render(pv.PlayingStatus), 4)
+	return pv.PlayingStatusStyle.Render(pv.PlayingStatus)
 }
 
-var PlayerInfoView = func(pv *PlayerView) string {
-	if pv.State == nil {
-		return "invalid player state"
-	}
-
+func PlayerInfoRender(pv *PlayerView, terminal Terminal) string {
 	track, artist,
 		progressMin, progressSec,
 		durationMin, durationSec := pv.State.Track.InfoString(pv.Config, pv.ProgressMs)
@@ -199,17 +203,18 @@ var PlayerInfoView = func(pv *PlayerView) string {
 		shuffle = "off"
 	}
 
-	return padLines(fmt.Sprintf(
-		"%s - %s\n\n%sm:%ss / %sm:%ss\n\nvol: %v%% sfl: %v",
-		track,
-		artist,
-		progressMin,
-		progressSec,
-		durationMin,
-		durationSec,
-		pv.State.Device.VolumePercent,
-		shuffle,
-	), TAB_WIDTH)
+	line1 := CenterString(
+		fmt.Sprintf("%s - %s", track, artist),
+		terminal, -1)
+
+	line2 := CenterString(fmt.Sprintf("%sm:%ss / %sm:%ss",
+		progressMin, progressSec, durationMin, durationSec),
+		terminal, -1)
+
+	line3 := CenterString(fmt.Sprintf("vol: %v%% sfl: %v", pv.State.Device.VolumePercent, shuffle),
+		terminal, -1)
+
+	return line1 + "\n\n" + line2 + "\n\n" + line3
 }
 
 func cacheImage(url string, path string) error {
@@ -235,4 +240,16 @@ func (pv *PlayerView) CachedImagePath() string {
 	cd, _ := os.UserCacheDir()
 	path := filepath.Join(cd, config.APPNAME, "player_ascii.jpeg")
 	return path
+}
+
+// Updates state asyncchronously to improve progress timer smoothness.
+func (pv *PlayerView) UpdateStateAsync() {
+	go func() {
+		pv.State, _ = pv.Player.State(pv.Session)
+	}()
+}
+
+// Update state synchronously for percision.
+func (pv *PlayerView) UpdateStateSync() {
+	pv.State, _ = pv.Player.State(pv.Session)
 }

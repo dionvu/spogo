@@ -2,15 +2,21 @@ package ui
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"os/signal"
+	"syscall"
 
 	"github.com/fatih/color"
+	"golang.org/x/term"
 )
 
 const (
-	MIN_TERMINAL_HEIGHT = 21
+	MIN_TERMINAL_HEIGHT = 16
 	MIN_TERMINAL_WIDTH  = 42
 
 	MAX_TERMINAL_HEIGHT_SMALL  = 30
+	MAX_TERMINAL_WIDTH_SMALL   = 70
 	MIN_TERMINAL_HEIGHT_NORMAL = 40
 )
 
@@ -19,7 +25,7 @@ func (t Terminal) IsValid() bool {
 }
 
 func (t Terminal) IsSizeSmall() bool {
-	return t.Height <= MAX_TERMINAL_HEIGHT_SMALL
+	return t.Height <= MAX_TERMINAL_HEIGHT_SMALL || t.Width <= MAX_TERMINAL_WIDTH_SMALL
 }
 
 func (t Terminal) IsSizeNormal() bool {
@@ -28,11 +34,43 @@ func (t Terminal) IsSizeNormal() bool {
 
 // Returns the error message associated with the terminal being
 // below the required dimensions.
-func terminalWarningView(terminal Terminal) string {
+func (terminal *Terminal) WarningString() string {
 	return color.RedString(
 		fmt.Sprint(
 			"Terminal of size ",
 			terminal.Height, "x", terminal.Width,
 			" is prone to visual glitches.\nMinimum required height is ",
 			MIN_TERMINAL_HEIGHT, "x", MIN_TERMINAL_WIDTH, "."))
+}
+
+// Asyncronously updates the terminal dimensions.
+func (terminal *Terminal) UpdateSize() {
+	// Channel to receive terminal size change signals (SIGWINCH)
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, syscall.SIGWINCH)
+
+	// If their is a change in terminal dimensions, updates terminal.
+	go func() {
+		for range sigCh {
+			w, h := getTerminalSize()
+			if w != terminal.Width || h != terminal.Height {
+				cmd := exec.Command("clear")
+				cmd.Stdout = os.Stdout
+				cmd.Run()
+
+			}
+
+			terminal.Width, terminal.Height = w, h
+		}
+	}()
+}
+
+// Gets the current dimensions of the user's terminal.
+func getTerminalSize() (int, int) {
+	width, height, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		return -1, -1
+	}
+
+	return width, height
 }

@@ -51,6 +51,8 @@ func (p *Player) State(s *auth.Session) (*PlayerState, error) {
 		return nil, errors.HTTP.WrapWithNoMessage(err)
 	}
 
+	// errors.LogApiCall(spotifyurls.PLAYER, res.StatusCode)
+
 	if res.StatusCode == 204 {
 		return nil, errors.NoDevice.New("playback device is not active")
 	}
