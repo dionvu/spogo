@@ -45,16 +45,6 @@ func (i *Image) AsciiSmall() Ascii {
 	return i.Ascii(AsciiFlagsSmall())
 }
 
-// // Renders the ascii as a string centered in the given terminal size.
-// func (a Ascii) CenterH(terminal Terminal) Ascii {
-// 	return Ascii(Content(a).CenterHorizontal(terminal))
-// }
-//
-// // Renders the ascii as a string centered in the given terminal size.
-// func (a Ascii) CenterV(terminal Terminal) Ascii {
-// 	return Ascii(Content(a).CenterVertical(terminal))
-// }
-
 // Renders the ascii as a string.
 func (a Image) Ascii(flags aic_package.Flags) Ascii {
 	ascii, err := aic_package.Convert(a.FilePath, flags)
@@ -68,12 +58,12 @@ func (a Image) Ascii(flags aic_package.Flags) Ascii {
 // Updates the ascii image url, and caches the image if it is not the same.
 func (img *Image) Update(url string) {
 	if AsciiNewUrl := url; AsciiNewUrl != img.Url {
+		img.Url = AsciiNewUrl
+
 		err := img.Cache()
 		if err != nil {
 			errors.LogError(errors.PlayerViewImageCache.Wrap(err, "failed to cache new image with url: %s", url))
 		}
-
-		img.Url = AsciiNewUrl
 	}
 }
 
@@ -109,7 +99,7 @@ func AsciiFlagsNormal() aic_package.Flags {
 func AsciiFlagsSmall() aic_package.Flags {
 	flags := aic_package.DefaultFlags()
 	flags.Colored = true
-	flags.Dimensions = []int{30, 15}
+	flags.Dimensions = []int{24, 12}
 	flags.Braille = true
 	flags.Threshold = 20
 	return flags

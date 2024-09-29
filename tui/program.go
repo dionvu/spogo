@@ -71,7 +71,7 @@ func New(
 	m.Terminal.Width, m.Terminal.Height = getTerminalSize()
 
 	m.Views.Player = NewPlayerView(auth, player)
-	m.Views.Playlist = NewPlaylistView(auth, config)
+	m.Views.Playlist = NewPlaylistView(auth)
 	m.Views.SearchType = NewSearchTypeView(auth)
 	m.Views.Device = NewDeviceView(m.Session)
 
@@ -81,6 +81,7 @@ func New(
 }
 
 func (m *Program) Init() tea.Cmd {
+	m.Views.Player.UpdateStateLoop()
 	return tea.Tick(POLLING_RATE_MS, func(time.Time) tea.Msg {
 		return tickMsg{}
 	})

@@ -11,6 +11,7 @@ import (
 	"github.com/dionvu/spogo/errors"
 	"github.com/dionvu/spogo/spotify/api/headers"
 	"github.com/dionvu/spogo/spotify/api/urls"
+	"github.com/dionvu/spogo/utils"
 )
 
 // ContextUri can be the uri of an album or playlist. Uri should be a track
@@ -280,6 +281,7 @@ func (p *Player) Pause(s *auth.Session) error {
 	if res.StatusCode >= http.StatusOK {
 		err = errors.HTTP.New("bad request")
 		errors.LogError(err)
+		errors.LogApiCall(utils.ResponseBody(res.Body), 1)
 		return err
 	}
 

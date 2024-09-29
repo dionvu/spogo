@@ -34,21 +34,22 @@ func (m *Program) View() string {
 	switch m.CurrentView {
 	case PLAYER_VIEW:
 		return m.Views.Player.View(m.Terminal)
+		// return m.Views.Player.ProgressMs
 
 	case PLAYLIST_VIEW:
 		return m.Views.Playlist.View(m.Views.Player, m.Terminal)
 
 	case HELP_VIEW:
-		return "\n\n" + MainControlsRender(HELP_VIEW) + "\n\n" + PadLines(HelpString(), TAB_WIDTH)
+		return "\n\n" + MainControlsRender(HELP_VIEW) + "\n\n" + HelpString()
 
 	case PLAYLIST_TRACK_VIEW:
 		state := m.Views.Player.State.CurrentPlayingType
 
 		switch state {
 		case "track":
-			selectedItem := m.Views.Playlist.PlaylistListModel.list.SelectedItem()
+			selectedItem := m.Views.Playlist.PlaylistList.list.SelectedItem()
 
-			playlistName := m.Views.Playlist.ItemsMap[selectedItem]
+			playlistName := m.Views.Playlist.itemsMap[selectedItem]
 
 			playlist := m.Views.Playlist.playlistsMap[playlistName]
 
@@ -85,11 +86,6 @@ func (m *Program) View() string {
 					_ = utils.CacheImage(tracks[i].Album.Images[0].Url, imagePath)
 
 					var ascii string
-					// if m.Terminal.IsSizeSmall() {
-					// 	ascii, _ = AsciiRender(imagePath, AsciiFlagsSmall())
-					// } else {
-					// 	ascii, _ = AsciiRender(imagePath, AsciiFlagsNormal())
-					// }
 
 					return fmt.Sprintf("Track: %s \nArtist: %s\nAlbum: %s\nDuration: %sm:%ss\n\n%s",
 						tracks[i].Name,

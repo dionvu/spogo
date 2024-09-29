@@ -60,7 +60,7 @@ func (st *SearchTypeView) View(playerView *PlayerView, terminal Terminal) string
 func NewSearchTypeListModel(items []list.Item) *SearchTypeListModel {
 	l := list.New(items, itemDelegate{}, DEFAULT_WIDTH, LIST_HEIGHT)
 	l.SetFilteringEnabled(false)
-	l.Title = PadLines("Select a search type: ", 2)
+	l.Title = "Select a search type: "
 	l.Styles.Title = lg.NewStyle().MarginLeft(0)
 	l.SetShowStatusBar(false)
 	l.SetShowHelp(false)

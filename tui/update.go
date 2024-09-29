@@ -24,13 +24,9 @@ func (m *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tickMsg:
-		m.Views.Player.UpdateStateAsync()
-
 		// If state is unaccessible, likely due to user closing
 		// their playerback device, and attempt reconnect to closed device.
 		if m.PlayerState() == nil {
-			// m.Views.Player.PlayingStatusStyle = &PlayerViewStyle.StatusBar.NoPlayer
-			// m.Views.Player.PlayingStatus = NO_PLAYER
 			m.Views.Player.StatusBar.Update(m.PlayerState())
 
 			m.Player.Resume(m.Session, false)
@@ -95,8 +91,8 @@ func (m *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch m.CurrentView {
 
 			case PLAYLIST_VIEW:
-				if i, ok := m.Views.Playlist.PlaylistListModel.list.SelectedItem().(Item); ok {
-					m.Views.Playlist.PlaylistListModel.choice = string(i)
+				if i, ok := m.Views.Playlist.PlaylistList.list.SelectedItem().(Item); ok {
+					m.Views.Playlist.PlaylistList.choice = string(i)
 					err := m.Player.Play(m.Views.Playlist.playlistsMap[string(i)].URI, "", m.Session)
 					if err != nil {
 						log.Fatal(string(i), m.Views.Playlist.playlistsMap[string(i)].URI)
@@ -157,9 +153,9 @@ func (m *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		// Handles updates from the playlist list.
-		if m.CurrentView == PLAYLIST_VIEW && m.Views.Playlist.PlaylistListModel.choice != "" {
+		if m.CurrentView == PLAYLIST_VIEW && m.Views.Playlist.PlaylistList.choice != "" {
 			var cmd tea.Cmd
-			m.Views.Playlist.PlaylistListModel.list, cmd = m.Views.Playlist.PlaylistListModel.list.Update(msg)
+			m.Views.Playlist.PlaylistList.list, cmd = m.Views.Playlist.PlaylistList.list.Update(msg)
 			return m, cmd
 		}
 

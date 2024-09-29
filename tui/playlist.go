@@ -2,269 +2,119 @@ package ui
 
 import (
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/charmbracelet/bubbles/list"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/dionvu/spogo/auth"
 	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/spotify"
 	"github.com/jedib0t/go-pretty/v6/table"
 )
 
+// The view that handles everything related to
+// the user's playlist library.
 type PlaylistView struct {
-	Session *auth.Session
-	Config  *config.Config
+	// The content to be displayed when the view
+	// is being displayed.
+	Content Content
 
+	// The playlists of the user.
 	UserPlaylists *[]spotify.Playlist
-	playlistsMap  map[string]*spotify.Playlist
 
-	ItemsMap map[list.Item]string
+	// The list selection for user to select
+	// playlists through hovering and selecting.
+	PlaylistList *PlaylistList
 
-	PlaylistListModel *PlaylistListModel
+	Images []Image
+
+	// The detailed information about the selected
+	// playlist.
+	PlaylistInfo *PlaylistInfo
+
+	// Displays the alternative main views, with the
+	// current view (player view) highlighted.
+	ViewStatus *ViewStatus
+
+	// Used to access playlists from a selected item or
+	// selected playlist name.
+	playlistsMap map[string]*spotify.Playlist
+	itemsMap     map[list.Item]string
+
+	Session *auth.Session
+
+	ImageMap map[list.Item]*Image
 }
 
-type PlaylistListModel struct {
-	list     list.Model
-	choice   string
-	quitting bool
-}
-
-func NewPlaylistView(s *auth.Session, c *config.Config) *PlaylistView {
+func NewPlaylistView(s *auth.Session) *PlaylistView {
 	items := []list.Item{}
+	cd, _ := os.UserCacheDir()
+	path := filepath.Join(cd, config.APPNAME, "playlist")
 
 	pv := &PlaylistView{
-		Session: s,
-		Config:  c,
+		Session:      s,
+		itemsMap:     map[list.Item]string{},
+		playlistsMap: map[string]*spotify.Playlist{},
+
+		PlaylistInfo: &PlaylistInfo{},
+
+		ViewStatus: &ViewStatus{},
+
+		Images:   []Image{},
+		ImageMap: map[list.Item]*Image{},
 	}
-
-	pv.ItemsMap = map[list.Item]string{}
-
-	pv.playlistsMap = map[string]*spotify.Playlist{}
 
 	pv.UserPlaylists, _ = spotify.UserPlaylists(pv.Session)
 
-	for _, playlist := range *pv.UserPlaylists {
-		item := Item(playlist.Name)
+	for i, playlist := range *pv.UserPlaylists {
+		pv.Images = append(pv.Images, Image{FilePath: path + fmt.Sprint(i) + ".jpeg"})
+		pv.Images[i].Update(playlist.Images[0].Url)
+		pv.ImageMap[Item(playlist.Name)] = &pv.Images[i]
 
-		items = append(items, item)
-
+		items = append(items, Item(playlist.Name))
 		pv.playlistsMap[playlist.Name] = &playlist
-
-		pv.ItemsMap[items[len(items)-1]] = playlist.Name
+		pv.itemsMap[items[len(items)-1]] = playlist.Name
 	}
 
-	pv.PlaylistListModel = NewPlaylistListModel(items, PlaylistViewStyle.Title.Render("Playlists"))
+	pv.PlaylistList = NewPlaylistListModel(items, PlaylistViewStyle.Title.Render("Playlists"))
 
-	if len(pv.PlaylistListModel.list.Items()) > 0 {
-		pv.PlaylistListModel.choice = (*pv.UserPlaylists)[0].Name
+	if len(pv.PlaylistList.list.Items()) > 0 {
+		pv.PlaylistList.choice = (*pv.UserPlaylists)[0].Name
 	}
 
 	return pv
 }
 
-func (pv *PlaylistView) View(playerView *PlayerView, terminal Terminal) string {
-	pv.PlaylistListModel.list.SetHeight(DEFAULT_LIST_HEIGHT)
-
-	const DEFAULT_IMAGE_URL string = "https://cdn.pixabay.com/photo/2016/10/22/00/15/spotify-1759471_1280.jpg"
-	var res *http.Response
-
-	imageFile, _ := os.Create(pv.CachedImagePath())
-
-	if len(pv.playlistsMap) > 0 && len(pv.playlistsMap[pv.PlaylistListModel.choice].Images) > 0 {
-		res, _ = http.Get(pv.GetSelectedPlaylist().Images[0].Url)
-	} else {
-		res, _ = http.Get(DEFAULT_IMAGE_URL)
-	}
-
-	io.Copy(imageFile, res.Body)
-
-	if terminal.IsSizeSmall() {
-		return pv.viewSmall(pv.CachedImagePath(), terminal)
-	}
-
-	// ascii, err := AsciiRender(pv.CachedImagePath(), AsciiFlagsSmall())
-	ascii := ""
-	// if err != nil {
-	// 	ascii = "Ascii image unavailable"
-	// }
-
-	if len((*pv.UserPlaylists)) < 1 {
-		return fmt.Sprintf("\n\n%s\n\n%s\n\n%s", MainControlsRender(PLAYLIST_VIEW),
-			PadLines(ascii, TAB_WIDTH),
-			PadLines("No playlists :(", TAB_WIDTH))
-	}
+func (pv *PlaylistView) UpdateContent(term Terminal) {
+	pv.PlaylistInfo.Update(pv.GetSelectedPlaylist())
+	pv.ViewStatus.Update(PLAYLIST_VIEW)
 
 	t := table.NewWriter()
-	t.Style().Options.DrawBorder = false
-	t.Style().Options.SeparateColumns = false
-
-	t.AppendRow(table.Row{
-		"\n\n" + PadLines(ascii, TAB_WIDTH),
-		"\n\n\n" + pv.PlaylistListModel.View(),
+	t.Style().Box.PaddingRight = "   "
+	t.AppendRows([]table.Row{
+		{"\n"},
+		{pv.PlaylistList.View()},
+		{"\n\n"},
+		{pv.PlaylistInfo.Content(term).PadLinesLeft(4).String()},
+		{"\n\n\n\n\n\n"},
 	})
 
-	playlist := pv.GetSelectedPlaylist()
-
-	t2 := table.NewWriter()
-	t2.Style().Options.DrawBorder = false
-	t2.Style().Options.SeparateColumns = false
-
-	style := lipgloss.NewStyle().Bold(true)
-
-	plName := playlist.Name
-	plNameLen := len(strings.Split(plName, ""))
-	if plNameLen >= terminal.Width-4 {
-		plName = plName[:terminal.Width-10]
-		plName += "..."
-	}
-
-	t2.AppendRow(table.Row{
-		PadLines(style.Render("\n\n"+plName), TAB_WIDTH) + "\n",
-	})
-
-	t2.AppendRow(table.Row{
-		PadLines("Tracks: "+fmt.Sprint(playlist.Tracks.Total), TAB_WIDTH) + "\n",
-	})
-
-	t2.AppendRow(table.Row{
-		PadLines("Owner: "+fmt.Sprint(playlist.Owner.DisplayName), TAB_WIDTH) + "\n",
-	})
-
-	return "\n\n" + MainControlsRender(PLAYLIST_VIEW) + "\n" + t.Render() + "\n" + t2.Render()
+	pv.Content = Join([]Content{
+		Content(t.Render()),
+		pv.ViewStatus.Content(),
+		Content(pv.ImageMap[pv.PlaylistList.list.SelectedItem()].AsciiSmall()),
+	}, "\n\n")
 }
 
-func (pv *PlaylistView) viewSmall(imagePath string, terminal Terminal) string {
-	pv.PlaylistListModel.list.SetHeight(SMALL_LIST_HEIGHT)
+func (pv *PlaylistView) View(playerView *PlayerView, term Terminal) string {
+	pv.UpdateContent(term)
 
-	var ascii string
-
-	// ascii, err := AsciiRender(imagePath, AsciiFlagsSmall())
-	ascii = ""
-	// if err != nil {
-	// 	ascii = "Ascii image unavailable"
-	// }
-
-	if len((*pv.UserPlaylists)) < 1 {
-		return fmt.Sprintf("\n\n%s\n\n%s",
-			PadLines(ascii, TAB_WIDTH),
-			PadLines("No playlists :(", TAB_WIDTH))
-	}
-
-	t := table.NewWriter()
-	t.Style().Options.DrawBorder = false
-	t.Style().Options.SeparateColumns = false
-
-	t.AppendRow(table.Row{
-		"\n\n\n" + PadLines(ascii, TAB_WIDTH),
-		"\n\n\n\n" + pv.PlaylistListModel.View(),
-	})
-
-	playlist := pv.GetSelectedPlaylist()
-
-	t2 := table.NewWriter()
-	t2.Style().Options.DrawBorder = false
-	t2.Style().Options.SeparateColumns = false
-
-	style := lipgloss.NewStyle().Bold(true)
-
-	plName := playlist.Name
-	plNameLen := len(strings.Split(plName, ""))
-	if plNameLen >= terminal.Width-4 {
-		plName = plName[:terminal.Width-10]
-		plName += "..."
-	}
-
-	t2.AppendRow(table.Row{
-		PadLines(style.Render("\n\n"+plName), TAB_WIDTH) + "\n",
-	})
-
-	t2.AppendRow(table.Row{
-		PadLines("Tracks: "+fmt.Sprint(playlist.Tracks.Total), TAB_WIDTH) + "\n",
-	})
-
-	t2.AppendRow(table.Row{
-		PadLines("Owner: "+fmt.Sprint(playlist.Owner.DisplayName), TAB_WIDTH) + "\n",
-	})
-
-	return t.Render() + "\n\n" + t2.Render()
+	return pv.Content.CenterHorizontal(term).CenterVertical(term).String()
 }
 
-func (pv *PlaylistView) GetPlaylistFromChoice(choice string) *spotify.Playlist {
-	return pv.playlistsMap[choice]
-}
-
-func (pv *PlaylistView) GetSelectedName() string {
-	return pv.ItemsMap[pv.PlaylistListModel.list.SelectedItem()]
-}
-
+// Gets the playlist object with the same name as what the
+// user is selecting.
 func (pv *PlaylistView) GetSelectedPlaylist() *spotify.Playlist {
-	return pv.GetPlaylistFromChoice(pv.GetSelectedName())
-}
-
-func NewPlaylistListModel(items []list.Item, title string) *PlaylistListModel {
-	l := list.New(items, itemDelegate{}, DEFAULT_WIDTH, LIST_HEIGHT)
-	l.SetFilteringEnabled(false)
-	l.Title = PadLines(title, 2)
-	l.Styles.Title = lipgloss.NewStyle().MarginLeft(0)
-	l.SetShowStatusBar(false)
-	l.SetShowHelp(false)
-
-	lm := &PlaylistListModel{list: l}
-
-	return lm
-}
-
-func (m PlaylistListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch keypress := msg.String(); keypress {
-		case "ctrl+c":
-			m.quitting = true
-			return m, tea.Quit
-		}
-
-		return m, cmd
-	}
-
-	m.list, cmd = m.list.Update(msg)
-
-	return m, cmd
-}
-
-func (m PlaylistListModel) View() string {
-	return m.list.View()
-}
-
-func (m PlaylistListModel) Init() tea.Cmd {
-	return nil
-}
-
-func (pv *PlaylistView) CachedImagePath() string {
-	cd, _ := os.UserCacheDir()
-	path := filepath.Join(cd, config.APPNAME, "playlist_ascii.jpeg")
-	return path
-}
-
-// TEMP
-func PadLines(s string, count int) string {
-	if count < 0 {
-		return s
-	}
-
-	pad := strings.Repeat(" ", count)
-	lines := strings.Split(s, "\n")
-
-	for i, line := range lines {
-		lines[i] = pad + line
-	}
-
-	return strings.Join(lines, "\n")
+	name := pv.itemsMap[pv.PlaylistList.list.SelectedItem()]
+	return pv.playlistsMap[name]
 }

@@ -21,7 +21,7 @@ type PlayerDetails struct {
 }
 
 // Updates PlayerDetails with information in given state and track.
-func (pd *PlayerDetails) Update(state *player.State) {
+func (pd *PlayerDetails) Update(progressMs int, state *player.State) {
 	if state == nil || state.Device == nil || state.Track == nil {
 		errors.LogError(errors.PlayerViewInvalidState.New("invalid state passed, cannot update player details"))
 		return
@@ -29,8 +29,8 @@ func (pd *PlayerDetails) Update(state *player.State) {
 
 	pd.Track = state.Track.Name
 	pd.Artists = ""
-	pd.ProgressSec = strconv.Itoa(((state.ProgressMs / 1000) % 60))
-	pd.ProgressMin = strconv.Itoa((state.ProgressMs / 1000) / 60)
+	pd.ProgressSec = strconv.Itoa(((progressMs / 1000) % 60))
+	pd.ProgressMin = strconv.Itoa((progressMs / 1000) / 60)
 	pd.DurationSec = strconv.Itoa((state.Track.DurationMs / 1000) % 60)
 	pd.DurationMin = strconv.Itoa((state.Track.DurationMs / 1000) / 60)
 	pd.VolumePercent = strconv.Itoa(state.Device.VolumePercent)
@@ -50,8 +50,8 @@ func (pd *PlayerDetails) Update(state *player.State) {
 }
 
 // Renders the player details as a string.
-func (pd *PlayerDetails) Render(track *spotify.Track, state *player.State) string {
-	pd.Update(state)
+func (pd *PlayerDetails) Render(track *spotify.Track, progressMs int, state *player.State) string {
+	pd.Update(progressMs, state)
 
 	title := Content(fmt.Sprintf("%s - %s", pd.Track, pd.Artists))
 
@@ -63,8 +63,8 @@ func (pd *PlayerDetails) Render(track *spotify.Track, state *player.State) strin
 }
 
 // Renders the player details as a content string.
-func (pd *PlayerDetails) Content(track *spotify.Track, state *player.State) Content {
-	pd.Update(state)
+func (pd *PlayerDetails) Content(track *spotify.Track, progressMs int, state *player.State) Content {
+	pd.Update(progressMs, state)
 
 	title := Content(fmt.Sprintf("%s - %s", pd.Track, pd.Artists))
 

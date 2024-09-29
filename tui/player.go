@@ -4,6 +4,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/dionvu/spogo/auth"
 	"github.com/dionvu/spogo/config"
@@ -49,7 +50,7 @@ func NewPlayerView(
 	auth *auth.Session, player *player.Player,
 ) *PlayerView {
 	cd, _ := os.UserCacheDir()
-	path := filepath.Join(cd, config.APPNAME, "player_ascii.jpeg")
+	path := filepath.Join(cd, config.APPNAME, "player.jpeg")
 
 	pv := &PlayerView{
 		Session: auth,
@@ -90,7 +91,7 @@ func (pv *PlayerView) EnsureProgressSynced() {
 
 	// Syncs progress time if it differs too much (2 * Polling rate).
 	if math.Abs(float64(pv.State.ProgressMs-pv.ProgressMs)) >
-		float64(2*POLLING_RATE_MS.Milliseconds()) ||
+		float64(10*POLLING_RATE_MS.Milliseconds()) ||
 		pv.State.Track.ID != pv.TrackID {
 
 		pv.ProgressMs = pv.State.ProgressMs
@@ -112,7 +113,7 @@ func (pv *PlayerView) UpdateContent(term Terminal) {
 				return Join([]Content{
 					pv.Image.AsciiSmall().Content(),
 					pv.StatusBar.Content(),
-					pv.PlayerDetails.Content(pv.State.Track, pv.State),
+					pv.PlayerDetails.Content(pv.State.Track, pv.ProgressMs, pv.State),
 				}, "\n\n")
 			}
 		}
@@ -130,7 +131,7 @@ func (pv *PlayerView) UpdateContent(term Terminal) {
 			return Join([]Content{
 				pv.Image.AsciiNormal().Content(),
 				pv.StatusBar.Content(),
-				pv.PlayerDetails.Content(pv.State.Track, pv.State),
+				pv.PlayerDetails.Content(pv.State.Track, pv.ProgressMs, pv.State),
 				pv.ViewStatus.Content(),
 			}, "\n\n")
 		}
@@ -151,7 +152,7 @@ func (pv *PlayerView) PlayPause() {
 		pv.Player.Resume(pv.Session, true)
 	}
 
-	pv.UpdateStateSync() // Ensures statusbar updates percisely
+	// pv.UpdateStateSync()
 
 	pv.StatusBar.Update(pv.State)
 }
@@ -160,17 +161,27 @@ func (pv *PlayerView) PlayPause() {
 // the size dynamic to the terminal size.
 func (pv *PlayerView) View(term Terminal) string {
 	pv.UpdateContent(term)
-	return pv.Content.CenterHorizontal(term).CenterVertical(term).String()
-}
+	pv.PlayerDetails.Update(pv.ProgressMs, pv.State)
 
-// Updates state asyncchronously to improve progress timer smoothness.
-func (pv *PlayerView) UpdateStateAsync() {
-	go func() {
-		pv.State, _ = pv.Player.State(pv.Session)
-	}()
+	return pv.Content.CenterHorizontal(term).CenterVertical(term).String()
 }
 
 // Update state synchronously for percision.
 func (pv *PlayerView) UpdateStateSync() {
 	pv.State, _ = pv.Player.State(pv.Session)
 }
+
+// Updates state continuously and asyncchronously.
+func (pv *PlayerView) UpdateStateLoop() {
+	go func() {
+		pv.State, _ = pv.Player.State(pv.Session)
+		time.Sleep(time.Second)
+		pv.UpdateStateLoop()
+	}()
+}
+
+// func (pv *PlayerView) UpdateStateAsync() {
+// 	go func() {
+// 		pv.State, _ = pv.Player.State(pv.Session)
+// 	}()
+// }

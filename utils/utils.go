@@ -14,6 +14,13 @@ func PrintResponseBody(r io.ReadCloser) {
 	fmt.Println(string(b))
 }
 
+// Use to debug wacky api json confuzzling.
+func ResponseBody(r io.ReadCloser) string {
+	b, _ := io.ReadAll(r)
+	defer r.Close()
+	return string(b)
+}
+
 // Caches the given image.
 //
 // Deprecated: Use Image.Cache instead.
