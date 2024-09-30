@@ -24,7 +24,7 @@ type PlaylistView struct {
 
 	// The list selection for user to select
 	// playlists through hovering and selecting.
-	PlaylistList *PlaylistList
+	PlaylistList PlaylistList
 
 	Images []Image
 
@@ -89,27 +89,39 @@ func (pv *PlaylistView) UpdateContent(term Terminal) {
 	pv.PlaylistInfo.Update(pv.GetSelectedPlaylist())
 	pv.ViewStatus.Update(PLAYLIST_VIEW)
 
-	t := table.NewWriter()
-	t.Style().Box.PaddingRight = "   "
-	t.AppendRows([]table.Row{
-		{"\n"},
-		{pv.PlaylistList.View()},
-		{"\n\n"},
-		{pv.PlaylistInfo.Content(term).PadLinesLeft(4).String()},
-		{"\n\n\n\n\n\n"},
-	})
+	container := table.NewWriter()
+	container.Style().Options.DrawBorder = false
+	container.Style().Options.SeparateColumns = false
+	// container.Style().Box = table.StyleBoxRounded
 
-	pv.Content = Join([]Content{
-		Content(t.Render()),
-		pv.ViewStatus.Content(),
-		Content(pv.ImageMap[pv.PlaylistList.list.SelectedItem()].AsciiSmall()),
-	}, "\n\n")
+	pv.Content = func() Content {
+		// if term.IsSizeSmall() {
+		pv.PlaylistList.list.SetHeight(LIST_HEIGHT)
+
+		container.AppendRow(table.Row{
+			Join([]Content{
+				pv.PlaylistList.Content().Prepend('\n', 2).Append('\n', 1),
+				pv.PlaylistInfo.Content(term).PadLinesLeft(2),
+				Content("").Append(' ', 45),
+			}, "\n"),
+		})
+
+		t := table.NewWriter()
+		t.Style().Options.DrawBorder = false
+		t.Style().Options.SeparateColumns = false
+		t.AppendRow(table.Row{
+			Content(container.Render()).CenterVertical(term),
+			pv.ImageMap[pv.PlaylistList.list.SelectedItem()].AsciiNormalBW().Content().Prepend('\n', 1).Append('\n', 1).PadLinesLeft(2).CenterVertical(term),
+		})
+
+		return Content(t.Render()).CenterHorizontal(term)
+	}()
 }
 
 func (pv *PlaylistView) View(playerView *PlayerView, term Terminal) string {
 	pv.UpdateContent(term)
 
-	return pv.Content.CenterHorizontal(term).CenterVertical(term).String()
+	return pv.Content.String()
 }
 
 // Gets the playlist object with the same name as what the

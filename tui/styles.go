@@ -59,7 +59,7 @@ var PlaylistViewStyle = struct {
 	ItemSelected lg.Style
 	Item         lg.Style
 }{
-	Title:        lg.NewStyle().Bold(true).Background(lg.Color("#a89984")).Foreground(lg.Color("#282828")).PaddingLeft(1).PaddingRight(1),
+	Title:        lg.NewStyle().Bold(true).Background(lg.Color("#458588")).Foreground(lg.Color("#282828")).PaddingLeft(1).PaddingRight(1),
 	ItemSelected: lg.NewStyle().PaddingLeft(2),
 
 	Item: lg.NewStyle().PaddingLeft(4).Faint(true),

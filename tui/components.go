@@ -57,7 +57,23 @@ func (pd *PlayerDetails) Render(track *spotify.Track, progressMs int, state *pla
 
 	timer := Content(fmt.Sprintf("%sm:%ss / %sm:%ss", pd.ProgressMin, pd.ProgressSec, pd.DurationMin, pd.DurationSec))
 
-	options := Content(fmt.Sprintf("vol: %s%% sfl: %v", pd.VolumePercent, state.ShuffleState))
+	var repeat string
+	switch state.RepeatState {
+	case "off":
+		repeat = "off"
+	default:
+		repeat = "on"
+	}
+
+	var shuffle string
+	switch state.ShuffleState {
+	case true:
+		shuffle = "on"
+	default:
+		shuffle = "off"
+	}
+
+	options := Content(fmt.Sprintf("vol: %s%% sfl: %v rpt: %v", pd.VolumePercent, shuffle, repeat))
 
 	return Join([]Content{title, timer, options}, "\n\n").String()
 }
@@ -70,7 +86,23 @@ func (pd *PlayerDetails) Content(track *spotify.Track, progressMs int, state *pl
 
 	timer := Content(fmt.Sprintf("%sm:%ss / %sm:%ss", pd.ProgressMin, pd.ProgressSec, pd.DurationMin, pd.DurationSec))
 
-	options := Content(fmt.Sprintf("vol: %s%% sfl: %v", pd.VolumePercent, state.ShuffleState))
+	var repeat string
+	switch state.RepeatState {
+	case "off":
+		repeat = "off"
+	default:
+		repeat = "on"
+	}
+
+	var shuffle string
+	switch state.ShuffleState {
+	case true:
+		shuffle = "on"
+	default:
+		shuffle = "off"
+	}
+
+	options := Content(fmt.Sprintf("Vol: %s%%  Sfl: %v  Rep: %v", pd.VolumePercent, shuffle, repeat))
 
 	return Join([]Content{title, timer, options}, "\n\n")
 }

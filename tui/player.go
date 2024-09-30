@@ -86,14 +86,20 @@ func (pv *PlayerView) EnsureProgressSynced() {
 	pv.StatusBar.Update(pv.State)
 
 	if pv.State.IsPlaying {
-		pv.ProgressMs += int(POLLING_RATE_MS.Milliseconds())
+		pv.ProgressMs += int(UPDATE_RATE_SEC.Milliseconds())
 	}
 
-	// Syncs progress time if it differs too much (2 * Polling rate).
+	// Syncs progress time if it differs too much (5 * Polling rate).
 	if math.Abs(float64(pv.State.ProgressMs-pv.ProgressMs)) >
-		float64(10*POLLING_RATE_MS.Milliseconds()) ||
+		float64(5*UPDATE_RATE_SEC.Milliseconds()) ||
 		pv.State.Track.ID != pv.TrackID {
 
+		pv.ProgressMs = pv.State.ProgressMs
+		pv.TrackID = pv.State.Track.ID
+	}
+
+	// Updates the progress percisly when player is paused.
+	if !pv.State.IsPlaying {
 		pv.ProgressMs = pv.State.ProgressMs
 		pv.TrackID = pv.State.Track.ID
 	}
@@ -126,7 +132,9 @@ func (pv *PlayerView) UpdateContent(term Terminal) {
 			}, "\n\n")
 
 		default:
-			pv.Image.Update(pv.State.Track.Album.Images[0].Url)
+			if len(pv.State.Track.Album.Images) > 0 {
+				pv.Image.Update(pv.State.Track.Album.Images[0].Url)
+			}
 
 			return Join([]Content{
 				pv.Image.AsciiNormal().Content(),
@@ -148,8 +156,13 @@ func (pv *PlayerView) PlayPause() {
 	switch pv.State.IsPlaying {
 	case true:
 		pv.Player.Pause(pv.Session)
+
+		// Updates to ensure player updates immediately
+		// since state only updates every POLLING_RATE seconds.
+		pv.State.IsPlaying = false
 	default:
 		pv.Player.Resume(pv.Session, true)
+		pv.State.IsPlaying = true //
 	}
 
 	// pv.UpdateStateSync()
@@ -175,13 +188,7 @@ func (pv *PlayerView) UpdateStateSync() {
 func (pv *PlayerView) UpdateStateLoop() {
 	go func() {
 		pv.State, _ = pv.Player.State(pv.Session)
-		time.Sleep(time.Second)
+		time.Sleep(POLLING_RATE_STATE_SEC)
 		pv.UpdateStateLoop()
 	}()
 }
-
-// func (pv *PlayerView) UpdateStateAsync() {
-// 	go func() {
-// 		pv.State, _ = pv.Player.State(pv.Session)
-// 	}()
-// }

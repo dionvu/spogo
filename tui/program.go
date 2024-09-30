@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	POLLING_RATE_MS          = time.Second
+	UPDATE_RATE_SEC          = time.Second
+	POLLING_RATE_STATE_SEC   = time.Second * 5
 	VOLUME_INCREMENT_PERCENT = 5
 )
 
@@ -82,7 +83,7 @@ func New(
 
 func (m *Program) Init() tea.Cmd {
 	m.Views.Player.UpdateStateLoop()
-	return tea.Tick(POLLING_RATE_MS, func(time.Time) tea.Msg {
+	return tea.Tick(UPDATE_RATE_SEC, func(time.Time) tea.Msg {
 		return tickMsg{}
 	})
 }

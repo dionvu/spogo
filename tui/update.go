@@ -31,14 +31,14 @@ func (m *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			m.Player.Resume(m.Session, false)
 
-			return m, tea.Tick(4*POLLING_RATE_MS, func(time.Time) tea.Msg {
+			return m, tea.Tick(4*UPDATE_RATE_SEC, func(time.Time) tea.Msg {
 				return tickMsg{}
 			})
 		}
 
 		m.Views.Player.EnsureProgressSynced()
 
-		return m, tea.Tick(POLLING_RATE_MS, func(time.Time) tea.Msg {
+		return m, tea.Tick(UPDATE_RATE_SEC, func(time.Time) tea.Msg {
 			return tickMsg{}
 		})
 
@@ -56,7 +56,7 @@ func (m *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case " ":
-			m.Views.Player.UpdateStateSync()
+			// m.Views.Player.UpdateStateSync()
 			m.Views.Player.PlayPause()
 
 		case "[":
@@ -122,14 +122,14 @@ func (m *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.Views.Squery = NewSearchQuery()
 			}
 
-		case "r":
+		case "ctrl+r":
 			// Refreshes the terminal fixing any visual glitches. This doesn't yet force any
 			// updates to, for example, listed playlist devices.
 			go func() {
 				view := m.CurrentView
 
 				m.CurrentView = REFRESH_VIEW
-				time.Sleep(POLLING_RATE_MS)
+				time.Sleep(UPDATE_RATE_SEC)
 				m.CurrentView = view
 
 				cmd := exec.Command("clear")
@@ -148,14 +148,27 @@ func (m *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "s":
 			// Enables or disables shuffling on current album or playlist.
 			state := m.PlayerState().ShuffleState
+
+			m.PlayerState().ShuffleState = !state
+
 			m.Player.Shuffle(!state, m.Session)
 
+		case "r":
+			switch m.PlayerState().RepeatState {
+			case "off":
+				m.Player.Repeat(true, m.Session)
+				m.PlayerState().RepeatState = "context"
+			default:
+				m.Player.Repeat(false, m.Session)
+				m.PlayerState().RepeatState = "off"
+			}
 		}
 
 		// Handles updates from the playlist list.
 		if m.CurrentView == PLAYLIST_VIEW && m.Views.Playlist.PlaylistList.choice != "" {
 			var cmd tea.Cmd
-			m.Views.Playlist.PlaylistList.list, cmd = m.Views.Playlist.PlaylistList.list.Update(msg)
+			model, cmd := m.Views.Playlist.PlaylistList.Update(msg)
+			m.Views.Playlist.PlaylistList = model.(PlaylistList)
 			return m, cmd
 		}
 

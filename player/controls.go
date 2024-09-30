@@ -289,13 +289,13 @@ func (p *Player) Pause(s *auth.Session) error {
 }
 
 // Seeks to given position in milliseconds to user's current playing track.
-func (p *Player) SeekToPosition(s *auth.Session, pos int) error {
+func (p *Player) Seek(positionMs int, s *auth.Session) error {
 	if p.device == nil {
 		return errors.NoDevice.New("no selected playback device")
 	}
 
 	query := url.Values{}
-	query.Set("position_ms", strconv.Itoa(pos))
+	query.Set("position_ms", strconv.Itoa(positionMs))
 	query.Set("device_id", p.device.ID)
 
 	req, err := http.NewRequest(http.MethodPut, spotifyurls.PLAYERSEEK+"?"+query.Encode(), nil)
@@ -357,6 +357,46 @@ func (p *Player) Shuffle(state bool, s *auth.Session) error {
 	}
 
 	if res.StatusCode >= http.StatusOK {
+		err = errors.HTTP.New("bad request")
+		errors.LogError(err)
+		return err
+	}
+
+	return nil
+}
+
+// Toggles repeating on the current context.
+func (p *Player) Repeat(state bool, s *auth.Session) error {
+	if p.device == nil {
+		return errors.NoDevice.New("no selected playback device")
+	}
+
+	query := &url.Values{}
+	if state == true {
+		query.Set("state", "context")
+	} else {
+		query.Set("state", "off")
+	}
+
+	url := spotifyurls.PLAYERREPEAT + "?" + query.Encode()
+	req, err := http.NewRequest(http.MethodPut, url, nil)
+	if err != nil {
+		err = errors.HTTPRequest.WrapWithNoMessage(err)
+		errors.LogError(err)
+		return err
+	}
+	req.Header.Add(headers.Auth, "Bearer "+s.AccessToken.String())
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		err = errors.HTTP.WrapWithNoMessage(err)
+		errors.LogError(err)
+		return err
+	}
+
+	errors.LogApiCall(spotifyurls.PLAYERREPEAT, res.StatusCode)
+
+	if res.StatusCode > 204 {
 		err = errors.HTTP.New("bad request")
 		errors.LogError(err)
 		return err

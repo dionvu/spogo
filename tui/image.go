@@ -39,6 +39,10 @@ func (i *Image) AsciiNormal() Ascii {
 	return i.Ascii(AsciiFlagsNormal())
 }
 
+func (i *Image) AsciiNormalBW() Ascii {
+	return i.Ascii(AsciiFlagsNormalBW())
+}
+
 // Shorthand for rendering image as ascii with size
 // small flags.
 func (i *Image) AsciiSmall() Ascii {
@@ -96,10 +100,20 @@ func AsciiFlagsNormal() aic_package.Flags {
 	return flags
 }
 
+func AsciiFlagsNormalBW() aic_package.Flags {
+	flags := aic_package.DefaultFlags()
+	// flags.Colored = false
+	flags.Grayscale = true
+	flags.Dimensions = []int{40, 20}
+	flags.Braille = true
+	flags.Threshold = 80
+	return flags
+}
+
 func AsciiFlagsSmall() aic_package.Flags {
 	flags := aic_package.DefaultFlags()
 	flags.Colored = true
-	flags.Dimensions = []int{24, 12}
+	flags.Dimensions = []int{22, 11}
 	flags.Braille = true
 	flags.Threshold = 20
 	return flags

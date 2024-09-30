@@ -25,6 +25,7 @@ type State struct {
 	ProgressMs   int     `json:"progress_ms"`
 	IsPlaying    bool    `json:"is_playing"`
 	ShuffleState bool    `json:"shuffle_state"`
+	RepeatState  string  `json:"repeat_state"`
 
 	// Each State will have either a nil track or episode,
 	// depending on what the user is playing.

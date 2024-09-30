@@ -9,13 +9,14 @@ import (
 	"github.com/dionvu/spogo/spotify"
 )
 
+// The detailed infomation about a playlist to
+// be displayed when a playlist is selected
+// or hovered.
 type PlaylistInfo struct {
 	Name        PlaylistName
 	TotalTracks int
 	Owner       string
 }
-
-type PlaylistName string
 
 func (pi *PlaylistInfo) Update(playlist *spotify.Playlist) {
 	pi.Name = PlaylistName(playlist.Name)
@@ -25,7 +26,7 @@ func (pi *PlaylistInfo) Update(playlist *spotify.Playlist) {
 
 // Renders the playlistInfo as a content string.
 func (pi PlaylistInfo) Content(term Terminal) Content {
-	style := lg.NewStyle().Bold(true)
+	style := lg.NewStyle().Bold(true).Foreground(lg.Color("#458588"))
 
 	return Join([]string{
 		style.Render(pi.Name.Adjust(term).String()),
@@ -34,18 +35,14 @@ func (pi PlaylistInfo) Content(term Terminal) Content {
 	}, "\n")
 }
 
+type PlaylistName string
+
 // Adjusts the playlist string to fit
 // within the terminal if it is too big.
 func (pn PlaylistName) Adjust(term Terminal) PlaylistName {
-	s := string(pn)
+	c := Content(pn)
 
-	len := len(s)
-	if len >= term.Width-4 {
-		s = s[:term.Width-10]
-		s += "..."
-	}
-
-	return PlaylistName(s)
+	return PlaylistName(c.AdjustFit(term.Width))
 }
 
 func (pn PlaylistName) String() string {
@@ -58,16 +55,16 @@ type PlaylistList struct {
 	quitting bool
 }
 
-func NewPlaylistListModel(items []list.Item, title string) *PlaylistList {
+func NewPlaylistListModel(items []list.Item, title string) PlaylistList {
 	l := list.New(items, itemDelegate{}, DEFAULT_WIDTH, LIST_HEIGHT)
 	l.SetFilteringEnabled(false)
-	// l.Title = title
-	l.Title = lg.NewStyle().PaddingLeft(2).Render(title)
+	l.Title = title
+	// l.Title = lg.NewStyle().PaddingLeft(2).Render(title)
 	l.Styles.Title = lg.NewStyle().MarginLeft(0)
 	l.SetShowStatusBar(false)
 	l.SetShowHelp(false)
 
-	lm := &PlaylistList{list: l}
+	lm := PlaylistList{list: l}
 
 	return lm
 }
@@ -81,14 +78,19 @@ func (pll PlaylistList) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			pll.quitting = true
 			return pll, tea.Quit
-		}
 
-		return pll, cmd
+		case "esc":
+			return pll, nil
+		}
 	}
 
 	pll.list, cmd = pll.list.Update(msg)
 
 	return pll, cmd
+}
+
+func (pl PlaylistList) Content() Content {
+	return Content(pl.list.View())
 }
 
 func (pl PlaylistList) View() string {

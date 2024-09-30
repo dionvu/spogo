@@ -11,7 +11,7 @@ import (
 
 const (
 	LIST_HEIGHT         = 10
-	DEFAULT_WIDTH       = 40
+	DEFAULT_WIDTH       = 20
 	DEFAULT_LIST_HEIGHT = 20 // 7 Selections per page
 	SMALL_LIST_HEIGHT   = 7  // 5 Selections per page
 )
@@ -42,5 +42,5 @@ func (d itemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 }
 
 func (i Item) FilterValue() string {
-	return ""
+	return string(i)
 }

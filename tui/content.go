@@ -131,3 +131,36 @@ func (v Content) PadLinesLeft(count int) Content {
 
 	return Content(strings.Join(lines, "\n"))
 }
+
+// Adjusts content to fit within the width size.
+func (v Content) AdjustFit(size int) Content {
+	lines := strings.Split(string(v), "\n")
+	for i, line := range lines {
+		if len(line) > size {
+			lines[i] = line[:size]
+		}
+	}
+	return Content(strings.Join(lines, "\n"))
+}
+
+// Prepends a char to the beginning of the content count
+// number of times.
+func (v Content) Prepend(c byte, count int) Content {
+	s := string(v)
+	for i := 0; i < count; i++ {
+		s = string(c) + s
+	}
+
+	return Content(s)
+}
+
+// Appends a char to the beginning of the content count
+// number of times.
+func (v Content) Append(c byte, count int) Content {
+	s := string(v)
+	for i := 0; i < count; i++ {
+		s += string(c)
+	}
+
+	return Content(s)
+}
