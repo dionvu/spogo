@@ -1,14 +1,19 @@
 package ui
 
 import (
+	"fmt"
 	"math"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
+	lg "github.com/charmbracelet/lipgloss"
 	"github.com/dionvu/spogo/auth"
 	"github.com/dionvu/spogo/config"
+	"github.com/dionvu/spogo/errors"
 	"github.com/dionvu/spogo/player"
+	"github.com/dionvu/spogo/spotify"
 )
 
 // The view struct that displays player state
@@ -162,10 +167,8 @@ func (pv *PlayerView) PlayPause() {
 		pv.State.IsPlaying = false
 	default:
 		pv.Player.Resume(pv.Session, true)
-		pv.State.IsPlaying = true //
+		pv.State.IsPlaying = true
 	}
-
-	// pv.UpdateStateSync()
 
 	pv.StatusBar.Update(pv.State)
 }
@@ -191,4 +194,138 @@ func (pv *PlayerView) UpdateStateLoop() {
 		time.Sleep(POLLING_RATE_STATE_SEC)
 		pv.UpdateStateLoop()
 	}()
+}
+
+type PlayerDetails struct {
+	Track         string
+	Artists       string
+	ProgressMin   string
+	ProgressSec   string
+	DurationMin   string
+	DurationSec   string
+	VolumePercent string
+}
+
+// Updates PlayerDetails with information in given state and track.
+func (pd *PlayerDetails) Update(progressMs int, state *player.State) {
+	if state == nil || state.Device == nil || state.Track == nil {
+		errors.LogError(errors.PlayerViewInvalidState.New("invalid state passed, cannot update player details"))
+		return
+	}
+
+	pd.Track = state.Track.Name
+	pd.Artists = ""
+	pd.ProgressSec = strconv.Itoa(((progressMs / 1000) % 60))
+	pd.ProgressMin = strconv.Itoa((progressMs / 1000) / 60)
+	pd.DurationSec = strconv.Itoa((state.Track.DurationMs / 1000) % 60)
+	pd.DurationMin = strconv.Itoa((state.Track.DurationMs / 1000) / 60)
+	pd.VolumePercent = strconv.Itoa(state.Device.VolumePercent)
+
+	for i := 0; i < len(state.Track.Artists); i++ {
+		pd.Artists += state.Track.Artists[i].Name
+		if i != len(state.Track.Artists)-1 {
+			pd.Artists += ", "
+		}
+	}
+
+	for _, time := range []*string{&pd.ProgressSec, &pd.DurationSec} {
+		if len(*time) == 1 {
+			*time = "0" + *time
+		}
+	}
+}
+
+// Renders the player details as a string.
+func (pd *PlayerDetails) Render(track *spotify.Track, progressMs int, state *player.State) string {
+	pd.Update(progressMs, state)
+
+	title := Content(fmt.Sprintf("%s - %s", pd.Track, pd.Artists))
+
+	timer := Content(fmt.Sprintf("%sm:%ss / %sm:%ss", pd.ProgressMin, pd.ProgressSec, pd.DurationMin, pd.DurationSec))
+
+	var repeat string
+	switch state.RepeatState {
+	case "off":
+		repeat = "off"
+	default:
+		repeat = "on"
+	}
+
+	var shuffle string
+	switch state.ShuffleState {
+	case true:
+		shuffle = "on"
+	default:
+		shuffle = "off"
+	}
+
+	options := Content(fmt.Sprintf("vol: %s%% sfl: %v rpt: %v", pd.VolumePercent, shuffle, repeat))
+
+	return Join([]Content{title, timer, options}, "\n\n").String()
+}
+
+// Renders the player details as a content string.
+func (pd *PlayerDetails) Content(track *spotify.Track, progressMs int, state *player.State) Content {
+	pd.Update(progressMs, state)
+
+	title := Content(fmt.Sprintf("%s - %s", pd.Track, pd.Artists))
+
+	timer := Content(fmt.Sprintf("%sm:%ss / %sm:%ss", pd.ProgressMin, pd.ProgressSec, pd.DurationMin, pd.DurationSec))
+
+	var repeat string
+	switch state.RepeatState {
+	case "off":
+		repeat = "off"
+	default:
+		repeat = "on"
+	}
+
+	var shuffle string
+	switch state.ShuffleState {
+	case true:
+		shuffle = "on"
+	default:
+		shuffle = "off"
+	}
+
+	options := Content(fmt.Sprintf("Vol: %s%%  Sfl: %v  Rep: %v", pd.VolumePercent, shuffle, repeat))
+
+	return Join([]Content{title, timer, options}, "\n\n")
+}
+
+// The title status bar indicating whether the player is
+// playing, paused or an invalid device is selected.
+type StatusBar struct {
+	Status string
+	Style  *lg.Style
+}
+
+// Renders the status bar as a string.
+func (sb *StatusBar) Render() string {
+	return sb.Style.Render(sb.Status)
+}
+
+// Renders the status bar as a content string.
+func (sb *StatusBar) Content() Content {
+	return Content(sb.Style.Render(sb.Status))
+}
+
+// Updates the status bar given the player's state.
+func (sb *StatusBar) Update(state *player.State) {
+	const (
+		PAUSED      = "Paused"
+		NO_PLAYER   = "Player Inactive"
+		NOW_PLAYING = "Now Playing"
+	)
+
+	if state != nil && state.IsPlaying {
+		sb.Style = &PlayerViewStyle.StatusBar.NowPlaying
+		sb.Status = NOW_PLAYING
+	} else if state != nil && !state.IsPlaying {
+		sb.Style = &PlayerViewStyle.StatusBar.Paused
+		sb.Status = PAUSED
+	} else {
+		sb.Style = &PlayerViewStyle.StatusBar.NoPlayer
+		sb.Status = NO_PLAYER
+	}
 }

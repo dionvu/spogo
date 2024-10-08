@@ -74,7 +74,8 @@ func (dv *DeviceView) View(terminal Terminal, device *player.Device) string {
 		return "\n\n" + RenderDeviceView(dv, device)
 	}
 
-	return "\n\n" + MainControlsRender(DEVICE_VIEW) + "\n\n" + RenderDeviceView(dv, device)
+	// return "\n\n" + MainControlsRender(DEVICE_VIEW) + "\n\n" + RenderDeviceView(dv, device)
+	return ""
 }
 
 func (dv *DeviceView) GetDeviceFromChoice(choice string) *player.Device {
@@ -101,7 +102,7 @@ func RenderDeviceView(dv *DeviceView, device *player.Device) string {
 }
 
 func NewDeviceListModel(items []list.Item) *DeviceListModel {
-	l := list.New(items, itemDelegate{}, DEFAULT_WIDTH, LIST_HEIGHT)
+	l := list.New(items, itemDelegate{}, DEFAULT_WIDTH, LIST_HEIGHT_NORMAL)
 	l.SetFilteringEnabled(false)
 	l.Title = DeviceViewStyle.Title.Render("Devices")
 	l.Styles.Title = lg.NewStyle().MarginLeft(0)

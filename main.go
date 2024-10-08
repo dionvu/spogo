@@ -10,7 +10,7 @@ import (
 	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/errors"
 	"github.com/dionvu/spogo/player"
-	"github.com/dionvu/spogo/tui"
+	"github.com/dionvu/spogo/views"
 )
 
 func main() {

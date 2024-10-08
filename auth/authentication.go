@@ -150,7 +150,6 @@ func OpenURL(url string) error {
 	return nil
 }
 
-// Starts the fucking server :DD.
 func startServer() {
 	go func() {
 		err := http.ListenAndServe(":"+PORT, nil)

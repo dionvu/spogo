@@ -42,3 +42,15 @@ func CacheImage(url string, path string) error {
 
 	return nil
 }
+
+// Converts the number of milliseconds into two string values
+// of minutes and addittional seconds.
+func MsToMinutesAndSeconds(ms int) (minutes string, seconds string) {
+	m := ms / 60000
+	s := (ms % 60000) / 1000
+
+	minutes = fmt.Sprint(m)
+	seconds = fmt.Sprint(s)
+
+	return minutes, seconds
+}

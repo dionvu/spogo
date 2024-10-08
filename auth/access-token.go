@@ -74,7 +74,7 @@ func (t *AccessToken) Refresh(refreshToken *RefreshToken, c *config.Config) erro
 	req.SetBasicAuth(c.Spotify.ClientID, c.Spotify.ClientSecret)
 
 	res, err := http.DefaultClient.Do(req)
-	if res.StatusCode != 200 || err != nil {
+	if res.StatusCode != http.StatusOK || err != nil {
 		err = errors.Reauthentication.Wrap(err, "bad refresh token")
 		errors.LogError(err)
 		return err

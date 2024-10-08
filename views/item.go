@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	LIST_HEIGHT         = 10
+	LIST_HEIGHT_SMALL   = 7
+	LIST_HEIGHT_NORMAL  = 10
 	DEFAULT_WIDTH       = 20
 	DEFAULT_LIST_HEIGHT = 20 // 7 Selections per page
 	SMALL_LIST_HEIGHT   = 7  // 5 Selections per page

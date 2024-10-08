@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/spotify"
@@ -11,47 +12,23 @@ import (
 	"github.com/ktr0731/go-fuzzyfinder"
 )
 
-const (
-	PLAYER_VIEW           = "PLAYER_VIEW"
-	PLAYLIST_VIEW         = "PLAYLIST_VIEW"
-	PLAYLIST_TRACK_VIEW   = "PLAYLIST_TRACK_VIEW"
-	ALBUM_TRACK_VIEW      = "ALBUM_TRACK_VIEW"
-	REFRESH_VIEW          = "REFRESH_VIEW"
-	HELP_VIEW             = "HELP_VIEW"
-	TERMINAL_WARNING_VIEW = "TERMINAL_WARNING_VIEW"
-
-	SEARCH_TYPE_VIEW  = "SEARCH_TYPE_VIEW"
-	SEARCH_QUERY_VIEW = "SEARCH_QUERY_VIEW"
-
-	SEARCH_PLAYLIST_VIEW = "SEARCH_PLAYLIST_VIEW"
-	SEARCH_TRACK_VIEW    = "SEARCH_TRACK_VIEW"
-	SEARCH_ALBUM_VIEW    = "SEARCH_ALBUM_VIEW"
-
-	DEVICE_VIEW = "DEVICE_VIEW"
-)
-
 func (m *Program) View() string {
 	switch m.CurrentView {
 	case PLAYER_VIEW:
 		return m.Views.Player.View(m.Terminal)
-		// return m.Views.Player.ProgressMs
 
 	case PLAYLIST_VIEW:
 		return m.Views.Playlist.View(m.Views.Player, m.Terminal)
 
 	case HELP_VIEW:
-		return "\n\n" + MainControlsRender(HELP_VIEW) + "\n\n" + HelpString()
+		return HelpString()
 
 	case PLAYLIST_TRACK_VIEW:
 		state := m.Views.Player.State.CurrentPlayingType
 
 		switch state {
 		case "track":
-			selectedItem := m.Views.Playlist.PlaylistList.list.SelectedItem()
-
-			playlistName := m.Views.Playlist.itemsMap[selectedItem]
-
-			playlist := m.Views.Playlist.playlistsMap[playlistName]
+			playlist := m.Views.Playlist.GetSelectedPlaylist()
 
 			if playlist == nil {
 				m.CurrentView = PLAYLIST_VIEW
@@ -65,6 +42,18 @@ func (m *Program) View() string {
 			}
 
 			tracks := *t
+			asciis := make([]string, len(tracks))
+
+			m.CurrentView = PLAYER_VIEW
+
+			cd, _ := os.UserCacheDir()
+			imagePath := filepath.Join(cd, config.APPNAME, playlist.ID, "temp")
+			os.MkdirAll(imagePath, os.ModePerm)
+			for i, track := range tracks {
+				image := Image{FilePath: fmt.Sprint(imagePath, i, ".jpeg")}
+				image.Update(track.Album.Images[0].Url)
+				asciis[i] = image.AsciiSmall().String()
+			}
 
 			// Fzf tracks from the playlist currently slected
 			// and plays the selected track.
@@ -78,14 +67,7 @@ func (m *Program) View() string {
 						return ""
 					}
 
-					mins, secs := msToMinutesAndSeconds(tracks[i].DurationMs)
-
-					cd, _ := os.UserCacheDir()
-					imagePath := filepath.Join(cd, config.APPNAME, "temp.jpeg")
-
-					_ = utils.CacheImage(tracks[i].Album.Images[0].Url, imagePath)
-
-					var ascii string
+					mins, secs := utils.MsToMinutesAndSeconds(tracks[i].DurationMs)
 
 					return fmt.Sprintf("Track: %s \nArtist: %s\nAlbum: %s\nDuration: %sm:%ss\n\n%s",
 						tracks[i].Name,
@@ -93,7 +75,7 @@ func (m *Program) View() string {
 						tracks[i].Album.Name,
 						mins,
 						secs,
-						ascii,
+						asciis[i],
 					)
 				}))
 
@@ -104,9 +86,13 @@ func (m *Program) View() string {
 				m.Player.Play(contextUri, tracks[idx].Uri, m.Session)
 			}
 
-			m.CurrentView = PLAYLIST_VIEW
-
 			fmt.Print("\033[?25l") // Hide cursor after fzf showing fuzzyfinder
+
+			if err == nil {
+				m.CurrentView = PLAYER_VIEW
+			} else {
+				m.CurrentView = PLAYLIST_VIEW
+			}
 
 			return ""
 
@@ -130,31 +116,19 @@ func (m *Program) View() string {
 
 		// Fzf tracks from the album currently playing
 		// and plays the selected track.
-		idx, err := fuzzyfinder.Find(
-			tracks,
-			func(i int) string {
-				return tracks[i].Name
-			},
-			fuzzyfinder.WithPreviewWindow(func(i, w, h int) string {
-				if i == -1 {
-					return ""
-				}
-
-				mins, secs := msToMinutesAndSeconds(tracks[i].DurationMs)
-
-				return fmt.Sprintf("Track: %s\nDuration: %sm:%ss",
-					tracks[i].Name,
-					mins,
-					secs,
-				)
-			}))
-
-		// Prevents user pressing Esc from playing the first track.
+		idx, err := FzfAlbumTracks(t)
 		if err == nil {
 			m.Player.Play(album.Uri, tracks[idx].Uri, m.Session)
-		}
 
-		fmt.Print("\033[?25l") // Hide cursor after fzf showing fuzzyfinder
+			go func() {
+				// After playing spotify takes a moment to update the state
+				// to match the newly played song.
+				time.Sleep(time.Second)
+
+				// Syncs state to new song.
+				m.Views.Player.UpdateStateSync()
+			}()
+		}
 
 		m.CurrentView = PLAYER_VIEW
 
@@ -189,14 +163,29 @@ func (m *Program) View() string {
 	}
 }
 
-// Converts the number of milliseconds into two string values
-// of minutes and addittional seconds.
-func msToMinutesAndSeconds(ms int) (minutes string, seconds string) {
-	m := ms / 60000
-	s := (ms % 60000) / 1000
+func FzfAlbumTracks(albumTracks *[]spotify.AlbumTrack) (int, error) {
+	tracks := *albumTracks
 
-	minutes = fmt.Sprint(m)
-	seconds = fmt.Sprint(s)
+	idx, err := fuzzyfinder.Find(
+		tracks,
+		func(i int) string {
+			return tracks[i].Name
+		},
+		fuzzyfinder.WithPreviewWindow(func(i, w, h int) string {
+			if i == -1 {
+				return ""
+			}
 
-	return minutes, seconds
+			mins, secs := utils.MsToMinutesAndSeconds(tracks[i].DurationMs)
+
+			return fmt.Sprintf("Track: %s\nDuration: %sm:%ss",
+				tracks[i].Name,
+				mins,
+				secs,
+			)
+		}))
+
+	fmt.Print("\033[?25l") // Hide cursor after fzf showing fuzzyfinder
+
+	return idx, err
 }

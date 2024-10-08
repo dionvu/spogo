@@ -43,20 +43,23 @@ func (m *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		})
 
 	case tea.KeyMsg:
-
-		// Prevents search query from activating any commands.
-		if m.CurrentView == SEARCH_QUERY_VIEW && msg.String() != "enter" {
+		// Prevents search query from activating any commands, enless esc or enter.
+		if m.CurrentView == SEARCH_QUERY_VIEW && msg.String() != "enter" && msg.String() != "esc" {
 			var cmd tea.Cmd
 			m.Views.Squery.textInput, cmd = m.Views.Squery.textInput.Update(msg)
 			return m, cmd
 		}
 
 		switch msg.String() {
+		case "esc":
+			if m.CurrentView == SEARCH_QUERY_VIEW {
+				m.CurrentView = PLAYER_VIEW
+			}
+
 		case "ctrl+c", "q":
 			return m, tea.Quit
 
 		case " ":
-			// m.Views.Player.UpdateStateSync()
 			m.Views.Player.PlayPause()
 
 		case "[":
@@ -74,7 +77,8 @@ func (m *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.CurrentView = PLAYLIST_VIEW
 
 		case "f3", "3":
-			m.CurrentView = SEARCH_TYPE_VIEW
+			m.CurrentView = SEARCH_QUERY_VIEW
+			m.Views.Squery.textInput.SetValue("") // Resets the search value.
 
 		case "f4", "4":
 			m.Views.Device = NewDeviceView(m.Session) // Updates the list of available devices.
@@ -93,9 +97,9 @@ func (m *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case PLAYLIST_VIEW:
 				if i, ok := m.Views.Playlist.PlaylistList.list.SelectedItem().(Item); ok {
 					m.Views.Playlist.PlaylistList.choice = string(i)
-					err := m.Player.Play(m.Views.Playlist.playlistsMap[string(i)].URI, "", m.Session)
+					err := m.Player.Play(m.Views.Playlist.GetSelectedPlaylist().URI, "", m.Session)
 					if err != nil {
-						log.Fatal(string(i), m.Views.Playlist.playlistsMap[string(i)].URI)
+						log.Fatal(string(i), m.Views.Playlist.GetSelectedPlaylist().URI)
 					}
 				}
 
@@ -103,7 +107,8 @@ func (m *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if i, ok := m.Views.SearchType.ListModel.list.SelectedItem().(Item); ok {
 					m.Views.SearchType.ListModel.choice = string(i)
 
-					m.CurrentView = SEARCH_QUERY_VIEW
+					// TEMP
+					m.CurrentView = PLAYER_VIEW
 				}
 
 			case DEVICE_VIEW:
@@ -116,10 +121,8 @@ func (m *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			case SEARCH_QUERY_VIEW:
 				if m.Views.Squery.Query() != "" {
-					m.CurrentView = PLAYER_VIEW
+					m.CurrentView = SEARCH_TYPE_VIEW
 				}
-
-				m.Views.Squery = NewSearchQuery()
 			}
 
 		case "ctrl+r":
@@ -164,25 +167,23 @@ func (m *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
+		var cmd tea.Cmd
+
 		// Handles updates from the playlist list.
 		if m.CurrentView == PLAYLIST_VIEW && m.Views.Playlist.PlaylistList.choice != "" {
-			var cmd tea.Cmd
 			model, cmd := m.Views.Playlist.PlaylistList.Update(msg)
 			m.Views.Playlist.PlaylistList = model.(PlaylistList)
 			return m, cmd
 		}
 
-		// Handles updates from the search list.
-		if m.CurrentView == SEARCH_TYPE_VIEW && m.Views.SearchType.ListModel.choice != "" {
-			var cmd tea.Cmd
-			m.Views.SearchType.ListModel.list, cmd = m.Views.SearchType.ListModel.list.Update(msg)
+		// Handles updates from the device list.
+		if m.CurrentView == DEVICE_VIEW && m.Views.Device.ListModel.choice != "" {
+			m.Views.Device.ListModel.list, cmd = m.Views.Device.ListModel.list.Update(msg)
 			return m, cmd
 		}
 
-		// Handles updates from the device list.
-		if m.CurrentView == DEVICE_VIEW && m.Views.Device.ListModel.choice != "" {
-			var cmd tea.Cmd
-			m.Views.Device.ListModel.list, cmd = m.Views.Device.ListModel.list.Update(msg)
+		if m.CurrentView == SEARCH_TYPE_VIEW {
+			m.Views.SearchType.ListModel.list, cmd = m.Views.SearchType.ListModel.list.Update(msg)
 			return m, cmd
 		}
 	}

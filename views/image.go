@@ -9,6 +9,13 @@ import (
 	"github.com/dionvu/spogo/errors"
 )
 
+const (
+	ASCII_SMALL_HEIGHT  = 22
+	ASCII_SMALL_WIDTH   = 11
+	ASCII_MEDIUM_HEIGHT = 40
+	ASCII_MEDIUM_WIDTH  = 20
+)
+
 // Image is a struct that allows caching of the Image
 // and conversion to ascii. It also works with the Content
 // type to format the ascii content around a terminal.
@@ -49,6 +56,10 @@ func (i *Image) AsciiSmall() Ascii {
 	return i.Ascii(AsciiFlagsSmall())
 }
 
+func (i *Image) AsciiSmallBW() Ascii {
+	return i.Ascii(AsciiFlagsSmallBW())
+}
+
 // Renders the ascii as a string.
 func (a Image) Ascii(flags aic_package.Flags) Ascii {
 	ascii, err := aic_package.Convert(a.FilePath, flags)
@@ -59,7 +70,7 @@ func (a Image) Ascii(flags aic_package.Flags) Ascii {
 	return Ascii(ascii)
 }
 
-// Updates the ascii image url, and caches the image if it is not the same.
+// Updates the image url, and caches the image if it is not the same.
 func (img *Image) Update(url string) {
 	if AsciiNewUrl := url; AsciiNewUrl != img.Url {
 		img.Url = AsciiNewUrl
@@ -93,8 +104,8 @@ func (img *Image) Cache() error {
 
 func AsciiFlagsNormal() aic_package.Flags {
 	flags := aic_package.DefaultFlags()
+	flags.Dimensions = []int{ASCII_MEDIUM_HEIGHT, ASCII_MEDIUM_WIDTH}
 	flags.Colored = true
-	flags.Dimensions = []int{40, 20}
 	flags.Braille = true
 	flags.Threshold = 20
 	return flags
@@ -104,7 +115,7 @@ func AsciiFlagsNormalBW() aic_package.Flags {
 	flags := aic_package.DefaultFlags()
 	// flags.Colored = false
 	flags.Grayscale = true
-	flags.Dimensions = []int{40, 20}
+	flags.Dimensions = []int{ASCII_MEDIUM_HEIGHT, ASCII_MEDIUM_WIDTH}
 	flags.Braille = true
 	flags.Threshold = 80
 	return flags
@@ -113,8 +124,18 @@ func AsciiFlagsNormalBW() aic_package.Flags {
 func AsciiFlagsSmall() aic_package.Flags {
 	flags := aic_package.DefaultFlags()
 	flags.Colored = true
-	flags.Dimensions = []int{22, 11}
+	flags.Dimensions = []int{ASCII_SMALL_HEIGHT, ASCII_SMALL_WIDTH}
 	flags.Braille = true
 	flags.Threshold = 20
+	return flags
+}
+
+func AsciiFlagsSmallBW() aic_package.Flags {
+	flags := aic_package.DefaultFlags()
+	// flags.Colored = false
+	flags.Grayscale = true
+	flags.Dimensions = []int{ASCII_SMALL_HEIGHT, ASCII_SMALL_WIDTH}
+	flags.Braille = true
+	flags.Threshold = 80
 	return flags
 }

@@ -48,17 +48,15 @@ func NewSearchTypeView(s *auth.Session) *SearchTypeView {
 }
 
 func (st *SearchTypeView) View(playerView *PlayerView, terminal Terminal) string {
-	mainControls := MainControlsRender(SEARCH_TYPE_VIEW)
-
 	if terminal.IsSizeSmall() {
 		return "\n\n" + st.ListModel.View()
 	}
 
-	return "\n\n" + mainControls + "\n\n" + st.ListModel.View()
+	return ""
 }
 
 func NewSearchTypeListModel(items []list.Item) *SearchTypeListModel {
-	l := list.New(items, itemDelegate{}, DEFAULT_WIDTH, LIST_HEIGHT)
+	l := list.New(items, itemDelegate{}, DEFAULT_WIDTH, LIST_HEIGHT_NORMAL)
 	l.SetFilteringEnabled(false)
 	l.Title = "Select a search type: "
 	l.Styles.Title = lg.NewStyle().MarginLeft(0)

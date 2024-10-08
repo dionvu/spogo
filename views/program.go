@@ -10,6 +10,23 @@ import (
 )
 
 const (
+	PLAYER_VIEW           = "PLAYER_VIEW"
+	PLAYLIST_VIEW         = "PLAYLIST_VIEW"
+	PLAYLIST_TRACK_VIEW   = "PLAYLIST_TRACK_VIEW"
+	ALBUM_TRACK_VIEW      = "ALBUM_TRACK_VIEW"
+	REFRESH_VIEW          = "REFRESH_VIEW"
+	HELP_VIEW             = "HELP_VIEW"
+	TERMINAL_WARNING_VIEW = "TERMINAL_WARNING_VIEW"
+
+	SEARCH_TYPE_VIEW  = "SEARCH_TYPE_VIEW"
+	SEARCH_QUERY_VIEW = "SEARCH_QUERY_VIEW"
+
+	SEARCH_PLAYLIST_VIEW = "SEARCH_PLAYLIST_VIEW"
+	SEARCH_TRACK_VIEW    = "SEARCH_TRACK_VIEW"
+	SEARCH_ALBUM_VIEW    = "SEARCH_ALBUM_VIEW"
+
+	DEVICE_VIEW = "DEVICE_VIEW"
+
 	UPDATE_RATE_SEC          = time.Second
 	POLLING_RATE_STATE_SEC   = time.Second * 5
 	VOLUME_INCREMENT_PERCENT = 5
@@ -41,13 +58,16 @@ type Program struct {
 		Squery SearchQuery
 	}
 
+	// The programs's current terminal size, this
+	// is updated consistantly.
 	Terminal Terminal
 
-	CurrentWarning string
-
+	// Stuff necessary to access the spotify api.
 	Session *auth.Session
 	Player  *player.Player
-	Config  *config.Config
+
+	// Configuration options.
+	Config *config.Config
 }
 
 type tickMsg struct{}
@@ -72,7 +92,7 @@ func New(
 	m.Terminal.Width, m.Terminal.Height = getTerminalSize()
 
 	m.Views.Player = NewPlayerView(auth, player)
-	m.Views.Playlist = NewPlaylistView(auth)
+	m.Views.Playlist = NewPlaylistView(auth, m.Terminal)
 	m.Views.SearchType = NewSearchTypeView(auth)
 	m.Views.Device = NewDeviceView(m.Session)
 
