@@ -89,7 +89,7 @@ func NewPlaylistView(s *auth.Session, initialTerm components.Terminal) *Playlist
 		pv.playlistsMap[item] = &playlist
 	}
 
-	pv.PlaylistList = NewPlaylistListModel(items, PlaylistViewStyle.Title.Render("Playlists"), initialTerm)
+	pv.PlaylistList = NewPlaylistListModel(items, "Playlists", initialTerm)
 
 	// Sets the initial choice, else the list will not move.
 	if len(items) > 0 {
@@ -117,21 +117,21 @@ func (pv *Playlist) UpdateContent(term components.Terminal) {
 	pv.Content = func() components.Content {
 		t.AppendRow(table.Row{
 			components.Join([]components.Content{
-				pv.PlaylistList.Content().Prepend('\n', 2).Append('\n', 1),
-				pv.PlaylistInfo.Content(term).PadLinesLeft(2),
-				components.Content("").Append(' ', 40),
+				pv.PlaylistList.Content().
+					Prepend('\n', 2).Append('\n', 0),
+
+				pv.PlaylistInfo.Content(term).
+					PadLinesLeft(2).PadLinesLeft(2),
+
+				components.Content("").Append(' ', 35),
 			}, "\n"),
 		})
 
 		if term.IsSizeSmall() {
-			pv.PlaylistList.list.SetHeight(components.LIST_HEIGHT_SMALL)
-
 			ascii = pv.SelectedImage().AsciiSmallBW().Content().
 				Prepend('\n', 1).Append('\n', 1).
 				PadLinesLeft(2).CenterVertical(term)
 		} else {
-			pv.PlaylistList.list.SetHeight(components.LIST_HEIGHT_NORMAL)
-
 			ascii = pv.SelectedImage().AsciiNormalBW().Content().
 				Prepend('\n', 1).Append('\n', 1).
 				PadLinesLeft(2).CenterVertical(term)
@@ -213,13 +213,17 @@ type PlaylistList struct {
 
 // A new playlist list model sized dynamically based on the initial terminal dimensions.
 func NewPlaylistListModel(items []list.Item, title string, initialTerm components.Terminal) PlaylistList {
+	// var l list.Model
+
+	// fmt.Println(initialTerm.IsSizeSmall())
+	// if initialTerm.IsSizeSmall() {
+	// } else {
 	l := components.NewDefaultList(items, title)
+	// }
+
+	// l = components.NewCustomList(items, title, components.LIST_HEIGHT_SMALL, components.DEFAULT_WIDTH)
 
 	lm := PlaylistList{list: l}
-
-	if initialTerm.IsSizeSmall() {
-		l.SetHeight(components.LIST_HEIGHT_SMALL)
-	}
 
 	return lm
 }

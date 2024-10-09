@@ -95,7 +95,6 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "f3", "3":
 			p.Search.Input.Text.Focus()
 			p.CurrentView = views.SEARCH_VIEW_QUERY
-			// p.Views.Squery.textInput.SetValue("") // Resets the search value.
 
 		case "f4", "4":
 			// p.Views.Device = NewDeviceView(p.session) // Updates the list of available devices.
@@ -131,13 +130,8 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// Transfers playback to the newly select device.
 				p.player.Resume(p.session, false)
 
-				// case SEARCH_QUERY_VIEW:
-				// if p.Views.Squery.Query() != "" {
-				// 	p.CurrentView = SEARCH_TYPE_VIEW
-				// }
-
 			case views.SEARCH_VIEW_TYPE:
-				p.Search.Results = p.Search.Results.Refresh(p.Search.Input.Query(), p.session)
+				p.Search.Results = p.Search.Results.Refresh(p.Search.Input.Query(), p.Search.SelectedType(), p.session)
 				p.CurrentView = views.SEARCH_VIEW_RESULTS
 			}
 
@@ -206,11 +200,6 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			p.Search.Results, cmd = p.Search.Results.Update(msg)
 			return p, cmd
 		}
-
-		// if p.CurrentView == SEARCH_TYPE_VIEW {
-		// 	p.Views.SearchType.ListModel, cmd = p.Views.SearchType.ListModel.Update(msg)
-		// 	return p, cmd
-		// }
 	}
 
 	return p, nil

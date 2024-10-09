@@ -12,8 +12,9 @@ import (
 type Search struct {
 	Input    SearchQuery
 	TypeList SearchTypeList
-	typeMap  map[list.Item]string
-	Results  Results
+	// Used to map the selected search type item to the search type as a string.
+	typeMap map[list.Item]string
+	Results Results
 
 	session *auth.Session
 }
@@ -23,6 +24,12 @@ var searchTypes = []string{
 	"track",
 }
 
+var typeMap = map[list.Item]string{
+	components.ListItem("album"): "album",
+	components.ListItem("track"): "track",
+}
+
+// Creates a new search view.
 func NewSearch(session *auth.Session) Search {
 	typeItems := make([]list.Item, len(searchTypes))
 	for i, t := range searchTypes {
@@ -32,21 +39,17 @@ func NewSearch(session *auth.Session) Search {
 	s := Search{
 		Input:    NewSearchQuery(),
 		TypeList: NewSearchTypeList(typeItems),
-		typeMap: map[list.Item]string{
-			components.ListItem("album"): "album",
-			components.ListItem("track"): "track",
-		},
-
-		Results: Results{},
+		typeMap:  typeMap,
+		Results:  Results{},
 	}
-
-	// s.Results = s.Results.Refresh("spotify", session)
 
 	s.Results.listTracks = components.NewDefaultList([]list.Item{components.ListItem("")}, "Tracks")
 
 	return s
 }
 
+// Renders the search view, this includes, the text area,
+// the type selection, and the list of results.
 func (s Search) View(term components.Terminal) string {
 	l := table.NewWriter()
 	l.Style().Options.DrawBorder = false
@@ -62,7 +65,7 @@ func (s Search) View(term components.Terminal) string {
 	t.AppendRows([]table.Row{
 		{
 			l.Render(),
-			components.Content(s.Results.View()).PadLinesLeft(0).String() + components.Content("\n-").Append('-', 40).String(),
+			components.Content(s.Results.view()).PadLinesLeft(0).String() + components.Content("\n-").Append('-', 40).String(),
 		},
 	})
 
@@ -83,19 +86,37 @@ type Results struct {
 	listAlbums  list.Model
 }
 
-func (r Results) Refresh(query string, s *auth.Session) Results {
+// Called whenever the user has finished inputing a search query and selected the search type
+// of the results to be displayed. This updates the state of result to match the desired
+// specified content.
+func (r Results) Refresh(query string, currentSelectedType string, s *auth.Session) Results {
 	results, _ := spotify.Search(query, searchTypes, s)
 
-	items := make([]list.Item, len(results.Tracks))
-	for i, track := range results.Tracks {
-		items[i] = components.ListItem(components.Content(track.Name).AdjustFit(35))
+	r.CurrentType = currentSelectedType
+
+	switch r.CurrentType {
+	case "track":
+		items := make([]list.Item, len(results.Tracks))
+		for i, track := range results.Tracks {
+			items[i] = components.ListItem(components.Content(track.Name).AdjustFit(35))
+		}
+		r.listTracks = components.NewDefaultList(items, "Tracks")
+
+	case "album":
+		items := make([]list.Item, len(results.Albums))
+		for i, album := range results.Albums {
+			items[i] = components.ListItem(components.Content(album.Name).AdjustFit(35))
+		}
+		r.listAlbums = components.NewDefaultList(items, "Albums")
 	}
-	r.listTracks = components.NewDefaultList(items, "Tracks")
-	r.listAlbums = components.NewDefaultList(items, "Albums")
 
 	return r
 }
 
+// Updates the state of the result when a key is pressed,
+// handling every search type's result list. Ensure that
+// result.CurrentType has been set before (by calling
+// result.Refresh() ) before Update is called.
 func (r Results) Update(msg tea.Msg) (Results, tea.Cmd) {
 	var cmd tea.Cmd
 
@@ -110,16 +131,31 @@ func (r Results) Update(msg tea.Msg) (Results, tea.Cmd) {
 		}
 	}
 
-	r.listAlbums, cmd = r.listAlbums.Update(msg)
-	r.listTracks, cmd = r.listTracks.Update(msg)
+	switch r.CurrentType {
+	case "track":
+		r.listTracks, cmd = r.listTracks.Update(msg)
+	case "album":
+		r.listAlbums, cmd = r.listAlbums.Update(msg)
+	}
 
 	return r, cmd
 }
 
-func (r Results) View() string {
-	return r.listTracks.View()
+// Renders the result view based on the
+// current selected display type. Ensure
+// result.Refresh() was once before we display
+// the result content.
+func (r Results) view() string {
+	switch r.CurrentType {
+	case "track":
+		return r.listTracks.View()
+	case "album":
+		return r.listAlbums.View()
+	}
+
+	return "unknown search type"
 }
 
-func (r Results) Init() tea.Cmd {
+func (r Results) init() tea.Cmd {
 	return nil
 }

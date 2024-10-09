@@ -14,7 +14,7 @@ const (
 	LIST_HEIGHT_SMALL   = 7
 	LIST_HEIGHT_NORMAL  = 10
 	DEFAULT_WIDTH       = 20
-	DEFAULT_LIST_HEIGHT = 20 // 7 Selections per page
+	DEFAULT_LIST_HEIGHT = 22 // 7 Selections per page
 	SMALL_LIST_HEIGHT   = 7  // 5 Selections per page
 )
 
@@ -121,6 +121,17 @@ var DeviceViewStyle = struct {
 
 func NewDefaultList(items []list.Item, title string) list.Model {
 	l := list.New(items, ItemDelegate{}, DEFAULT_WIDTH, LIST_HEIGHT_NORMAL)
+	l.Styles.Title = lg.NewStyle().MarginLeft(0)
+	l.Title = title
+	l.SetFilteringEnabled(false)
+	l.SetShowStatusBar(false)
+	l.SetShowHelp(false)
+
+	return l
+}
+
+func NewCustomList(items []list.Item, title string, height int, width int) list.Model {
+	l := list.New(items, ItemDelegate{}, height, width)
 	l.Styles.Title = lg.NewStyle().MarginLeft(0)
 	l.Title = title
 	l.SetFilteringEnabled(false)
