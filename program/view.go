@@ -10,39 +10,40 @@ import (
 	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/spotify"
 	"github.com/dionvu/spogo/utils"
+	"github.com/dionvu/spogo/views"
 	"github.com/ktr0731/go-fuzzyfinder"
 )
 
-func (m *Program) View() string {
-	switch m.CurrentView {
+func (p *Program) View() string {
+	switch p.CurrentView {
 	case PLAYER_VIEW:
-		return m.Views.Player.View(m.Terminal)
+		return p.Player.View(p.Terminal)
 
 	case PLAYLIST_VIEW:
-		return m.Views.Playlist.View(m.Views.Player, m.Terminal)
+		return p.Playlist.View(p.Player, p.Terminal)
 
 	case HELP_VIEW:
 		// return HelpString()
 		return ""
 
 	case PLAYLIST_TRACK_VIEW:
-		playlist := m.Views.Playlist.GetSelectedPlaylist()
+		playlist := p.Playlist.GetSelectedPlaylist()
 
 		if playlist == nil {
-			m.CurrentView = PLAYLIST_VIEW
+			p.CurrentView = PLAYLIST_VIEW
 			return ""
 		}
 
-		t, err := spotify.PlaylistTracks(m.session, playlist.ID)
+		t, err := spotify.PlaylistTracks(p.session, playlist.ID)
 		if t == nil || err != nil || len(*t) < 1 {
-			m.CurrentView = PLAYLIST_VIEW
+			p.CurrentView = PLAYLIST_VIEW
 			return ""
 		}
 
 		tracks := *t
 		asciis := make([]string, len(tracks))
 
-		m.CurrentView = PLAYER_VIEW
+		p.CurrentView = PLAYER_VIEW
 
 		cd, _ := os.UserCacheDir()
 		imagePath := filepath.Join(cd, config.APPNAME, playlist.ID, "temp")
@@ -77,39 +78,39 @@ func (m *Program) View() string {
 				)
 			}))
 
-		contextUri := m.Views.Playlist.GetSelectedPlaylist().URI
+		contextUri := p.Playlist.GetSelectedPlaylist().URI
 
 		// Prevents user pressing Esc from playing the first track.
 		if err == nil {
-			m.player.Play(contextUri, tracks[idx].Uri, m.session)
+			p.player.Play(contextUri, tracks[idx].Uri, p.session)
 		}
 
 		HideCursor()
 
 		if err == nil {
-			m.CurrentView = PLAYER_VIEW
+			p.CurrentView = PLAYER_VIEW
 		} else {
-			m.CurrentView = PLAYLIST_VIEW
+			p.CurrentView = PLAYLIST_VIEW
 		}
 
 		return ""
 
 	case ALBUM_TRACK_VIEW:
-		if m.Views.Player.State == nil || m.Views.Player.State.Track == nil {
-			m.CurrentView = PLAYER_VIEW
+		if p.Player.State == nil || p.Player.State.Track == nil {
+			p.CurrentView = PLAYER_VIEW
 			return ""
 		}
 
-		album := &m.Views.Player.State.Track.Album
+		album := &p.Player.State.Track.Album
 
-		t, _ := spotify.AlbumTracks(m.session, album.ID)
+		t, _ := spotify.AlbumTracks(p.session, album.ID)
 		tracks := *t
 
 		// Fzf tracks from the album currently playing
 		// and plays the selected track.
 		idx, err := FzfAlbumTracks(t)
 		if err == nil {
-			m.player.Play(album.Uri, tracks[idx].Uri, m.session)
+			p.player.Play(album.Uri, tracks[idx].Uri, p.session)
 
 			go func() {
 				// After playing spotify takes a moment to update the state
@@ -117,11 +118,11 @@ func (m *Program) View() string {
 				time.Sleep(time.Second)
 
 				// Syncs state to new song.
-				m.Views.Player.UpdateStateSync()
+				p.Player.UpdateStateSync()
 			}()
 		}
 
-		m.CurrentView = PLAYER_VIEW
+		p.CurrentView = PLAYER_VIEW
 
 		return ""
 
@@ -129,24 +130,25 @@ func (m *Program) View() string {
 		return "Refreshing..."
 
 	case TERMINAL_WARNING_VIEW:
-		return m.Terminal.WarningString()
+		return p.Terminal.WarningString()
 
 		// case SEARCH_TYPE_VIEW:
-		// 	return m.Views.SearchType.View(m.Views.Player, m.Terminal)
+		// 	return p.SearchType.View(p.Views.Player, p.Terminal)
 
 		// case SEARCH_QUERY_VIEW:
-		// 	return m.Views.Squery.View()
+		// 	return p.Squery.View()
 
 		// case SEARCH_RESULT_TRACK:
-		// 	fmt.Println(m.Views.SearchType.ListModel.list.SelectedItem())
-		// 	fmt.Println(m.Views.SearchType.itemsMap[m.Views.SearchType.ListModel.list.SelectedItem()])
-		// 	m.Views.SearchResult = NewSearchResultView(m.Views.Squery.Query(), m.Views.SearchType.itemsMap[m.Views.SearchType.ListModel.list.SelectedItem()], m.session)
-		// 	return m.Views.SearchResult.items.Tracks[0].Name
+		// 	fmt.Println(p.SearchType.ListModel.list.SelectedItem())
+		// 	fmt.Println(p.SearchType.itemsMap[p.Views.SearchType.ListModel.list.SelectedItem()])
+		// 	p.SearchResult = NewSearchResultView(p.Views.Squery.Query(), p.Views.SearchType.itemsMap[p.Views.SearchType.ListModel.list.SelectedItem()], p.session)
+		// 	return p.SearchResult.items.Tracks[0].Name
 
-	case SEARCH_VIEW:
+	case views.SEARCH_VIEW_QUERY, views.SEARCH_VIEW_TYPE, views.SEARCH_VIEW_RESULTS:
+		return p.Search.View(p.Terminal)
 
 	case DEVICE_VIEW:
-		return m.Views.Device.View(m.Terminal, m.Views.Player.State.Device)
+		return p.Device.View(p.Terminal, p.Player.State.Device)
 	}
 
 	return "UNREACHABLE"

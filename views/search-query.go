@@ -3,6 +3,7 @@ package views
 import (
 	"fmt"
 
+	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -13,8 +14,8 @@ const (
 )
 
 type SearchQuery struct {
-	textInput textinput.Model
-	err       error
+	Text textinput.Model
+	err  error
 }
 
 func NewSearchQuery() SearchQuery {
@@ -23,10 +24,11 @@ func NewSearchQuery() SearchQuery {
 	ti.Focus()
 	ti.CharLimit = CHAR_LIMIT
 	ti.Width = SEARCH_QUERY_WIDTH
+	ti.Cursor.SetMode(cursor.CursorBlink)
 
 	return SearchQuery{
-		textInput: ti,
-		err:       nil,
+		Text: ti,
+		err:  nil,
 	}
 }
 
@@ -34,7 +36,7 @@ func (sq SearchQuery) Init() tea.Cmd {
 	return textinput.Blink
 }
 
-func (sq SearchQuery) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (sq SearchQuery) Update(msg tea.Msg) (SearchQuery, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -45,14 +47,15 @@ func (sq SearchQuery) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	sq.textInput, cmd = sq.textInput.Update(msg)
+	sq.Text, cmd = sq.Text.Update(msg)
+
 	return sq, cmd
 }
 
 func (sq SearchQuery) View() string {
 	s := fmt.Sprintf(
 		"Search\n\n%s\n\n%s",
-		sq.textInput.View(),
+		sq.Text.View(),
 		"(esc to quit)",
 	) + "\n"
 
@@ -60,5 +63,12 @@ func (sq SearchQuery) View() string {
 }
 
 func (sq SearchQuery) Query() string {
-	return sq.textInput.Value()
+	return sq.Text.Value()
+}
+
+func (sq SearchQuery) HideCursor() SearchQuery {
+	// sq.Text.Cursor.SetMode(cursor.CursorHide)
+	sq.Text.Blur()
+
+	return sq
 }

@@ -7,133 +7,149 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/dionvu/spogo/player"
+	"github.com/dionvu/spogo/views"
 )
 
 // Handles updates associate with the current selected view.
-func (m *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	m.Terminal.UpdateSize()
+func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	p.Terminal.UpdateSize()
 
-	if !m.Terminal.IsValid() {
-		m.CurrentView = TERMINAL_WARNING_VIEW
+	if !p.Terminal.IsValid() {
+		p.CurrentView = TERMINAL_WARNING_VIEW
 	}
 
-	if m.CurrentView == TERMINAL_WARNING_VIEW && m.Terminal.IsValid() {
-		m.CurrentView = PLAYER_VIEW
+	if p.CurrentView == TERMINAL_WARNING_VIEW && p.Terminal.IsValid() {
+		p.CurrentView = PLAYER_VIEW
 	}
 
 	switch msg := msg.(type) {
 	case tickMsg:
 		// If state is unaccessible, likely due to user closing
 		// their playerback device, and attempt reconnect to closed device.
-		if m.PlayerState() == nil {
-			m.Views.Player.StatusBar.Update(m.PlayerState())
+		if p.PlayerState() == nil {
+			p.Player.StatusBar.Update(p.PlayerState())
 
-			m.player.Resume(m.session, false)
+			p.player.Resume(p.session, false)
 
-			return m, tea.Tick(4*UPDATE_RATE_SEC, func(time.Time) tea.Msg {
+			return p, tea.Tick(4*UPDATE_RATE_SEC, func(time.Time) tea.Msg {
 				return tickMsg{}
 			})
 		}
 
-		m.Views.Player.EnsureProgressSynced()
+		p.Player.EnsureProgressSynced()
 
-		return m, tea.Tick(UPDATE_RATE_SEC, func(time.Time) tea.Msg {
+		return p, tea.Tick(UPDATE_RATE_SEC, func(time.Time) tea.Msg {
 			return tickMsg{}
 		})
 
 	case tea.KeyMsg:
 		// Prevents search query from activating any commands, enless esc or enter.
-		// key := msg.String()
-		// if m.CurrentView == SEARCH_QUERY_VIEW &&
-		// key != "enter" &&
-		// key != "esc" &&
-		// key != "f1" &&
-		// key != "f2" &&
-		// key != "f4" &&
-		// key != "f5" {
-		// var cmd tea.Cmd
-		// m.Views.Squery.textInput, cmd = m.Views.Squery.textInput.Update(msg)
-		// return m, cmd
-		// }
+		key := msg.String()
+		if p.CurrentView == views.SEARCH_VIEW_QUERY &&
+			key != "enter" && key != "esc" &&
+			key != "f1" && key != "f2" && key != "f4" && key != "f5" {
+
+			var cmd tea.Cmd
+			p.Search.Input, cmd = p.Search.Input.Update(msg)
+			return p, cmd
+
+		}
+
+		if p.CurrentView == views.SEARCH_VIEW_TYPE &&
+			key != "enter" && key != "esc" &&
+			key != "f1" && key != "f2" && key != "f4" && key != "f5" {
+
+			var cmd tea.Cmd
+			p.Search.TypeList, cmd = p.Search.TypeList.Update(msg)
+			return p, cmd
+		}
 
 		switch msg.String() {
 		case "esc":
-			if m.CurrentView == SEARCH_QUERY_VIEW {
-				m.CurrentView = PLAYER_VIEW
+			switch p.CurrentView {
+			case views.SEARCH_VIEW_QUERY:
+				p.CurrentView = PLAYER_VIEW
+			default:
 			}
 
 		case "ctrl+c", "q":
-			return m, tea.Quit
+			return p, tea.Quit
 
 		case " ":
-			m.Views.Player.PlayPause()
+			p.Player.PlayPause()
 
 		case "[":
-			vol := m.PlayerState().Device.VolumePercent
-			m.Views.Player.Player.SetVolume(m.session, vol-VOLUME_INCREMENT_PERCENT)
+			vol := p.PlayerState().Device.VolumePercent
+			p.Player.Player.SetVolume(p.session, vol-VOLUME_INCREMENT_PERCENT)
 
 		case "]":
-			vol := m.PlayerState().Device.VolumePercent
-			m.Views.Player.Player.SetVolume(m.session, vol+VOLUME_INCREMENT_PERCENT)
+			vol := p.PlayerState().Device.VolumePercent
+			p.Player.Player.SetVolume(p.session, vol+VOLUME_INCREMENT_PERCENT)
 
 		case "f1", "1":
-			m.CurrentView = PLAYER_VIEW
+			p.CurrentView = PLAYER_VIEW
 
 		case "f2", "2":
-			m.CurrentView = PLAYLIST_VIEW
+			p.CurrentView = PLAYLIST_VIEW
 
 		case "f3", "3":
-			m.CurrentView = SEARCH_VIEW
-			// m.Views.Squery.textInput.SetValue("") // Resets the search value.
+			p.Search.Input.Text.Focus()
+			p.CurrentView = views.SEARCH_VIEW_QUERY
+			// p.Views.Squery.textInput.SetValue("") // Resets the search value.
 
 		case "f4", "4":
-			// m.Views.Device = NewDeviceView(m.session) // Updates the list of available devices.
-			m.Views.Device.UpdateDevices()
-			m.CurrentView = DEVICE_VIEW
+			// p.Views.Device = NewDeviceView(p.session) // Updates the list of available devices.
+			p.Device.UpdateDevices()
+			p.CurrentView = DEVICE_VIEW
 
 		case "f5", "5":
-			m.CurrentView = HELP_VIEW
+			p.CurrentView = HELP_VIEW
 
 		case "enter":
 
 			// The enter key has different actions it needs to perform depending on the
 			// current view.
-			switch m.CurrentView {
+			switch p.CurrentView {
 			case PLAYLIST_VIEW:
-				// if i, ok := m.Views.Playlist.PlaylistList.list.SelectedItem().(views.Item); ok {
-				// 	m.Views.Playlist.PlaylistList.choice = string(i)
-				// 	err := m.player.Play(m.Views.Playlist.GetSelectedPlaylist().URI, "", m.session)
+				// if i, ok := p..Playlist.PlaylistList.list.SelectedItem().(views.Item); ok {
+				// 	p.Views.Playlist.PlaylistList.choice = string(i)
+				// 	err := p.player.Play(p.Views.Playlist.GetSelectedPlaylist().URI, "", p.session)
 				// 	if err != nil {
-				// 		log.Fatal(string(i), m.Views.Playlist.GetSelectedPlaylist().URI)
+				// 		log.Fatal(string(i), p.Views.Playlist.GetSelectedPlaylist().URI)
 				// 	}
 				// }
 
-			case SEARCH_TYPE_VIEW:
-				m.CurrentView = SEARCH_RESULT_TRACK
+			case views.SEARCH_VIEW_QUERY:
+				p.Search.Input = p.Search.Input.HideCursor()
+				p.CurrentView = views.SEARCH_VIEW_TYPE
 
 			case DEVICE_VIEW:
-				device := m.Views.Device.GetSelectedDevice()
+				device := p.Device.GetSelectedDevice()
 
-				m.player.SetDevice(device, m.Config)
+				p.player.SetDevice(device, p.Config)
 
 				// Transfers playback to the newly select device.
-				m.player.Resume(m.session, false)
+				p.player.Resume(p.session, false)
 
 				// case SEARCH_QUERY_VIEW:
-				// if m.Views.Squery.Query() != "" {
-				// 	m.CurrentView = SEARCH_TYPE_VIEW
+				// if p.Views.Squery.Query() != "" {
+				// 	p.CurrentView = SEARCH_TYPE_VIEW
 				// }
+
+			case views.SEARCH_VIEW_TYPE:
+				p.Search.Results = p.Search.Results.Refresh(p.Search.Input.Query(), p.session)
+				p.CurrentView = views.SEARCH_VIEW_RESULTS
 			}
 
 		case "ctrl+r":
 			// Refreshes the terminal fixing any visual glitches. This doesn't yet force any
 			// updates to, for example, listed playlist devices.
 			go func() {
-				view := m.CurrentView
+				view := p.CurrentView
 
-				m.CurrentView = REFRESH_VIEW
+				p.CurrentView = REFRESH_VIEW
 				time.Sleep(UPDATE_RATE_SEC)
-				m.CurrentView = view
+				p.CurrentView = view
 
 				cmd := exec.Command("clear")
 				cmd.Stdout = os.Stdout
@@ -141,56 +157,66 @@ func (m *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}()
 
 		case "t":
-			if m.CurrentView == PLAYLIST_VIEW {
-				m.CurrentView = PLAYLIST_TRACK_VIEW
+			if p.CurrentView == PLAYLIST_VIEW {
+				p.CurrentView = PLAYLIST_TRACK_VIEW
 			}
 
 		case "a":
-			m.CurrentView = ALBUM_TRACK_VIEW
+			p.CurrentView = ALBUM_TRACK_VIEW
 
 		case "s":
 			// Enables or disables shuffling on current album or playlist.
-			state := m.PlayerState().ShuffleState
+			state := p.PlayerState().ShuffleState
 
-			m.PlayerState().ShuffleState = !state
+			p.PlayerState().ShuffleState = !state
 
-			m.player.Shuffle(!state, m.session)
+			p.player.Shuffle(!state, p.session)
 
 		case "r":
-			switch m.PlayerState().RepeatState {
+			switch p.PlayerState().RepeatState {
 			case "off":
-				m.player.Repeat(true, m.session)
-				m.PlayerState().RepeatState = "context"
+				p.player.Repeat(true, p.session)
+				p.PlayerState().RepeatState = "context"
 			default:
-				m.player.Repeat(false, m.session)
-				m.PlayerState().RepeatState = "off"
+				p.player.Repeat(false, p.session)
+				p.PlayerState().RepeatState = "off"
 			}
 		}
 
 		var cmd tea.Cmd
 
 		// Handles updates from the playlist list.
-		if m.CurrentView == PLAYLIST_VIEW {
-			m.Views.Playlist.PlaylistList, cmd = m.Views.Playlist.PlaylistList.Update(msg)
-			return m, cmd
+		if p.CurrentView == PLAYLIST_VIEW {
+			p.Playlist.PlaylistList, cmd = p.Playlist.PlaylistList.Update(msg)
+			return p, cmd
 		}
 
 		// Handles updates from the device list.
-		// if m.CurrentView == DEVICE_VIEW {
-		// 	m.Views.Device.ListModel.list, cmd = m.Views.Device.ListModel.list.Update(msg)
-		// 	return m, cmd
+		// if p.CurrentView == DEVICE_VIEW {
+		// 	p.Views.Device.ListModel.list, cmd = p.Views.Device.ListModel.list.Update(msg)
+		// 	return p, cmd
 		// }
 
-		// if m.CurrentView == SEARCH_TYPE_VIEW {
-		// 	m.Views.SearchType.ListModel, cmd = m.Views.SearchType.ListModel.Update(msg)
-		// 	return m, cmd
+		if p.CurrentView == views.SEARCH_VIEW_QUERY {
+			p.Search.Input, cmd = p.Search.Input.Update(msg)
+			return p, cmd
+		}
+
+		if p.CurrentView == views.SEARCH_VIEW_RESULTS {
+			p.Search.Results, cmd = p.Search.Results.Update(msg)
+			return p, cmd
+		}
+
+		// if p.CurrentView == SEARCH_TYPE_VIEW {
+		// 	p.Views.SearchType.ListModel, cmd = p.Views.SearchType.ListModel.Update(msg)
+		// 	return p, cmd
 		// }
 	}
 
-	return m, nil
+	return p, nil
 }
 
 // Returns the player state from the model's player view.
-func (m *Program) PlayerState() *player.State {
-	return m.Views.Player.State
+func (p *Program) PlayerState() *player.State {
+	return p.Player.State
 }

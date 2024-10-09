@@ -43,25 +43,24 @@ const (
 // are to be displayed.
 type Program struct {
 	CurrentView string
-	Views       struct {
-		// Tracks player state and current progress,
-		// displaying information in a media player.
-		Player *views.Player
 
-		// Displays the user's playlists in a list
-		// format, allowing the user to select one
-		// to transfer playback to.
-		Playlist *views.Playlist
+	// Tracks player state and current progress,
+	// displaying information in a media player.
+	Player *views.Player
 
-		// Allows the user to search for tracks,
-		// albums, etc., depending on the selection.
-		// SearchType *SearchTypeView
+	// Displays the user's playlists in a list
+	// format, allowing the user to select one
+	// to transfer playback to.
+	Playlist *views.Playlist
 
-		// SearchQuery *SearchQueryView
-		Device *views.Device
+	// Allows the user to search for tracks,
+	// albums, etc., depending on the selection.
+	// SearchType *SearchTypeView
 
-		Search *views.Search
-	}
+	// SearchQuery *SearchQueryView
+	Device *views.Device
+
+	Search views.Search
 
 	// The programs's current terminal size, this
 	// is updated consistantly.
@@ -81,7 +80,7 @@ func New(
 	auth *auth.Session, player *player.Player,
 	config *config.Config,
 ) *Program {
-	m := &Program{
+	p := &Program{
 		session:     auth,
 		player:      player,
 		Config:      config,
@@ -94,13 +93,14 @@ func New(
 		player.Resume(auth, false)
 	}
 
-	m.Terminal.Width, m.Terminal.Height = components.GetTerminalSize()
+	p.Terminal.Width, p.Terminal.Height = components.GetTerminalSize()
 
-	m.Views.Player = views.NewPlayerView(auth, player)
-	m.Views.Playlist = views.NewPlaylistView(auth, m.Terminal)
-	m.Views.Device = views.NewDeviceView(m.session)
+	p.Player = views.NewPlayerView(auth, player)
+	p.Playlist = views.NewPlaylistView(auth, p.Terminal)
+	p.Device = views.NewDeviceView(p.session)
+	p.Search = views.NewSearch(p.session)
 
-	return m
+	return p
 }
 
 func (program *Program) Run() error {
@@ -112,8 +112,8 @@ func (program *Program) Run() error {
 	return nil
 }
 
-func (m *Program) Init() tea.Cmd {
-	m.Views.Player.UpdateStateLoop()
+func (p *Program) Init() tea.Cmd {
+	p.Player.UpdateStateLoop()
 	return tea.Tick(UPDATE_RATE_SEC, func(time.Time) tea.Msg {
 		return tickMsg{}
 	})
