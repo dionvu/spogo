@@ -1,4 +1,4 @@
-package ui
+package components
 
 import (
 	"fmt"
@@ -34,7 +34,7 @@ func (terminal *Terminal) UpdateSize() {
 	// If their is a change in terminal dimensions, updates terminal.
 	go func() {
 		for range sigCh {
-			w, h := getTerminalSize()
+			w, h := GetTerminalSize()
 			if w != terminal.Width || h != terminal.Height {
 				cmd := exec.Command("clear")
 				cmd.Stdout = os.Stdout
@@ -48,7 +48,7 @@ func (terminal *Terminal) UpdateSize() {
 }
 
 // Gets the current dimensions of the user's terminal.
-func getTerminalSize() (int, int) {
+func GetTerminalSize() (int, int) {
 	width, height, err := term.GetSize(int(os.Stdout.Fd()))
 	if err != nil {
 		return -1, -1

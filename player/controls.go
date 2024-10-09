@@ -6,12 +6,19 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/dionvu/spogo/auth"
 	"github.com/dionvu/spogo/errors"
 	"github.com/dionvu/spogo/spotify/api/headers"
 	"github.com/dionvu/spogo/spotify/api/urls"
 	"github.com/dionvu/spogo/utils"
+)
+
+const (
+	UPDATE_RATE_SEC          = time.Second
+	POLLING_RATE_STATE_SEC   = time.Second * 5
+	VOLUME_INCREMENT_PERCENT = 5
 )
 
 // ContextUri can be the uri of an album or playlist. Uri should be a track

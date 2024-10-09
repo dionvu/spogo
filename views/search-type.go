@@ -1,74 +1,31 @@
-package ui
+package views
 
 import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	lg "github.com/charmbracelet/lipgloss"
-	"github.com/dionvu/spogo/auth"
+	"github.com/dionvu/spogo/components"
 )
 
-type SearchTypeView struct {
-	Session   *auth.Session
-	ListModel *SearchTypeListModel
-	Types     []string
-}
-
-type SearchTypeListModel struct {
+type SearchTypeList struct {
 	list     list.Model
 	choice   string
 	quitting bool
 }
 
-func (s *SearchTypeView) ChoiceType() string {
-	return s.ListModel.choice
+// The selected type as a list item.
+func (stl SearchTypeList) Selected() list.Item {
+	return stl.list.SelectedItem()
 }
 
-func NewSearchTypeView(s *auth.Session) *SearchTypeView {
-	types := []string{
-		"album",
-		"track",
-	}
+func NewSearchTypeList(items []list.Item) SearchTypeList {
+	l := components.NewDefaultList(items, "Select a search type: ")
 
-	items := []list.Item{
-		Item("album"),
-		Item("track"),
-	}
-
-	stv := SearchTypeView{
-		Session:   s,
-		ListModel: NewSearchTypeListModel(items),
-		Types:     types,
-	}
-
-	if len(stv.ListModel.list.Items()) > 0 {
-		stv.ListModel.choice = stv.Types[0]
-	}
-
-	return &stv
-}
-
-func (st *SearchTypeView) View(playerView *PlayerView, terminal Terminal) string {
-	if terminal.IsSizeSmall() {
-		return "\n\n" + st.ListModel.View()
-	}
-
-	return ""
-}
-
-func NewSearchTypeListModel(items []list.Item) *SearchTypeListModel {
-	l := list.New(items, itemDelegate{}, DEFAULT_WIDTH, LIST_HEIGHT_NORMAL)
-	l.SetFilteringEnabled(false)
-	l.Title = "Select a search type: "
-	l.Styles.Title = lg.NewStyle().MarginLeft(0)
-	l.SetShowStatusBar(false)
-	l.SetShowHelp(false)
-
-	lm := &SearchTypeListModel{list: l}
+	lm := SearchTypeList{list: l}
 
 	return lm
 }
 
-func (m SearchTypeListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m SearchTypeList) Update(msg tea.Msg) (SearchTypeList, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -78,8 +35,6 @@ func (m SearchTypeListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.quitting = true
 			return m, tea.Quit
 		}
-
-		return m, cmd
 	}
 
 	m.list, cmd = m.list.Update(msg)
@@ -87,10 +42,10 @@ func (m SearchTypeListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m SearchTypeListModel) View() string {
+func (m SearchTypeList) View() string {
 	return m.list.View()
 }
 
-func (m SearchTypeListModel) Init() tea.Cmd {
+func (m SearchTypeList) Init() tea.Cmd {
 	return nil
 }

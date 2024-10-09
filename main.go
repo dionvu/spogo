@@ -5,12 +5,11 @@ import (
 	"os"
 	"os/exec"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/dionvu/spogo/auth"
 	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/errors"
 	"github.com/dionvu/spogo/player"
-	"github.com/dionvu/spogo/views"
+	"github.com/dionvu/spogo/program"
 )
 
 func main() {
@@ -30,8 +29,8 @@ func main() {
 	cmd.Stdout = os.Stdout
 	cmd.Run()
 
-	tp := tea.NewProgram(ui.New(auth, player, c), tea.WithAltScreen())
-	if _, err := tp.Run(); err != nil {
+	program := tui.New(auth, player, c)
+	if err := program.Run(); err != nil {
 		log.Fatal(err)
 	}
 }

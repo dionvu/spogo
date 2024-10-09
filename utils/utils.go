@@ -22,7 +22,6 @@ func ResponseBody(r io.ReadCloser) string {
 }
 
 // Caches the given image.
-//
 // Deprecated: Use Image.Cache instead.
 func CacheImage(url string, path string) error {
 	res, err := http.Get(url)

@@ -1,10 +1,15 @@
-package ui
+package views
 
 import (
 	"fmt"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+)
+
+const (
+	CHAR_LIMIT         = 156
+	SEARCH_QUERY_WIDTH = 30
 )
 
 type SearchQuery struct {
@@ -14,10 +19,10 @@ type SearchQuery struct {
 
 func NewSearchQuery() SearchQuery {
 	ti := textinput.New()
-	ti.Placeholder = "Pikachu"
+	ti.Placeholder = "What do you want to listen to?"
 	ti.Focus()
-	ti.CharLimit = 156
-	ti.Width = 20
+	ti.CharLimit = CHAR_LIMIT
+	ti.Width = SEARCH_QUERY_WIDTH
 
 	return SearchQuery{
 		textInput: ti,
@@ -45,11 +50,13 @@ func (sq SearchQuery) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (sq SearchQuery) View() string {
-	return fmt.Sprintf(
-		"What’s your favorite Pokémon?\n\n%s\n\n%s",
+	s := fmt.Sprintf(
+		"Search\n\n%s\n\n%s",
 		sq.textInput.View(),
 		"(esc to quit)",
 	) + "\n"
+
+	return s
 }
 
 func (sq SearchQuery) Query() string {

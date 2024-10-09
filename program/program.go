@@ -1,31 +1,36 @@
-package ui
+package tui
 
 import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/dionvu/spogo/auth"
+	"github.com/dionvu/spogo/components"
 	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/player"
+	"github.com/dionvu/spogo/views"
 )
 
 const (
-	PLAYER_VIEW           = "PLAYER_VIEW"
-	PLAYLIST_VIEW         = "PLAYLIST_VIEW"
-	PLAYLIST_TRACK_VIEW   = "PLAYLIST_TRACK_VIEW"
-	ALBUM_TRACK_VIEW      = "ALBUM_TRACK_VIEW"
-	REFRESH_VIEW          = "REFRESH_VIEW"
-	HELP_VIEW             = "HELP_VIEW"
-	TERMINAL_WARNING_VIEW = "TERMINAL_WARNING_VIEW"
+	PLAYER_VIEW           = "player_view"
+	PLAYLIST_VIEW         = "playlist_view"
+	PLAYLIST_TRACK_VIEW   = "playlist_track_view"
+	ALBUM_TRACK_VIEW      = "album_track_view"
+	REFRESH_VIEW          = "refresh_view"
+	HELP_VIEW             = "help_view"
+	TERMINAL_WARNING_VIEW = "terminal_warning_view"
 
-	SEARCH_TYPE_VIEW  = "SEARCH_TYPE_VIEW"
-	SEARCH_QUERY_VIEW = "SEARCH_QUERY_VIEW"
+	SEARCH_VIEW       = "search_view"
+	SEARCH_TYPE_VIEW  = "search_type_view"
+	SEARCH_QUERY_VIEW = "search_query_view"
 
-	SEARCH_PLAYLIST_VIEW = "SEARCH_PLAYLIST_VIEW"
-	SEARCH_TRACK_VIEW    = "SEARCH_TRACK_VIEW"
-	SEARCH_ALBUM_VIEW    = "SEARCH_ALBUM_VIEW"
+	SEARCH_PLAYLIST_VIEW = "search_playlist_view"
+	SEARCH_TRACK_VIEW    = "search_track_view"
+	SEARCH_ALBUM_VIEW    = "search_album_view"
 
-	DEVICE_VIEW = "DEVICE_VIEW"
+	SEARCH_RESULT_TRACK = "search_result_track"
+
+	DEVICE_VIEW = "device_view"
 
 	UPDATE_RATE_SEC          = time.Second
 	POLLING_RATE_STATE_SEC   = time.Second * 5
@@ -41,30 +46,30 @@ type Program struct {
 	Views       struct {
 		// Tracks player state and current progress,
 		// displaying information in a media player.
-		Player *PlayerView
+		Player *views.Player
 
 		// Displays the user's playlists in a list
 		// format, allowing the user to select one
 		// to transfer playback to.
-		Playlist *PlaylistView
+		Playlist *views.Playlist
 
 		// Allows the user to search for tracks,
 		// albums, etc., depending on the selection.
-		SearchType *SearchTypeView
+		// SearchType *SearchTypeView
 
 		// SearchQuery *SearchQueryView
-		Device *DeviceView
+		Device *views.Device
 
-		Squery SearchQuery
+		Search *views.Search
 	}
 
 	// The programs's current terminal size, this
 	// is updated consistantly.
-	Terminal Terminal
+	Terminal components.Terminal
 
 	// Stuff necessary to access the spotify api.
-	Session *auth.Session
-	Player  *player.Player
+	session *auth.Session
+	player  *player.Player
 
 	// Configuration options.
 	Config *config.Config
@@ -77,8 +82,8 @@ func New(
 	config *config.Config,
 ) *Program {
 	m := &Program{
-		Session:     auth,
-		Player:      player,
+		session:     auth,
+		player:      player,
 		Config:      config,
 		CurrentView: PLAYER_VIEW,
 	}
@@ -89,16 +94,22 @@ func New(
 		player.Resume(auth, false)
 	}
 
-	m.Terminal.Width, m.Terminal.Height = getTerminalSize()
+	m.Terminal.Width, m.Terminal.Height = components.GetTerminalSize()
 
-	m.Views.Player = NewPlayerView(auth, player)
-	m.Views.Playlist = NewPlaylistView(auth, m.Terminal)
-	m.Views.SearchType = NewSearchTypeView(auth)
-	m.Views.Device = NewDeviceView(m.Session)
-
-	m.Views.Squery = NewSearchQuery()
+	m.Views.Player = views.NewPlayerView(auth, player)
+	m.Views.Playlist = views.NewPlaylistView(auth, m.Terminal)
+	m.Views.Device = views.NewDeviceView(m.session)
 
 	return m
+}
+
+func (program *Program) Run() error {
+	tp := tea.NewProgram(program, tea.WithAltScreen())
+	if _, err := tp.Run(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (m *Program) Init() tea.Cmd {

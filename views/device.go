@@ -1,15 +1,15 @@
-package ui
+package views
 
 import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	lg "github.com/charmbracelet/lipgloss"
 	"github.com/dionvu/spogo/auth"
+	"github.com/dionvu/spogo/components"
 	"github.com/dionvu/spogo/player"
 	"github.com/jedib0t/go-pretty/v6/table"
 )
 
-type DeviceView struct {
+type Device struct {
 	Session   *auth.Session
 	ListModel *DeviceListModel
 	deviceMap map[string]*player.Device
@@ -24,7 +24,7 @@ type DeviceListModel struct {
 
 // Creates a new device view with a list model for the
 // user to select available playback devices.
-func NewDeviceView(s *auth.Session) *DeviceView {
+func NewDeviceView(s *auth.Session) *Device {
 	items := []list.Item{}
 	deviceMap := map[string]*player.Device{}
 	itemMap := map[list.Item]string{}
@@ -32,13 +32,13 @@ func NewDeviceView(s *auth.Session) *DeviceView {
 	devices, _ := player.GetDevices(s)
 
 	for _, device := range *devices {
-		item := Item(device.Name)
+		item := components.ListItem(device.Name)
 		items = append(items, item)
 		deviceMap[device.Name] = &device
 		itemMap[item] = device.Name
 	}
 
-	dv := DeviceView{
+	dv := Device{
 		Session:   s,
 		ListModel: NewDeviceListModel(items),
 		deviceMap: deviceMap,
@@ -52,7 +52,7 @@ func NewDeviceView(s *auth.Session) *DeviceView {
 	return &dv
 }
 
-func (dv *DeviceView) UpdateDevices() {
+func (dv *Device) UpdateDevices() {
 	items := []list.Item{}
 	dv.deviceMap = map[string]*player.Device{}
 	dv.itemMap = map[list.Item]string{}
@@ -60,7 +60,7 @@ func (dv *DeviceView) UpdateDevices() {
 	devices, _ := player.GetDevices(dv.Session)
 
 	for _, device := range *devices {
-		item := Item(device.Name)
+		item := components.ListItem(device.Name)
 		items = append(items, item)
 		dv.deviceMap[device.Name] = &device
 		dv.itemMap[item] = device.Name
@@ -69,7 +69,7 @@ func (dv *DeviceView) UpdateDevices() {
 	dv.ListModel = NewDeviceListModel(items)
 }
 
-func (dv *DeviceView) View(terminal Terminal, device *player.Device) string {
+func (dv *Device) View(terminal components.Terminal, device *player.Device) string {
 	if terminal.IsSizeSmall() {
 		return "\n\n" + RenderDeviceView(dv, device)
 	}
@@ -78,17 +78,17 @@ func (dv *DeviceView) View(terminal Terminal, device *player.Device) string {
 	return ""
 }
 
-func (dv *DeviceView) GetDeviceFromChoice(choice string) *player.Device {
+func (dv *Device) GetDeviceFromChoice(choice string) *player.Device {
 	return dv.deviceMap[choice]
 }
 
-func (dv *DeviceView) GetSelectedDevice() *player.Device {
+func (dv *Device) GetSelectedDevice() *player.Device {
 	return dv.deviceMap[dv.itemMap[dv.ListModel.list.SelectedItem()]]
 }
 
 // Renders the list of devices, and current device information in a
 // single row, two column table.
-func RenderDeviceView(dv *DeviceView, device *player.Device) string {
+func RenderDeviceView(dv *Device, device *player.Device) string {
 	t := table.NewWriter()
 	t.Style().Options.DrawBorder = false
 	t.Style().Options.SeparateColumns = false
@@ -102,15 +102,8 @@ func RenderDeviceView(dv *DeviceView, device *player.Device) string {
 }
 
 func NewDeviceListModel(items []list.Item) *DeviceListModel {
-	l := list.New(items, itemDelegate{}, DEFAULT_WIDTH, LIST_HEIGHT_NORMAL)
-	l.SetFilteringEnabled(false)
-	l.Title = DeviceViewStyle.Title.Render("Devices")
-	l.Styles.Title = lg.NewStyle().MarginLeft(0)
-	l.SetShowStatusBar(false)
-	l.SetShowHelp(false)
-
+	l := components.NewDefaultList(items, DeviceViewStyle.Title.Render("Devices"))
 	lm := &DeviceListModel{list: l}
-
 	return lm
 }
 
