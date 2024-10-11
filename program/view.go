@@ -145,7 +145,7 @@ func (p *Program) View() string {
 		// 	return p.SearchResult.items.Tracks[0].Name
 
 	case views.SEARCH_VIEW_QUERY, views.SEARCH_VIEW_TYPE, views.SEARCH_VIEW_RESULTS:
-		return p.Search.View(p.Terminal)
+		return p.Search.View(p.Terminal, p.CurrentView)
 
 	case DEVICE_VIEW:
 		return p.Device.View(p.Terminal, p.Player.State.Device)

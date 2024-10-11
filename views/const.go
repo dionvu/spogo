@@ -26,4 +26,4 @@ const (
 	DEVICE_VIEW = "device_view"
 )
 
-const SEARCH_LIMIT = 40
+const SEARCH_LIMIT = 42

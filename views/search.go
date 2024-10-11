@@ -5,6 +5,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/dionvu/spogo/auth"
 	"github.com/dionvu/spogo/components"
 	"github.com/dionvu/spogo/spotify"
@@ -58,7 +59,14 @@ func NewSearch(session *auth.Session) Search {
 
 // Renders the search view, this includes, the text area,
 // the type selection, and the list of results.
-func (s Search) View(term components.Terminal) string {
+func (s Search) View(term components.Terminal, curView string) string {
+	if curView == SEARCH_VIEW_TYPE {
+		style := lipgloss.NewStyle().Underline(true)
+		s.TypeList.list.Title = style.Render("Select a search type:")
+	} else {
+		s.TypeList.list.Title = "Select a search type:"
+	}
+
 	left := components.NewDefaultTable()
 	container := components.NewDefaultTable()
 
@@ -69,7 +77,10 @@ func (s Search) View(term components.Terminal) string {
 
 	container.AppendRows([]table.Row{
 		{
-			components.Content(left.Render()).PadLinesLeft(6).String(),
+			// Offsets the left to align center, as the right requires more
+			// allocated space for ~40 character result names.
+			components.Content(left.Render()).PadLinesLeft(16).String(),
+
 			components.Join([]string{
 				s.Results.view(),
 				components.Content("").Append(' ', SEARCH_RESULTS_WIDTH).String(),

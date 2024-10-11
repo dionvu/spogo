@@ -122,13 +122,8 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// current view.
 			switch p.CurrentView {
 			case PLAYLIST_VIEW:
-				// if i, ok := p..Playlist.PlaylistList.list.SelectedItem().(views.Item); ok {
-				// 	p.Views.Playlist.PlaylistList.choice = string(i)
-				// 	err := p.player.Play(p.Views.Playlist.GetSelectedPlaylist().URI, "", p.session)
-				// 	if err != nil {
-				// 		log.Fatal(string(i), p.Views.Playlist.GetSelectedPlaylist().URI)
-				// 	}
-				// }
+				pl := p.Playlist.GetSelectedPlaylist()
+				p.player.Play(pl.URI, "", p.session)
 
 			case views.SEARCH_VIEW_QUERY:
 				p.Search.Input = p.Search.Input.HideCursor()
@@ -149,7 +144,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case views.SEARCH_VIEW_RESULTS:
 				switch p.Search.SelectedType() {
 				case "track":
-					p.player.Play("", p.Search.Results.SelectedTrack().Uri, p.session)
+					p.player.Play(p.Search.Results.SelectedTrack().Album.Uri, p.Search.Results.SelectedTrack().Uri, p.session)
 				case "album":
 					p.player.Play(p.Search.Results.SelectedAlbum().Uri, "", p.session)
 				}
