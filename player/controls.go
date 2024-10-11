@@ -54,15 +54,9 @@ func (p *Player) Play(contextUri string, uri string, s *auth.Session) error {
 		}
 	} else {
 		payload = struct {
-			Offset struct {
-				Uri string `json:"uri"`
-			} `json:"offset"`
+			Uris []string `json:"uris"`
 		}{
-			Offset: struct {
-				Uri string `json:"uri"`
-			}{
-				Uri: uri,
-			},
+			Uris: []string{uri},
 		}
 	}
 

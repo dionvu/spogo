@@ -51,5 +51,9 @@ func MsToMinutesAndSeconds(ms int) (minutes string, seconds string) {
 	minutes = fmt.Sprint(m)
 	seconds = fmt.Sprint(s)
 
+	if s < 10 {
+		seconds = "0" + seconds
+	}
+
 	return minutes, seconds
 }

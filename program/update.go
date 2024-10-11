@@ -45,6 +45,13 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		// Prevents search query from activating any commands, enless esc or enter.
 		key := msg.String()
+
+		if p.CurrentView == views.SEARCH_VIEW_RESULTS && key == "/" {
+			p.Search.Input.Text.Focus()
+			p.CurrentView = views.SEARCH_VIEW_QUERY
+			return p, nil
+		}
+
 		if p.CurrentView == views.SEARCH_VIEW_QUERY &&
 			key != "enter" && key != "esc" &&
 			key != "f1" && key != "f2" && key != "f4" && key != "f5" {
@@ -62,6 +69,11 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			var cmd tea.Cmd
 			p.Search.TypeList, cmd = p.Search.TypeList.Update(msg)
 			return p, cmd
+		}
+
+		if (key == "/" || key == "3") && p.CurrentView != views.SEARCH_VIEW_QUERY {
+			p.CurrentView = views.SEARCH_VIEW_QUERY
+			return p, nil
 		}
 
 		switch msg.String() {
@@ -92,7 +104,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "f2", "2":
 			p.CurrentView = PLAYLIST_VIEW
 
-		case "f3", "3":
+		case "f3", "3", "/":
 			p.Search.Input.Text.Focus()
 			p.CurrentView = views.SEARCH_VIEW_QUERY
 
@@ -133,6 +145,14 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case views.SEARCH_VIEW_TYPE:
 				p.Search.Results = p.Search.Results.Refresh(p.Search.Input.Query(), p.Search.SelectedType(), p.session)
 				p.CurrentView = views.SEARCH_VIEW_RESULTS
+
+			case views.SEARCH_VIEW_RESULTS:
+				switch p.Search.SelectedType() {
+				case "track":
+					p.player.Play("", p.Search.Results.SelectedTrack().Uri, p.session)
+				case "album":
+					p.player.Play(p.Search.Results.SelectedAlbum().Uri, "", p.session)
+				}
 			}
 
 		case "ctrl+r":

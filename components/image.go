@@ -12,8 +12,8 @@ import (
 const (
 	ASCII_SMALL_HEIGHT  = 22
 	ASCII_SMALL_WIDTH   = 11
-	ASCII_MEDIUM_HEIGHT = 40
-	ASCII_MEDIUM_WIDTH  = 20
+	ASCII_MEDIUM_HEIGHT = 34
+	ASCII_MEDIUM_WIDTH  = 16
 )
 
 // Image is a struct that allows caching of the Image

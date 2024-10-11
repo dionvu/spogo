@@ -10,7 +10,7 @@ import (
 
 const (
 	CHAR_LIMIT         = 156
-	SEARCH_QUERY_WIDTH = 30
+	SEARCH_QUERY_WIDTH = 20
 )
 
 type SearchQuery struct {
@@ -20,7 +20,7 @@ type SearchQuery struct {
 
 func NewSearchQuery() SearchQuery {
 	ti := textinput.New()
-	ti.Placeholder = "What do you want to listen to?"
+	ti.Placeholder = "What's on your mind?"
 	ti.Focus()
 	ti.CharLimit = CHAR_LIMIT
 	ti.Width = SEARCH_QUERY_WIDTH
@@ -54,9 +54,8 @@ func (sq SearchQuery) Update(msg tea.Msg) (SearchQuery, tea.Cmd) {
 
 func (sq SearchQuery) View() string {
 	s := fmt.Sprintf(
-		"Search\n\n%s\n\n%s",
+		"Search\n\n%s",
 		sq.Text.View(),
-		"(esc to quit)",
 	) + "\n"
 
 	return s

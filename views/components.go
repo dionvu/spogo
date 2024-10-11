@@ -39,7 +39,7 @@ func (vs *ViewStatus) Content() components.Content {
 			CommonStyle.MainControls.Selected.Render("| F5 Help ]"),
 		}, "")
 
-	case SEARCH_TYPE_VIEW:
+	case SEARCH_VIEW_QUERY, SEARCH_VIEW_TYPE, SEARCH_VIEW_RESULTS:
 		return components.Join([]string{
 			CommonStyle.MainControls.Normal.Render("[ F1 Player | F2 Playlists | "),
 			CommonStyle.MainControls.Selected.Render("F3 Search"),

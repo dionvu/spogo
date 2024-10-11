@@ -27,7 +27,7 @@ func NewSearchResultView(searchQuery string, searchType string, s *auth.Session)
 	fmt.Println(searchType)
 	switch searchType {
 	case "track":
-		results, err := spotify.Search(searchQuery, []string{"track"}, s)
+		results, err := spotify.Search(searchQuery, []string{"track"}, SEARCH_LIMIT, s)
 		if err != nil {
 			log.Fatal("Error getting results")
 		}

@@ -97,13 +97,13 @@ type EpisodesSearchResponse struct {
 	Items    []Episode `json:"items"`
 }
 
-func Search(input string, searchType []string, s *auth.Session) (*SearchResult, error) {
+func Search(input string, searchType []string, limit int, s *auth.Session) (*SearchResult, error) {
 	r := &searchResponse{}
 
 	query := url.Values{}
 	query.Set("q", input)
 	query.Set("type", strings.Join(searchType, ","))
-	query.Set("limit", "20")
+	query.Set("limit", fmt.Sprint(limit))
 
 	req, err := http.NewRequest(http.MethodGet, spotifyurls.SEARCH+"?"+query.Encode(), nil)
 	if err != nil {

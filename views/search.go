@@ -1,12 +1,20 @@
 package views
 
 import (
+	"fmt"
+
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/dionvu/spogo/auth"
 	"github.com/dionvu/spogo/components"
 	"github.com/dionvu/spogo/spotify"
+	"github.com/dionvu/spogo/utils"
 	"github.com/jedib0t/go-pretty/v6/table"
+)
+
+const (
+	SEARCH_VIEW_WIDTH    = 86
+	SEARCH_RESULTS_WIDTH = 40
 )
 
 type Search struct {
@@ -51,25 +59,57 @@ func NewSearch(session *auth.Session) Search {
 // Renders the search view, this includes, the text area,
 // the type selection, and the list of results.
 func (s Search) View(term components.Terminal) string {
-	l := table.NewWriter()
-	l.Style().Options.DrawBorder = false
-	t := table.NewWriter()
-	t.Style().Options.DrawBorder = false
-	t.Style().Options.SeparateColumns = false
+	left := components.NewDefaultTable()
+	container := components.NewDefaultTable()
 
-	l.AppendRows([]table.Row{
+	left.AppendRows([]table.Row{
 		{components.Content(s.Input.View()).PadLinesLeft(2).String()},
 		{s.TypeList.View()},
 	})
 
-	t.AppendRows([]table.Row{
+	container.AppendRows([]table.Row{
 		{
-			l.Render(),
-			components.Content(s.Results.view()).PadLinesLeft(0).String() + components.Content("\n-").Append('-', 40).String(),
+			components.Content(left.Render()).PadLinesLeft(6).String(),
+			components.Join([]string{
+				s.Results.view(),
+				components.Content("").Append(' ', SEARCH_RESULTS_WIDTH).String(),
+			}, "\n"),
 		},
 	})
 
-	c := components.Content(t.Render()) + "\n" + components.Content("-").Append('-', 100)
+	extraInfo := func() string {
+		switch s.Results.CurrentType {
+		case "track":
+			mins, secs := utils.MsToMinutesAndSeconds(s.Results.SelectedTrack().DurationMs)
+			return components.Join(
+				[]string{
+					s.Results.SelectedTrack().Artists[0].Name,
+					mins + "m:" + secs + "s",
+				}, "\n\n").Prepend('\n', 0).String()
+
+		case "album":
+			return components.Join(
+				[]string{
+					s.Results.SelectedAlbum().Artists[0].Name,
+					" Tracks: " + fmt.Sprint(s.Results.SelectedAlbum().TotalTracks),
+				}, "\n\n").Prepend('\n', 0).String()
+
+		default:
+			return "\n\n\n"
+		}
+	}()
+
+	vs := ViewStatus{}
+	vs.Update(SEARCH_VIEW_RESULTS)
+
+	c := components.Join([]components.Content{
+		components.Content("").Append('\n', 6),
+		components.Content(container.Render()).Append('\n', 1),
+		components.Content(extraInfo),
+		components.Content(" ").Append(' ', SEARCH_VIEW_WIDTH),
+		components.Content("").Append('\n', 0),
+		vs.Content(),
+	}, "\n")
 
 	return c.CenterVertical(term).CenterHorizontal(term).String()
 }
@@ -82,32 +122,52 @@ func (s Search) SelectedType() string {
 type Results struct {
 	CurrentType string
 	Items       spotify.SearchResult
-	listTracks  list.Model
-	listAlbums  list.Model
+
+	listTracks list.Model
+	trackMap   map[list.Item]*spotify.Track
+
+	listAlbums list.Model
+	albumMap   map[list.Item]*spotify.Album
 }
 
 // Called whenever the user has finished inputing a search query and selected the search type
 // of the results to be displayed. This updates the state of result to match the desired
 // specified content.
 func (r Results) Refresh(query string, currentSelectedType string, s *auth.Session) Results {
-	results, _ := spotify.Search(query, searchTypes, s)
+	results, _ := spotify.Search(query, searchTypes, SEARCH_LIMIT, s)
 
 	r.CurrentType = currentSelectedType
 
 	switch r.CurrentType {
 	case "track":
+		r.trackMap = map[list.Item]*spotify.Track{}
+
 		items := make([]list.Item, len(results.Tracks))
 		for i, track := range results.Tracks {
-			items[i] = components.ListItem(components.Content(track.Name).AdjustFit(35))
+			items[i] = components.UniqueItem{
+				Name: components.Content(track.Name).AdjustFit(SEARCH_RESULTS_WIDTH - 5).String(),
+				Id:   track.ID,
+			}
+
+			r.trackMap[items[i]] = track
 		}
-		r.listTracks = components.NewDefaultList(items, "Tracks")
+
+		r.listTracks = components.NewDefaultUniqueItemList(items, "Tracks")
 
 	case "album":
+		r.albumMap = map[list.Item]*spotify.Album{}
+
 		items := make([]list.Item, len(results.Albums))
 		for i, album := range results.Albums {
-			items[i] = components.ListItem(components.Content(album.Name).AdjustFit(35))
+			items[i] = components.UniqueItem{
+				Name: components.Content(album.Name).AdjustFit(SEARCH_RESULTS_WIDTH - 5).String(),
+				Id:   album.ID,
+			}
+
+			r.albumMap[items[i]] = album
 		}
-		r.listAlbums = components.NewDefaultList(items, "Albums")
+
+		r.listAlbums = components.NewDefaultUniqueItemList(items, "Albums")
 	}
 
 	return r
@@ -153,9 +213,20 @@ func (r Results) view() string {
 		return r.listAlbums.View()
 	}
 
-	return "unknown search type"
+	// User's first time in the search view,
+	// hasn't selected a type, so just hide
+	// results.
+	return ""
 }
 
 func (r Results) init() tea.Cmd {
 	return nil
+}
+
+func (r Results) SelectedTrack() *spotify.Track {
+	return r.trackMap[r.listTracks.SelectedItem()]
+}
+
+func (r Results) SelectedAlbum() *spotify.Album {
+	return r.albumMap[r.listAlbums.SelectedItem()]
 }

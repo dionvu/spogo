@@ -7,7 +7,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	lg "github.com/charmbracelet/lipgloss"
 	"github.com/dionvu/spogo/auth"
 	"github.com/dionvu/spogo/components"
 	"github.com/dionvu/spogo/config"
@@ -102,47 +101,40 @@ func NewPlaylistView(s *auth.Session, initialTerm components.Terminal) *Playlist
 // Updates the content to be displayed based on the dimensions of the terminal.
 func (pv *Playlist) UpdateContent(term components.Terminal) {
 	var ascii components.Content
+	container := components.NewDefaultTable()
+	t := components.NewDefaultTable()
 
 	pv.PlaylistInfo.Update(pv.GetSelectedPlaylist())
 	pv.ViewStatus.Update(PLAYLIST_VIEW)
 
-	container := table.NewWriter()
-	container.Style().Options.DrawBorder = false
-	container.Style().Options.SeparateColumns = false
-
-	t := table.NewWriter()
-	t.Style().Options.DrawBorder = false
-	t.Style().Options.SeparateColumns = false
+	vs := ViewStatus{}
+	vs.Update(PLAYLIST_VIEW)
 
 	pv.Content = func() components.Content {
 		t.AppendRow(table.Row{
 			components.Join([]components.Content{
 				pv.PlaylistList.Content().
-					Prepend('\n', 2).Append('\n', 0),
-
-				pv.PlaylistInfo.Content(term).
-					PadLinesLeft(2).PadLinesLeft(2),
+					Prepend('\n', 1).Append('\n', 0),
 
 				components.Content("").Append(' ', 35),
 			}, "\n"),
 		})
 
-		if term.IsSizeSmall() {
-			ascii = pv.SelectedImage().AsciiSmallBW().Content().
-				Prepend('\n', 1).Append('\n', 1).
-				PadLinesLeft(2).CenterVertical(term)
-		} else {
-			ascii = pv.SelectedImage().AsciiNormalBW().Content().
-				Prepend('\n', 1).Append('\n', 1).
-				PadLinesLeft(2).CenterVertical(term)
-		}
+		ascii = pv.SelectedImage().AsciiSmall().Content().
+			Prepend('\n', 0).Append('\n', 1).
+			PadLinesLeft(2)
 
 		container.AppendRow(table.Row{
-			components.Content(t.Render()).CenterVertical(term),
+			components.Content(t.Render()),
 			ascii,
 		})
 
-		return components.Content(container.Render()).CenterHorizontal(term)
+		return components.Join([]components.Content{
+			components.Content(container.Render()).Append('\n', 1).CenterHorizontal(term),
+			pv.PlaylistInfo.Content(term).CenterHorizontal(term),
+			components.Content("").Append('\n', 1),
+			vs.Content().CenterHorizontal(term),
+		}, "\n").Prepend('\n', 6).CenterVertical(term)
 	}()
 }
 
@@ -180,14 +172,12 @@ func (pi *PlaylistInfo) Update(playlist *spotify.Playlist) {
 
 // Renders the playlistInfo as a content string.
 func (pi PlaylistInfo) Content(term components.Terminal) components.Content {
-	style := lg.NewStyle().Bold(true)
-	// .Foreground(lg.Color("#458588"))
-
-	return components.Join([]string{
-		style.Render(pi.Name.AdjustFit(term).String()),
-		"Tracks: " + fmt.Sprint(pi.TotalTracks),
-		"Owner: " + fmt.Sprint(pi.Owner),
-	}, "\n")
+	return components.Join(
+		[]string{
+			pi.Name.AdjustFit(term).String() + "\n",
+			"Tracks: " + fmt.Sprint(pi.TotalTracks),
+			// "Owner: " + fmt.Sprint(pi.Owner),
+		}, "\n")
 }
 
 type PlaylistName string
@@ -213,19 +203,7 @@ type PlaylistList struct {
 
 // A new playlist list model sized dynamically based on the initial terminal dimensions.
 func NewPlaylistListModel(items []list.Item, title string, initialTerm components.Terminal) PlaylistList {
-	// var l list.Model
-
-	// fmt.Println(initialTerm.IsSizeSmall())
-	// if initialTerm.IsSizeSmall() {
-	// } else {
-	l := components.NewDefaultList(items, title)
-	// }
-
-	// l = components.NewCustomList(items, title, components.LIST_HEIGHT_SMALL, components.DEFAULT_WIDTH)
-
-	lm := PlaylistList{list: l}
-
-	return lm
+	return PlaylistList{list: components.NewDefaultList(items, title)}
 }
 
 func (pll PlaylistList) Update(msg tea.Msg) (PlaylistList, tea.Cmd) {

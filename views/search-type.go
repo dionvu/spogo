@@ -18,9 +18,10 @@ func (stl SearchTypeList) Selected() list.Item {
 }
 
 func NewSearchTypeList(items []list.Item) SearchTypeList {
-	l := components.NewDefaultList(items, "Select a search type: ")
-
-	lm := SearchTypeList{list: l}
+	lm := SearchTypeList{
+		list: components.NewCustomList(items, "Select a search type:",
+			components.DEFAULT_WIDTH+4, components.LIST_HEIGHT_SMALL-1),
+	}
 
 	return lm
 }

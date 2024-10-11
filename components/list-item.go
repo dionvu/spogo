@@ -14,9 +14,41 @@ const (
 	LIST_HEIGHT_SMALL   = 7
 	LIST_HEIGHT_NORMAL  = 10
 	DEFAULT_WIDTH       = 20
-	DEFAULT_LIST_HEIGHT = 22 // 7 Selections per page
+	DEFAULT_LIST_HEIGHT = 20 // 7 Selections per page
 	SMALL_LIST_HEIGHT   = 7  // 5 Selections per page
 )
+
+type UniqueItem struct {
+	Name string
+	Id   string
+}
+
+type UniqueItemDelegate struct{}
+
+func (d UniqueItemDelegate) Height() int                             { return 1 }
+func (d UniqueItemDelegate) Spacing() int                            { return 0 }
+func (d UniqueItemDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
+func (d UniqueItemDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
+	i, ok := listItem.(UniqueItem)
+	if !ok {
+		return
+	}
+
+	str := fmt.Sprintf("%s", i.Name)
+
+	fn := PlaylistViewStyle.ListItem.Render
+	if index == m.Index() {
+		fn = func(s ...string) string {
+			return PlaylistViewStyle.ItemSelected.Render("> " + strings.Join(s, " "))
+		}
+	}
+
+	fmt.Fprint(w, fn(str))
+}
+
+func (i UniqueItem) FilterValue() string {
+	return ""
+}
 
 type ListItem string
 
@@ -44,7 +76,7 @@ func (d ItemDelegate) Render(w io.Writer, m list.Model, index int, listItem list
 }
 
 func (i ListItem) FilterValue() string {
-	return string(i)
+	return ""
 }
 
 var CommonStyle = struct {
@@ -132,6 +164,28 @@ func NewDefaultList(items []list.Item, title string) list.Model {
 
 func NewCustomList(items []list.Item, title string, height int, width int) list.Model {
 	l := list.New(items, ItemDelegate{}, height, width)
+	l.Styles.Title = lg.NewStyle().MarginLeft(0)
+	l.Title = title
+	l.SetFilteringEnabled(false)
+	l.SetShowStatusBar(false)
+	l.SetShowHelp(false)
+
+	return l
+}
+
+func NewDefaultUniqueItemList(items []list.Item, title string) list.Model {
+	l := list.New(items, UniqueItemDelegate{}, DEFAULT_WIDTH, LIST_HEIGHT_NORMAL)
+	l.Styles.Title = lg.NewStyle().MarginLeft(0)
+	l.Title = title
+	l.SetFilteringEnabled(false)
+	l.SetShowStatusBar(false)
+	l.SetShowHelp(false)
+
+	return l
+}
+
+func NewCustomUniqueItemList(items []list.Item, title string, height int, width int) list.Model {
+	l := list.New(items, UniqueItemDelegate{}, height, width)
 	l.Styles.Title = lg.NewStyle().MarginLeft(0)
 	l.Title = title
 	l.SetFilteringEnabled(false)
