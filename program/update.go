@@ -91,24 +91,40 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			p.Player.PlayPause()
 
 		case "[":
-			vol := p.PlayerState().Device.VolumePercent
-			p.Player.Player.SetVolume(p.session, vol-VOLUME_INCREMENT_PERCENT)
-			p.Player.State.Device.VolumePercent = vol - VOLUME_INCREMENT_PERCENT
+			t := p.player.Device().Type
+			// Spotify doesn't have a volume control for mobile devices.
+			if p.player.Device() != nil && (t != "smartphone" || t != "tablet") {
+				vol := p.PlayerState().Device.VolumePercent
+				p.Player.Player.SetVolume(p.session, vol-VOLUME_INCREMENT_PERCENT)
+				p.Player.State.Device.VolumePercent = vol - VOLUME_INCREMENT_PERCENT
+			}
 
 		case "]":
-			vol := p.PlayerState().Device.VolumePercent
-			p.Player.Player.SetVolume(p.session, vol+VOLUME_INCREMENT_PERCENT)
-			p.Player.State.Device.VolumePercent = vol + VOLUME_INCREMENT_PERCENT
+			t := p.player.Device().Type
+			// Spotify doesn't have a volume control for mobile devices.
+			if p.player.Device() != nil && (t != "smartphone" || t != "tablet") {
+				vol := p.PlayerState().Device.VolumePercent
+				p.Player.Player.SetVolume(p.session, vol+VOLUME_INCREMENT_PERCENT)
+				p.Player.State.Device.VolumePercent = vol + VOLUME_INCREMENT_PERCENT
+			}
 
 		case "{":
-			vol := p.PlayerState().Device.VolumePercent
-			p.Player.Player.SetVolume(p.session, vol-1)
-			p.Player.State.Device.VolumePercent = vol - 1
+			t := p.player.Device().Type
+			// Spotify doesn't have a volume control for mobile devices.
+			if p.player.Device() != nil && (t != "smartphone" || t != "tablet") {
+				vol := p.PlayerState().Device.VolumePercent
+				p.Player.Player.SetVolume(p.session, vol-1)
+				p.Player.State.Device.VolumePercent = vol - 1
+			}
 
 		case "}":
-			vol := p.PlayerState().Device.VolumePercent
-			p.Player.Player.SetVolume(p.session, vol+1)
-			p.Player.State.Device.VolumePercent = vol + 1
+			t := p.player.Device().Type
+			// Spotify doesn't have a volume control for mobile devices.
+			if p.player.Device() != nil && (t != "smartphone" || t != "tablet") {
+				vol := p.PlayerState().Device.VolumePercent
+				p.Player.Player.SetVolume(p.session, vol+1)
+				p.Player.State.Device.VolumePercent = vol + 1
+			}
 
 		case "f1", "1":
 			p.CurrentView = PLAYER_VIEW

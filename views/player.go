@@ -139,7 +139,7 @@ func (pv *Player) UpdateContent(term components.Terminal) {
 		switch pv.State {
 		case nil:
 			return components.Join([]components.Content{
-				pv.StatusBar.Content(),
+				pv.StatusBar.Content().Append('\n', 10).Prepend('\n', 12),
 				pv.ViewStatus.Content(),
 			}, "\n\n")
 

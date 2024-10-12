@@ -91,7 +91,7 @@ func NewPlaylistView(s *auth.Session, initialTerm components.Terminal) *Playlist
 		pv.playlistsMap[item] = &playlist
 	}
 
-	pv.PlaylistList = NewPlaylistListModel(items, "Playlists", initialTerm)
+	pv.PlaylistList = PlaylistList{list: components.NewDefaultList(items, "Playlists")}
 
 	// Sets the initial choice, else the list will not move.
 	if len(items) > 0 {
@@ -179,7 +179,6 @@ func (pi PlaylistInfo) Content(term components.Terminal) components.Content {
 		[]string{
 			pi.Name.AdjustFit(term).String() + "\n",
 			"Tracks: " + fmt.Sprint(pi.TotalTracks),
-			// "Owner: " + fmt.Sprint(pi.Owner),
 		}, "\n")
 }
 
@@ -202,11 +201,6 @@ type PlaylistList struct {
 	list     list.Model
 	choice   string
 	quitting bool
-}
-
-// A new playlist list model sized dynamically based on the initial terminal dimensions.
-func NewPlaylistListModel(items []list.Item, title string, initialTerm components.Terminal) PlaylistList {
-	return PlaylistList{list: components.NewDefaultList(items, title)}
 }
 
 func (pll PlaylistList) Update(msg tea.Msg) (PlaylistList, tea.Cmd) {

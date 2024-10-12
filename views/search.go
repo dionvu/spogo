@@ -82,8 +82,8 @@ func (s Search) View(term components.Terminal, curView string) string {
 			components.Content(left.Render()).PadLinesLeft(16).String(),
 
 			components.Join([]string{
-				s.Results.view(),
-				components.Content("").Append(' ', SEARCH_RESULTS_WIDTH).String(),
+				components.Content(s.Results.view()).Prepend(' ', 0).String(),
+				components.Content("").Append(' ', SEARCH_RESULTS_WIDTH+5).String(),
 			}, "\n"),
 		},
 	})

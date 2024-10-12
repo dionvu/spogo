@@ -62,18 +62,21 @@ func (dv *Device) UpdateDevices() {
 	devices, _ := player.GetDevices(dv.Session)
 
 	for _, device := range *devices {
-		item := components.ListItem(device.Name)
+		item := components.ListItem(components.Content(device.Name).AdjustFit(components.DEFAULT_WIDTH - 4))
 		items = append(items, item)
 		dv.deviceMap[device.Name] = &device
 		dv.itemMap[item] = device.Name
 	}
 
-	dv.ListModel = DeviceListModel{list: components.NewDefaultList(items,
-		"Devices")}
+	dv.ListModel = DeviceListModel{list: components.NewCustomList(items,
+		"Devices", components.DEFAULT_WIDTH, components.LIST_HEIGHT_NORMAL)}
 }
 
 func (dv *Device) View(term components.Terminal, device *player.Device) string {
-	link := "https://i.pinimg.com/736x/0f/ce/a0/0fcea0f6a76b73cd38b9557fd696e7da.jpg"
+	if device == nil {
+		return "no device bich"
+	}
+	link := "https://i.pinimg.com/736x/7f/cb/55/7fcb55a037d93681c7396e50b6f074aa.jpg"
 
 	cd, _ := os.UserCacheDir()
 	img := components.Image{FilePath: filepath.Join(cd, "spogo", "temp500.jpeg")}
@@ -82,14 +85,14 @@ func (dv *Device) View(term components.Terminal, device *player.Device) string {
 	t := components.NewDefaultTable()
 	t.AppendRow(table.Row{
 		components.Content(dv.ListModel.View()).Prepend('\n', 1),
-		img.AsciiSmall().Content().PadLinesLeft(10),
+		img.AsciiSmall().Content().PadLinesLeft(0).PadLinesLeft(15),
 	})
 	vs := ViewStatus{}
 	vs.Update(DEVICE_VIEW)
 
 	return components.Join([]string{
 		components.Content(t.Render()).Prepend('\n', 6).String(),
-		components.Content("Current Device: "+device.Name+"\n\n"+"Type: "+device.Type).Prepend('\n', 2).String(),
+		components.Content("Current Selected Device: "+device.Name+"\n\n"+"Type: "+device.Type).Prepend('\n', 2).String(),
 		vs.Content().Prepend('\n', 2).String(),
 	}, "\n").CenterVertical(term).CenterHorizontal(term).String()
 }

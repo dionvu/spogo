@@ -23,8 +23,7 @@ func (p *Program) View() string {
 		return p.Playlist.View(p.Player, p.Terminal)
 
 	case HELP_VIEW:
-		// return HelpString()
-		return ""
+		return "idk man just press them keys"
 
 	case PLAYLIST_TRACK_VIEW:
 		playlist := p.Playlist.GetSelectedPlaylist()
@@ -136,7 +135,11 @@ func (p *Program) View() string {
 		return p.Search.View(p.Terminal, p.CurrentView)
 
 	case DEVICE_VIEW:
-		return p.Device.View(p.Terminal, p.Player.State.Device)
+		if p.Player.State == nil {
+			return p.Device.View(p.Terminal, nil)
+		}
+
+		return p.Device.View(p.Terminal, p.player.Device())
 	}
 
 	return "UNREACHABLE"
