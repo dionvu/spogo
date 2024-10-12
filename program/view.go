@@ -139,6 +139,10 @@ func (p *Program) View() string {
 			return p.Device.View(p.Terminal, nil)
 		}
 
+    if p.player.Device() == nil {
+      return p.Device.View(p.Terminal, nil)
+    }
+
 		return p.Device.View(p.Terminal, p.player.Device())
 	}
 

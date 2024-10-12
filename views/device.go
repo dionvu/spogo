@@ -73,9 +73,14 @@ func (dv *Device) UpdateDevices() {
 }
 
 func (dv *Device) View(term components.Terminal, device *player.Device) string {
+	var currDeviceInfo string
+
 	if device == nil {
-		return "no device bich"
+		currDeviceInfo = components.Content("Current Selected Device: "+"none"+"\n\n"+"Type: "+"none").Prepend('\n', 2).String()
+	} else {
+		currDeviceInfo = components.Content("Current Selected Device: "+device.Name+"\n\n"+"Type: "+device.Type).Prepend('\n', 2).String()
 	}
+
 	link := "https://i.pinimg.com/736x/7f/cb/55/7fcb55a037d93681c7396e50b6f074aa.jpg"
 
 	cd, _ := os.UserCacheDir()
@@ -92,7 +97,7 @@ func (dv *Device) View(term components.Terminal, device *player.Device) string {
 
 	return components.Join([]string{
 		components.Content(t.Render()).Prepend('\n', 6).String(),
-		components.Content("Current Selected Device: "+device.Name+"\n\n"+"Type: "+device.Type).Prepend('\n', 2).String(),
+		currDeviceInfo,
 		vs.Content().Prepend('\n', 2).String(),
 	}, "\n").CenterVertical(term).CenterHorizontal(term).String()
 }
@@ -114,6 +119,8 @@ func (m DeviceListModel) Update(msg tea.Msg) (DeviceListModel, tea.Cmd) {
 		case "ctrl+c":
 			m.quitting = true
 			return m, tea.Quit
+		case "esc":
+			return m, nil
 		}
 	}
 

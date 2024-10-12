@@ -21,6 +21,8 @@ func Init() {
 	cacheDir, err := os.UserCacheDir()
 	Catch(err)
 
+  os.Mkdir(filepath.Join(cacheDir, "spogo"), 0777)
+  os.Create(filepath.Join(cacheDir, "spogo", "spogo.log"))
 	logFile, err := os.OpenFile(filepath.Join(cacheDir, "spogo", "spogo.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		log.Fatalf("Failed to open error log file: %v", err)
