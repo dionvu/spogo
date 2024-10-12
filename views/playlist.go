@@ -71,6 +71,9 @@ func NewPlaylistView(s *auth.Session, initialTerm components.Terminal) *Playlist
 	}
 
 	pv.UserPlaylists, _ = spotify.UserPlaylists(pv.Session)
+	if pv.UserPlaylists == nil {
+		return pv
+	}
 
 	for i, playlist := range *pv.UserPlaylists {
 		pv.Images = append(pv.Images, components.Image{FilePath: path + fmt.Sprint(i) + ".jpeg"})

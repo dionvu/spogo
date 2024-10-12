@@ -126,7 +126,7 @@ func AsciiFlagsSmall() aic_package.Flags {
 	flags.Colored = true
 	flags.Dimensions = []int{ASCII_SMALL_HEIGHT, ASCII_SMALL_WIDTH}
 	flags.Braille = true
-	flags.Threshold = 20
+	flags.Threshold = 0
 	return flags
 }
 

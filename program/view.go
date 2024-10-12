@@ -132,18 +132,6 @@ func (p *Program) View() string {
 	case TERMINAL_WARNING_VIEW:
 		return p.Terminal.WarningString()
 
-		// case SEARCH_TYPE_VIEW:
-		// 	return p.SearchType.View(p.Views.Player, p.Terminal)
-
-		// case SEARCH_QUERY_VIEW:
-		// 	return p.Squery.View()
-
-		// case SEARCH_RESULT_TRACK:
-		// 	fmt.Println(p.SearchType.ListModel.list.SelectedItem())
-		// 	fmt.Println(p.SearchType.itemsMap[p.Views.SearchType.ListModel.list.SelectedItem()])
-		// 	p.SearchResult = NewSearchResultView(p.Views.Squery.Query(), p.Views.SearchType.itemsMap[p.Views.SearchType.ListModel.list.SelectedItem()], p.session)
-		// 	return p.SearchResult.items.Tracks[0].Name
-
 	case views.SEARCH_VIEW_QUERY, views.SEARCH_VIEW_TYPE, views.SEARCH_VIEW_RESULTS:
 		return p.Search.View(p.Terminal, p.CurrentView)
 

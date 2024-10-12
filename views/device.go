@@ -1,6 +1,9 @@
 package views
 
 import (
+	"os"
+	"path/filepath"
+
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/dionvu/spogo/auth"
@@ -11,7 +14,7 @@ import (
 
 type Device struct {
 	Session   *auth.Session
-	ListModel *DeviceListModel
+	ListModel DeviceListModel
 	deviceMap map[string]*player.Device
 	itemMap   map[list.Item]string
 }
@@ -40,7 +43,6 @@ func NewDeviceView(s *auth.Session) *Device {
 
 	dv := Device{
 		Session:   s,
-		ListModel: NewDeviceListModel(items),
 		deviceMap: deviceMap,
 		itemMap:   itemMap,
 	}
@@ -66,16 +68,30 @@ func (dv *Device) UpdateDevices() {
 		dv.itemMap[item] = device.Name
 	}
 
-	dv.ListModel = NewDeviceListModel(items)
+	dv.ListModel = DeviceListModel{list: components.NewDefaultList(items,
+		"Devices")}
 }
 
-func (dv *Device) View(terminal components.Terminal, device *player.Device) string {
-	if terminal.IsSizeSmall() {
-		return "\n\n" + RenderDeviceView(dv, device)
-	}
+func (dv *Device) View(term components.Terminal, device *player.Device) string {
+	link := "https://i.pinimg.com/736x/0f/ce/a0/0fcea0f6a76b73cd38b9557fd696e7da.jpg"
 
-	// return "\n\n" + MainControlsRender(DEVICE_VIEW) + "\n\n" + RenderDeviceView(dv, device)
-	return ""
+	cd, _ := os.UserCacheDir()
+	img := components.Image{FilePath: filepath.Join(cd, "spogo", "temp500.jpeg")}
+	img.Update(link)
+
+	t := components.NewDefaultTable()
+	t.AppendRow(table.Row{
+		components.Content(dv.ListModel.View()).Prepend('\n', 1),
+		img.AsciiSmall().Content().PadLinesLeft(10),
+	})
+	vs := ViewStatus{}
+	vs.Update(DEVICE_VIEW)
+
+	return components.Join([]string{
+		components.Content(t.Render()).Prepend('\n', 6).String(),
+		components.Content("Current Device: "+device.Name+"\n\n"+"Type: "+device.Type).Prepend('\n', 2).String(),
+		vs.Content().Prepend('\n', 2).String(),
+	}, "\n").CenterVertical(term).CenterHorizontal(term).String()
 }
 
 func (dv *Device) GetDeviceFromChoice(choice string) *player.Device {
@@ -86,28 +102,7 @@ func (dv *Device) GetSelectedDevice() *player.Device {
 	return dv.deviceMap[dv.itemMap[dv.ListModel.list.SelectedItem()]]
 }
 
-// Renders the list of devices, and current device information in a
-// single row, two column table.
-func RenderDeviceView(dv *Device, device *player.Device) string {
-	t := table.NewWriter()
-	t.Style().Options.DrawBorder = false
-	t.Style().Options.SeparateColumns = false
-
-	t.AppendRow(table.Row{
-		dv.ListModel.View(),
-		"Current Device: " + device.Name + "\n\n" + "Type: " + device.Type,
-	})
-
-	return t.Render()
-}
-
-func NewDeviceListModel(items []list.Item) *DeviceListModel {
-	l := components.NewDefaultList(items, DeviceViewStyle.Title.Render("Devices"))
-	lm := &DeviceListModel{list: l}
-	return lm
-}
-
-func (m DeviceListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m DeviceListModel) Update(msg tea.Msg) (DeviceListModel, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -117,8 +112,6 @@ func (m DeviceListModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.quitting = true
 			return m, tea.Quit
 		}
-
-		return m, cmd
 	}
 
 	m.list, cmd = m.list.Update(msg)

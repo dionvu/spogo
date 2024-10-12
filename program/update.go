@@ -93,10 +93,22 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "[":
 			vol := p.PlayerState().Device.VolumePercent
 			p.Player.Player.SetVolume(p.session, vol-VOLUME_INCREMENT_PERCENT)
+			p.Player.State.Device.VolumePercent = vol - VOLUME_INCREMENT_PERCENT
 
 		case "]":
 			vol := p.PlayerState().Device.VolumePercent
 			p.Player.Player.SetVolume(p.session, vol+VOLUME_INCREMENT_PERCENT)
+			p.Player.State.Device.VolumePercent = vol + VOLUME_INCREMENT_PERCENT
+
+		case "{":
+			vol := p.PlayerState().Device.VolumePercent
+			p.Player.Player.SetVolume(p.session, vol-1)
+			p.Player.State.Device.VolumePercent = vol - 1
+
+		case "}":
+			vol := p.PlayerState().Device.VolumePercent
+			p.Player.Player.SetVolume(p.session, vol+1)
+			p.Player.State.Device.VolumePercent = vol + 1
 
 		case "f1", "1":
 			p.CurrentView = PLAYER_VIEW
@@ -109,7 +121,6 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			p.CurrentView = views.SEARCH_VIEW_QUERY
 
 		case "f4", "4":
-			// p.Views.Device = NewDeviceView(p.session) // Updates the list of available devices.
 			p.Device.UpdateDevices()
 			p.CurrentView = DEVICE_VIEW
 
@@ -124,6 +135,8 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case PLAYLIST_VIEW:
 				pl := p.Playlist.GetSelectedPlaylist()
 				p.player.Play(pl.URI, "", p.session)
+
+				p.Player.UpdateStateSync()
 
 			case views.SEARCH_VIEW_QUERY:
 				p.Search.Input = p.Search.Input.HideCursor()
@@ -145,8 +158,10 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				switch p.Search.SelectedType() {
 				case "track":
 					p.player.Play(p.Search.Results.SelectedTrack().Album.Uri, p.Search.Results.SelectedTrack().Uri, p.session)
+					p.Player.UpdateStateSync()
 				case "album":
 					p.player.Play(p.Search.Results.SelectedAlbum().Uri, "", p.session)
+					p.Player.UpdateStateSync()
 				}
 			}
 
@@ -201,10 +216,10 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		// Handles updates from the device list.
-		// if p.CurrentView == DEVICE_VIEW {
-		// 	p.Views.Device.ListModel.list, cmd = p.Views.Device.ListModel.list.Update(msg)
-		// 	return p, cmd
-		// }
+		if p.CurrentView == DEVICE_VIEW {
+			p.Device.ListModel, cmd = p.Device.ListModel.Update(msg)
+			return p, cmd
+		}
 
 		if p.CurrentView == views.SEARCH_VIEW_QUERY {
 			p.Search.Input, cmd = p.Search.Input.Update(msg)
