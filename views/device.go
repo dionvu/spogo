@@ -9,7 +9,6 @@ import (
 	"github.com/dionvu/spogo/auth"
 	"github.com/dionvu/spogo/components"
 	"github.com/dionvu/spogo/player"
-	"github.com/jedib0t/go-pretty/v6/table"
 )
 
 type Device struct {
@@ -69,16 +68,19 @@ func (dv *Device) UpdateDevices() {
 	}
 
 	dv.ListModel = DeviceListModel{list: components.NewCustomList(items,
-		"Devices", components.DEFAULT_WIDTH, components.LIST_HEIGHT_NORMAL)}
+		"Devices", components.DEFAULT_WIDTH, 1)}
+
+	dv.ListModel.list.SetShowTitle(false)
+	dv.ListModel.list.SetShowPagination(false)
 }
 
 func (dv *Device) View(term components.Terminal, device *player.Device) string {
 	var currDeviceInfo string
 
 	if device == nil {
-		currDeviceInfo = components.Content("Current Selected Device: "+"none"+"\n\n"+"Type: "+"none").Prepend('\n', 2).String()
+		currDeviceInfo = components.Content("Current Selected Device: "+"none"+"\n\n"+"Type: "+"none").Prepend('\n', 1).String()
 	} else {
-		currDeviceInfo = components.Content("Current Selected Device: "+device.Name+"\n\n"+"Type: "+device.Type).Prepend('\n', 2).String()
+		currDeviceInfo = components.Content("Current Selected Device: "+device.Name+"\n\n"+"Type: "+device.Type).Prepend('\n', 1).String()
 	}
 
 	link := "https://i.pinimg.com/736x/7f/cb/55/7fcb55a037d93681c7396e50b6f074aa.jpg"
@@ -87,18 +89,14 @@ func (dv *Device) View(term components.Terminal, device *player.Device) string {
 	img := components.Image{FilePath: filepath.Join(cd, "spogo", "temp500.jpeg")}
 	img.Update(link)
 
-	t := components.NewDefaultTable()
-	t.AppendRow(table.Row{
-		components.Content(dv.ListModel.View()).Prepend('\n', 1),
-		img.AsciiSmall().Content().PadLinesLeft(0).PadLinesLeft(15),
-	})
 	vs := ViewStatus{}
 	vs.Update(DEVICE_VIEW)
 
 	return components.Join([]string{
-		components.Content(t.Render()).Prepend('\n', 6).String(),
-		currDeviceInfo,
-		vs.Content().Prepend('\n', 2).String(),
+		"\n\n\n\n\n\n" + img.AsciiSmall().Content().PadLinesLeft(0).PadLinesLeft(0).String(),
+		currDeviceInfo + "\n",
+		components.Content(dv.ListModel.View()).Prepend('\n', 0).String() + "    ",
+		vs.Content().Prepend('\n', 1).String(),
 	}, "\n").CenterVertical(term).CenterHorizontal(term).String()
 }
 
