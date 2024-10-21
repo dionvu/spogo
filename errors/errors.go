@@ -21,15 +21,20 @@ func Init() {
 	cacheDir, err := os.UserCacheDir()
 	Catch(err)
 
-  os.Mkdir(filepath.Join(cacheDir, "spogo"), 0777)
-  os.Create(filepath.Join(cacheDir, "spogo", "spogo.log"))
-	logFile, err := os.OpenFile(filepath.Join(cacheDir, "spogo", "spogo.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	os.Mkdir(filepath.Join(cacheDir, "spogo"), 0777)
+	os.Create(filepath.Join(cacheDir, "spogo", "spogo.log"))
+	logFileErr, err := os.OpenFile(filepath.Join(cacheDir, "spogo", "errors.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		log.Fatalf("Failed to open error log file: %v", err)
 	}
 
-	errorLogger = log.New(logFile, "ERROR: ", log.Ldate|log.Ltime)
-	apiLogger = log.New(logFile, "API: ", log.Ldate|log.Ltime)
+	logFileApi, err := os.OpenFile(filepath.Join(cacheDir, "spogo", "api.log"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		log.Fatalf("Failed to open error log file: %v", err)
+	}
+
+	errorLogger = log.New(logFileErr, "ERROR: ", log.Ldate|log.Ltime)
+	apiLogger = log.New(logFileApi, "API: ", log.Ldate|log.Ltime)
 }
 
 func LogApiCall(endpoint string, statusCode int) {
@@ -39,7 +44,7 @@ func LogApiCall(endpoint string, statusCode int) {
 	}
 }
 
-func LogError(err error) {
+func Log(err error) {
 	errorLogger.Println(err)
 }
 

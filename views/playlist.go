@@ -108,10 +108,8 @@ func (pv *Playlist) UpdateContent(term components.Terminal) {
 	t := components.NewDefaultTable()
 
 	pv.PlaylistInfo.Update(pv.GetSelectedPlaylist())
-	pv.ViewStatus.Update(PLAYLIST_VIEW)
 
-	vs := ViewStatus{}
-	vs.Update(PLAYLIST_VIEW)
+	vs := ViewStatus{CurrentView: PLAYLIST_VIEW}
 
 	pv.Content = func() components.Content {
 		t.AppendRow(table.Row{

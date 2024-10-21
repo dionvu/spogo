@@ -15,11 +15,11 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	p.Terminal.UpdateSize()
 
 	if !p.Terminal.IsValid() {
-		p.CurrentView = TERMINAL_WARNING_VIEW
+		p.CurrentView = views.TERMINAL_WARNING_VIEW
 	}
 
-	if p.CurrentView == TERMINAL_WARNING_VIEW && p.Terminal.IsValid() {
-		p.CurrentView = PLAYER_VIEW
+	if p.CurrentView == views.TERMINAL_WARNING_VIEW && p.Terminal.IsValid() {
+		p.CurrentView = views.PLAYER_VIEW
 	}
 
 	switch msg := msg.(type) {
@@ -80,7 +80,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "esc":
 			switch p.CurrentView {
 			case views.SEARCH_VIEW_QUERY:
-				p.CurrentView = PLAYER_VIEW
+				p.CurrentView = views.PLAYER_VIEW
 			default:
 			}
 
@@ -127,10 +127,10 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case "f1", "1":
-			p.CurrentView = PLAYER_VIEW
+			p.CurrentView = views.PLAYER_VIEW
 
 		case "f2", "2":
-			p.CurrentView = PLAYLIST_VIEW
+			p.CurrentView = views.PLAYLIST_VIEW
 
 		case "f3", "3", "/":
 			p.Search.Input.Text.Focus()
@@ -138,17 +138,17 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case "f4", "4":
 			p.Device.UpdateDevices()
-			p.CurrentView = DEVICE_VIEW
+			p.CurrentView = views.DEVICE_VIEW
 
 		case "f5", "5":
-			p.CurrentView = HELP_VIEW
+			p.CurrentView = views.HELP_VIEW
 
 		case "enter":
 
 			// The enter key has different actions it needs to perform depending on the
 			// current view.
 			switch p.CurrentView {
-			case PLAYLIST_VIEW:
+			case views.PLAYLIST_VIEW:
 				pl := p.Playlist.GetSelectedPlaylist()
 				p.player.Play(pl.URI, "", p.session)
 
@@ -158,7 +158,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				p.Search.Input = p.Search.Input.HideCursor()
 				p.CurrentView = views.SEARCH_VIEW_TYPE
 
-			case DEVICE_VIEW:
+			case views.DEVICE_VIEW:
 				device := p.Device.GetSelectedDevice()
 
 				p.player.SetDevice(device, p.Config)
@@ -187,7 +187,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			go func() {
 				view := p.CurrentView
 
-				p.CurrentView = REFRESH_VIEW
+				p.CurrentView = views.REFRESH_VIEW
 				time.Sleep(UPDATE_RATE_SEC)
 				p.CurrentView = view
 
@@ -197,12 +197,12 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}()
 
 		case "t":
-			if p.CurrentView == PLAYLIST_VIEW {
-				p.CurrentView = PLAYLIST_TRACK_VIEW
+			if p.CurrentView == views.PLAYLIST_VIEW {
+				p.CurrentView = views.PLAYLIST_TRACK_VIEW
 			}
 
 		case "a":
-			p.CurrentView = ALBUM_TRACK_VIEW
+			p.CurrentView = views.ALBUM_TRACK_VIEW
 
 		case "s":
 			// Enables or disables shuffling on current album or playlist.
@@ -226,13 +226,13 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmd tea.Cmd
 
 		// Handles updates from the playlist list.
-		if p.CurrentView == PLAYLIST_VIEW {
+		if p.CurrentView == views.PLAYLIST_VIEW {
 			p.Playlist.PlaylistList, cmd = p.Playlist.PlaylistList.Update(msg)
 			return p, cmd
 		}
 
 		// Handles updates from the device list.
-		if p.CurrentView == DEVICE_VIEW {
+		if p.CurrentView == views.DEVICE_VIEW {
 			p.Device.ListModel, cmd = p.Device.ListModel.Update(msg)
 			return p, cmd
 		}

@@ -12,8 +12,9 @@ import (
 type Content string
 
 // Joins either several strings or several subcontents into a since content,
-// seperating them by a single sep.
-func Join(contents interface{}, sep string) Content {
+// seperating them by a single sep, if sep is omitted, seperates them with a
+// newline. Specify "" for no sep.
+func Join(contents interface{}, sep ...string) Content {
 	switch contents.(type) {
 	case []Content:
 		contents := contents.([]Content)
@@ -24,7 +25,12 @@ func Join(contents interface{}, sep string) Content {
 			if i == len(contents)-1 {
 				break
 			}
-			s += sep
+
+			if len(sep) > 0 {
+				s += sep[0]
+			} else {
+				s += "\n"
+			}
 		}
 
 		return Content(s)
@@ -38,7 +44,12 @@ func Join(contents interface{}, sep string) Content {
 			if i == len(contents)-1 {
 				break
 			}
-			s += sep
+
+			if len(sep) > 0 {
+				s += sep[0]
+			} else {
+				s += "\n"
+			}
 		}
 
 		return Content(s)
@@ -163,4 +174,16 @@ func (v Content) Append(c byte, count int) Content {
 	}
 
 	return Content(s)
+}
+
+// Returns an content string of space characters
+// equal to length, usually appended to lists
+// to keep lists from collapsing when they have
+// no items.
+func InvisibleBar(length int) Content {
+	return Content("").Append(' ', length)
+}
+
+func InvisibleBarV(length int) Content {
+	return Content("").Append('\n', length)
 }

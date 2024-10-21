@@ -34,7 +34,7 @@ func AlbumTracks(s *auth.Session, albumID string) (*[]AlbumTrack, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		err = errors.HTTPRequest.Wrap(err, "failed to make request for playlists")
-		errors.LogError(err)
+		errors.Log(err)
 		return nil, err
 	}
 
@@ -43,13 +43,13 @@ func AlbumTracks(s *auth.Session, albumID string) (*[]AlbumTrack, error) {
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		err = errors.HTTP.WrapWithNoMessage(err)
-		errors.LogError(err)
+		errors.Log(err)
 		return nil, err
 	}
 
 	if res.StatusCode == 401 {
 		err = errors.Reauthentication.NewWithNoMessage()
-		errors.LogError(err)
+		errors.Log(err)
 		return nil, err
 	}
 
@@ -60,7 +60,7 @@ func AlbumTracks(s *auth.Session, albumID string) (*[]AlbumTrack, error) {
 	b, err := io.ReadAll(res.Body)
 	if err != nil {
 		err = errors.HTTP.Wrap(err, "failed to read response body")
-		errors.LogError(err)
+		errors.Log(err)
 		return nil, err
 	}
 
@@ -71,7 +71,7 @@ func AlbumTracks(s *auth.Session, albumID string) (*[]AlbumTrack, error) {
 	err = json.Unmarshal(b, &response)
 	if err != nil {
 		err = errors.JSONUnmarshal.Wrap(err, "failed to unmarshal playlists response")
-		errors.LogError(err)
+		errors.Log(err)
 		return nil, err
 	}
 

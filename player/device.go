@@ -32,7 +32,7 @@ func GetDevices(s *auth.Session) (*[]Device, error) {
 	req, err := http.NewRequest(http.MethodGet, spotifyurls.PLAYERDEVICES, nil)
 	if err != nil {
 		err = errors.HTTPRequest.Wrap(err, "failed to create http request for playback devices")
-		errors.LogError(err)
+		errors.Log(err)
 		return nil, err
 	}
 	req.Header.Set(headers.Auth, "Bearer "+s.AccessToken.String())
@@ -40,7 +40,7 @@ func GetDevices(s *auth.Session) (*[]Device, error) {
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		err = errors.HTTP.Wrap(err, "failed to get response for playback devices")
-		errors.LogError(err)
+		errors.Log(err)
 		return nil, err
 	}
 	defer res.Body.Close()
@@ -49,7 +49,7 @@ func GetDevices(s *auth.Session) (*[]Device, error) {
 
 	if res.StatusCode != 200 {
 		err = errors.Reauthentication.Wrap(err, "bad token")
-		errors.LogError(err)
+		errors.Log(err)
 		return nil, err
 	}
 
@@ -59,7 +59,7 @@ func GetDevices(s *auth.Session) (*[]Device, error) {
 
 	if err = json.NewDecoder(res.Body).Decode(data); err != nil {
 		err = errors.JSONDecode.Wrap(err, "failed to decode json response for playback devices")
-		errors.LogError(err)
+		errors.Log(err)
 		return nil, err
 	}
 
@@ -81,7 +81,7 @@ func createCache(c *config.Config) error {
 	file, err := os.Create(filepath.Join(c.CachePath(), config.DEVICEFILE))
 	if err != nil {
 		err = errors.FileCreate.Wrap(err, fmt.Sprintf("creating file %v", c.FilePath()))
-		errors.LogError(err)
+		errors.Log(err)
 		return err
 	}
 	file.Close()
@@ -98,7 +98,7 @@ func getCachedPlaybackDevice(c *config.Config) (*Device, error) {
 	f, err := os.Open(c.DeviceFile())
 	if err != nil {
 		err = errors.FileOpen.Wrap(err, "failed to open device cache file")
-		errors.LogError(err)
+		errors.Log(err)
 		return nil, err
 	}
 	defer f.Close()
@@ -106,13 +106,13 @@ func getCachedPlaybackDevice(c *config.Config) (*Device, error) {
 	// Reached EOF before finished decoding into a device.
 	if err = json.NewDecoder(f).Decode(d); err == io.EOF {
 		err = errors.JSONDecode.Wrap(err, "invalid playback device")
-		errors.LogError(err)
+		errors.Log(err)
 		return nil, err
 	}
 
 	if err != nil {
 		err = errors.JSONMarshal.Wrap(err, "failed to marshal device")
-		errors.LogError(err)
+		errors.Log(err)
 		return nil, err
 	}
 

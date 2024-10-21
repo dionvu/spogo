@@ -18,10 +18,51 @@ import (
 )
 
 const (
+	PLAYER_VIEW           = "player_view"
+	PLAYLIST_VIEW         = "playlist_view"
+	PLAYLIST_TRACK_VIEW   = "playlist_track_view"
+	ALBUM_TRACK_VIEW      = "album_track_view"
+	REFRESH_VIEW          = "refresh_view"
+	HELP_VIEW             = "help_view"
+	TERMINAL_WARNING_VIEW = "terminal_warning_view"
+	SEARCH_VIEW_QUERY     = "search_view_query"
+	SEARCH_VIEW_TYPE      = "search_view_type"
+	SEARCH_VIEW_RESULTS   = "search_view_results"
+	DEVICE_VIEW           = "device_view"
+)
+
+const (
 	UPDATE_RATE_SEC          = time.Second
 	POLLING_RATE_STATE_SEC   = time.Second * 5
 	VOLUME_INCREMENT_PERCENT = 5
 )
+
+var statusBarStyle = struct {
+	NowPlaying lg.Style
+	Paused     lg.Style
+	NoPlayer   lg.Style
+}{
+	NowPlaying: lg.NewStyle().
+		Bold(true).
+		Foreground(lg.Color("#282828")).
+		Background(lg.Color("#98971a")).
+		PaddingLeft(1).
+		PaddingRight(1),
+
+	Paused: lg.NewStyle().
+		Bold(true).
+		Foreground(lg.Color("#282828")).
+		Background(lg.Color("#d79921")).
+		PaddingLeft(1).
+		PaddingRight(1),
+
+	NoPlayer: lg.NewStyle().
+		Bold(true).
+		Foreground(lg.Color("#282828")).
+		Background(lg.Color("#cc241d")).
+		PaddingLeft(1).
+		PaddingRight(1),
+}
 
 // The view struct that displays player state
 // details, the current track's album art,
@@ -70,14 +111,13 @@ func NewPlayerView(
 
 		PlayerDetails: &PlayerDetails{},
 		StatusBar:     &StatusBar{},
-		ViewStatus:    &ViewStatus{},
+		ViewStatus:    &ViewStatus{CurrentView: PLAYER_VIEW},
 		Image:         &components.Image{FilePath: path},
 	}
 
 	pv.UpdateStateSync()
 
 	pv.StatusBar.Update(pv.State)
-	pv.ViewStatus.Update(PLAYER_VIEW)
 
 	if pv.State != nil {
 		pv.ProgressMs = pv.State.ProgressMs
@@ -216,7 +256,7 @@ type PlayerDetails struct {
 // Updates PlayerDetails with information in given state and track.
 func (pd *PlayerDetails) Update(progressMs int, state *player.State) {
 	if state == nil || state.Device == nil || state.Track == nil {
-		errors.LogError(errors.PlayerViewInvalidState.New("invalid state passed, cannot update player details"))
+		errors.Log(errors.PlayerViewInvalidState.New("invalid state passed, cannot update player details"))
 		return
 	}
 
@@ -304,7 +344,7 @@ func (pd *PlayerDetails) Content(track *spotify.Track, progressMs int, state *pl
 // playing, paused or an invalid device is selected.
 type StatusBar struct {
 	Status string
-	Style  *lg.Style
+	Style  lg.Style
 }
 
 // Renders the status bar as a string.
@@ -326,13 +366,13 @@ func (sb *StatusBar) Update(state *player.State) {
 	)
 
 	if state != nil && state.IsPlaying {
-		sb.Style = &PlayerViewStyle.StatusBar.NowPlaying
+		sb.Style = statusBarStyle.NowPlaying
 		sb.Status = NOW_PLAYING
 	} else if state != nil && !state.IsPlaying {
-		sb.Style = &PlayerViewStyle.StatusBar.Paused
+		sb.Style = statusBarStyle.Paused
 		sb.Status = PAUSED
 	} else {
-		sb.Style = &PlayerViewStyle.StatusBar.NoPlayer
+		sb.Style = statusBarStyle.NoPlayer
 		sb.Status = NO_PLAYER
 	}
 }

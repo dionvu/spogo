@@ -2,132 +2,134 @@ package views
 
 import (
 	"fmt"
+	"log"
 
+	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	lg "github.com/charmbracelet/lipgloss"
 	"github.com/dionvu/spogo/auth"
-	"github.com/dionvu/spogo/components"
+	comp "github.com/dionvu/spogo/components"
+	"github.com/dionvu/spogo/errors"
 	"github.com/dionvu/spogo/spotify"
-	"github.com/dionvu/spogo/utils"
 	"github.com/jedib0t/go-pretty/v6/table"
 )
 
 const (
-	SEARCH_VIEW_WIDTH    = 86
-	SEARCH_RESULTS_WIDTH = 40
+	SEARCH_VIEW_WIDTH     = 86
+	MAX_RESULT_ITEM_WIDTH = 35
+	MAX_RESULT_WIDTH      = 40
+	LEFT_WIDTH            = 21
+
+	CHAR_LIMIT         = 156
+	SEARCH_QUERY_WIDTH = 20
+
+	SEARCH_LIMIT = 42
+
+	TRACK = "track"
+	ALBUM = "album"
 )
+
+var SEARCH_TYPES = []string{TRACK, ALBUM}
 
 type Search struct {
 	Input    SearchQuery
 	TypeList SearchTypeList
-	// Used to map the selected search type item to the search type as a string.
+
+	// Used to map the selected search
+	// type item to the search type as
+	// a string.
 	typeMap map[list.Item]string
+
 	Results Results
 
 	session *auth.Session
 }
 
-var searchTypes = []string{
-	"album",
-	"track",
-}
-
-var typeMap = map[list.Item]string{
-	components.ListItem("album"): "album",
-	components.ListItem("track"): "track",
-}
-
-// Creates a new search view.
 func NewSearch(session *auth.Session) Search {
-	typeItems := make([]list.Item, len(searchTypes))
-	for i, t := range searchTypes {
-		typeItems[i] = components.ListItem(t)
+	searchTypeListItemMap := map[list.Item]string{}
+	searchTypeListItems := make([]list.Item, len(SEARCH_TYPES))
+
+	for i, searchType := range []string{ALBUM, TRACK} {
+		item := comp.ListItem(searchType)
+		searchTypeListItems[i] = item
+		searchTypeListItemMap[item] = searchType
 	}
 
-	s := Search{
+	return Search{
 		Input:    NewSearchQuery(),
-		TypeList: NewSearchTypeList(typeItems),
-		typeMap:  typeMap,
+		TypeList: NewSearchTypeList(searchTypeListItems),
+		typeMap:  searchTypeListItemMap,
 		Results:  Results{},
 	}
+}
 
-	s.Results.listTracks = components.NewDefaultList([]list.Item{components.ListItem("")}, "Tracks")
+func (r Results) SelectedTrack() *spotify.Track {
+	return r.trackMap[r.listTracks.SelectedItem()]
+}
 
-	return s
+func (r Results) SelectedAlbum() *spotify.Album {
+	return r.albumMap[r.listAlbums.SelectedItem()]
+}
+
+func (s Search) SelectedType() string {
+	return s.typeMap[s.TypeList.Selected()]
 }
 
 // Renders the search view, this includes, the text area,
 // the type selection, and the list of results.
-func (s Search) View(term components.Terminal, curView string) string {
-	if curView == SEARCH_VIEW_TYPE {
-		style := lipgloss.NewStyle().Underline(true)
-		s.TypeList.list.Title = style.Render("Select a search type:")
-	} else {
-		s.TypeList.list.Title = "Select a search type:"
-	}
+func (s Search) View(term comp.Terminal, currentView string) string {
+	queryAndTypeContainer := comp.NewDefaultTable()
+	mainContainer := comp.NewDefaultTable()
 
-	left := components.NewDefaultTable()
-	container := components.NewDefaultTable()
+	s.TypeList = s.TypeList.UpdateSelected(currentView)
 
-	left.AppendRows([]table.Row{
-		{components.Content(s.Input.View()).PadLinesLeft(2).String()},
-		{s.TypeList.View()},
+	queryAndTypeContainer.AppendRow(table.Row{
+		s.Input.Content().PadLinesLeft(2),
 	})
 
-	container.AppendRows([]table.Row{
-		{
-			// Offsets the left to align center, as the right requires more
-			// allocated space for ~40 character result names.
-			components.Content(left.Render()).PadLinesLeft(16).String(),
-
-			components.Join([]string{
-				components.Content(s.Results.view()).Prepend(' ', 0).String(),
-				components.Content("").Append(' ', SEARCH_RESULTS_WIDTH+5).String(),
-			}, "\n"),
-		},
+	queryAndTypeContainer.AppendRow(table.Row{
+		s.TypeList.View(),
 	})
 
-	extraInfo := func() string {
+	mainContainer.AppendRow(table.Row{
+		// Offsets the left to align center, as the right requires more
+		// allocated space for ~40 character result names.
+		comp.Content(queryAndTypeContainer.Render()).PadLinesLeft(MAX_RESULT_WIDTH - LEFT_WIDTH),
+		s.Results.Content(),
+	})
+
+	details := func() comp.Content {
 		switch s.Results.CurrentType {
-		case "track":
-			mins, secs := utils.MsToMinutesAndSeconds(s.Results.SelectedTrack().DurationMs)
-			return components.Join(
+		case TRACK:
+			mins, secs := MsToMinutesAndSeconds(s.Results.SelectedTrack().DurationMs)
+			return comp.Join(
 				[]string{
 					s.Results.SelectedTrack().Artists[0].Name,
 					mins + "m:" + secs + "s",
-				}, "\n\n").Prepend('\n', 0).String()
+				}, "\n\n")
 
-		case "album":
-			return components.Join(
+		case ALBUM:
+			return comp.Join(
 				[]string{
 					s.Results.SelectedAlbum().Artists[0].Name,
 					" Tracks: " + fmt.Sprint(s.Results.SelectedAlbum().TotalTracks),
-				}, "\n\n").Prepend('\n', 0).String()
+				}, "\n\n")
 
 		default:
 			return "\n\n\n"
 		}
 	}()
 
-	vs := ViewStatus{}
-	vs.Update(SEARCH_VIEW_RESULTS)
-
-	c := components.Join([]components.Content{
-		components.Content("").Append('\n', 6),
-		components.Content(container.Render()).Append('\n', 1),
-		components.Content(extraInfo),
-		components.Content(" ").Append(' ', SEARCH_VIEW_WIDTH),
-		components.Content("").Append('\n', 0),
-		vs.Content(),
-	}, "\n")
-
-	return c.CenterVertical(term).CenterHorizontal(term).String()
-}
-
-// Returns the selected search type as a string
-func (s Search) SelectedType() string {
-	return s.typeMap[s.TypeList.Selected()]
+	return comp.Join([]comp.Content{
+		comp.InvisibleBarV(6),
+		comp.Content(mainContainer.Render()),
+		"\n",
+		details,
+		comp.InvisibleBar(SEARCH_VIEW_WIDTH),
+		ViewStatus{CurrentView: SEARCH_VIEW_RESULTS}.Content(),
+	}).CenterVertical(term).CenterHorizontal(term).String()
 }
 
 type Results struct {
@@ -144,41 +146,41 @@ type Results struct {
 // Called whenever the user has finished inputing a search query and selected the search type
 // of the results to be displayed. This updates the state of result to match the desired
 // specified content.
-func (r Results) Refresh(query string, currentSelectedType string, s *auth.Session) Results {
-	results, _ := spotify.Search(query, searchTypes, SEARCH_LIMIT, s)
+func (r Results) Refresh(query string, selectedType string, s *auth.Session) Results {
+	r.CurrentType = selectedType
 
-	r.CurrentType = currentSelectedType
+	searchResults, err := spotify.Search(query, SEARCH_TYPES, SEARCH_LIMIT, s)
+	if err != nil {
+		errors.Log(err)
+	}
 
 	switch r.CurrentType {
-	case "track":
+	case TRACK:
+		listItems := make([]list.Item, len(searchResults.Tracks))
 		r.trackMap = map[list.Item]*spotify.Track{}
 
-		items := make([]list.Item, len(results.Tracks))
-		for i, track := range results.Tracks {
-			items[i] = components.UniqueItem{
-				Name: components.Content(track.Name).AdjustFit(SEARCH_RESULTS_WIDTH - 5).String(),
+		for i, track := range searchResults.Tracks {
+			listItems[i] = comp.UniqueItem{
+				Name: comp.Content(track.Name).AdjustFit(MAX_RESULT_ITEM_WIDTH).String(),
 				Id:   track.ID,
 			}
-
-			r.trackMap[items[i]] = track
+			r.trackMap[listItems[i]] = track
 		}
 
-		r.listTracks = components.NewDefaultUniqueItemList(items, "Tracks")
+		r.listTracks = comp.NewDefaultUniqueItemList(listItems, "Tracks")
 
-	case "album":
+	case ALBUM:
+		listItems := make([]list.Item, len(searchResults.Albums))
 		r.albumMap = map[list.Item]*spotify.Album{}
 
-		items := make([]list.Item, len(results.Albums))
-		for i, album := range results.Albums {
-			items[i] = components.UniqueItem{
-				Name: components.Content(album.Name).AdjustFit(SEARCH_RESULTS_WIDTH - 5).String(),
+		for i, album := range searchResults.Albums {
+			listItems[i] = comp.UniqueItem{
+				Name: comp.Content(album.Name).AdjustFit(MAX_RESULT_ITEM_WIDTH).String(),
 				Id:   album.ID,
 			}
-
-			r.albumMap[items[i]] = album
+			r.albumMap[listItems[i]] = album
 		}
-
-		r.listAlbums = components.NewDefaultUniqueItemList(items, "Albums")
+		r.listAlbums = comp.NewDefaultUniqueItemList(listItems, "Albums")
 	}
 
 	return r
@@ -193,7 +195,7 @@ func (r Results) Update(msg tea.Msg) (Results, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch keypress := msg.String(); keypress {
+		switch msg.String() {
 		case "ctrl+c":
 			return r, tea.Quit
 
@@ -230,14 +232,183 @@ func (r Results) view() string {
 	return ""
 }
 
+func (r Results) Content() comp.Content {
+	return comp.Join([]comp.Content{
+		comp.Content(r.view()),
+		comp.InvisibleBar(MAX_RESULT_WIDTH),
+	})
+}
+
 func (r Results) init() tea.Cmd {
 	return nil
 }
 
-func (r Results) SelectedTrack() *spotify.Track {
-	return r.trackMap[r.listTracks.SelectedItem()]
+type SearchTypeList struct {
+	list     list.Model
+	choice   string
+	quitting bool
 }
 
-func (r Results) SelectedAlbum() *spotify.Album {
-	return r.albumMap[r.listAlbums.SelectedItem()]
+// The selected type as a list item.
+func (stl SearchTypeList) Selected() list.Item {
+	return stl.list.SelectedItem()
+}
+
+func NewSearchTypeList(items []list.Item) SearchTypeList {
+	lm := SearchTypeList{
+		list: comp.NewCustomList(items, "Select a search type:",
+			comp.DEFAULT_WIDTH+4, comp.LIST_HEIGHT_SMALL-1),
+	}
+
+	return lm
+}
+
+// Highlights the title of the list if the user is currently making a selection.
+func (stl SearchTypeList) UpdateSelected(currentView string) SearchTypeList {
+	stl.list.Title = func() string {
+		title := "Select a search type:"
+		if currentView == SEARCH_VIEW_TYPE {
+			return lg.NewStyle().Underline(true).Render(title)
+		}
+		return title
+	}()
+
+	return stl
+}
+
+func (m SearchTypeList) Update(msg tea.Msg) (SearchTypeList, tea.Cmd) {
+	var cmd tea.Cmd
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch keypress := msg.String(); keypress {
+		case "ctrl+c":
+			m.quitting = true
+			return m, tea.Quit
+		}
+	}
+	m.list, cmd = m.list.Update(msg)
+	return m, cmd
+}
+
+func (m SearchTypeList) View() string {
+	return m.list.View()
+}
+
+func (m SearchTypeList) Init() tea.Cmd {
+	return nil
+}
+
+type SearchQuery struct {
+	Text textinput.Model
+	err  error
+}
+
+func NewSearchQuery() SearchQuery {
+	ti := textinput.New()
+	ti.Placeholder = "What's on your mind?"
+	ti.Focus()
+	ti.CharLimit = CHAR_LIMIT
+	ti.Width = SEARCH_QUERY_WIDTH
+	ti.Cursor.SetMode(cursor.CursorBlink)
+
+	return SearchQuery{
+		Text: ti,
+		err:  nil,
+	}
+}
+
+func (sq SearchQuery) Init() tea.Cmd {
+	return textinput.Blink
+}
+
+func (sq SearchQuery) Update(msg tea.Msg) (SearchQuery, tea.Cmd) {
+	var cmd tea.Cmd
+
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.Type {
+		case tea.KeyEnter, tea.KeyCtrlC, tea.KeyEsc:
+			return sq, tea.Quit
+		}
+	}
+
+	sq.Text, cmd = sq.Text.Update(msg)
+
+	return sq, cmd
+}
+
+func (sq SearchQuery) View() string {
+	s := fmt.Sprintf(
+		"Search\n\n%s",
+		sq.Text.View(),
+	) + "\n"
+
+	return s
+}
+
+func (sq SearchQuery) Content() comp.Content {
+	return comp.Content(sq.View())
+}
+
+func (sq SearchQuery) Query() string {
+	return sq.Text.Value()
+}
+
+func (sq SearchQuery) HideCursor() SearchQuery {
+	sq.Text.Blur()
+	return sq
+}
+
+type SearchResultView struct {
+	items      *spotify.SearchResult
+	query      string
+	searchType string
+}
+
+func NewSearchResultView(searchQuery string, searchType string, s *auth.Session) *SearchResultView {
+	srv := SearchResultView{
+		query:      searchQuery,
+		searchType: searchType,
+	}
+
+	if searchQuery == "" {
+		log.Fatal("Empty search query")
+	}
+
+	fmt.Println(searchType)
+	switch searchType {
+	case "track":
+		results, err := spotify.Search(searchQuery, []string{"track"}, SEARCH_LIMIT, s)
+		if err != nil {
+			log.Fatal("Error getting results")
+		}
+
+		srv.items = results
+
+		fmt.Println(srv.items.Tracks)
+	default:
+		log.Fatal("Unknown search type passed")
+	}
+
+	return &srv
+}
+
+func (srv *SearchResultView) i() *spotify.SearchResult {
+	return srv.items
+}
+
+// Converts the number of milliseconds into two string values
+// of minutes and addittional seconds.
+func MsToMinutesAndSeconds(ms int) (minutes string, seconds string) {
+	m := ms / 60000
+	s := (ms % 60000) / 1000
+
+	minutes = fmt.Sprint(m)
+	seconds = fmt.Sprint(s)
+
+	if s < 10 {
+		seconds = "0" + seconds
+	}
+
+	return minutes, seconds
 }

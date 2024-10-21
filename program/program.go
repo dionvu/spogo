@@ -12,26 +12,6 @@ import (
 )
 
 const (
-	PLAYER_VIEW           = "player_view"
-	PLAYLIST_VIEW         = "playlist_view"
-	PLAYLIST_TRACK_VIEW   = "playlist_track_view"
-	ALBUM_TRACK_VIEW      = "album_track_view"
-	REFRESH_VIEW          = "refresh_view"
-	HELP_VIEW             = "help_view"
-	TERMINAL_WARNING_VIEW = "terminal_warning_view"
-
-	SEARCH_VIEW       = "search_view"
-	SEARCH_TYPE_VIEW  = "search_type_view"
-	SEARCH_QUERY_VIEW = "search_query_view"
-
-	SEARCH_PLAYLIST_VIEW = "search_playlist_view"
-	SEARCH_TRACK_VIEW    = "search_track_view"
-	SEARCH_ALBUM_VIEW    = "search_album_view"
-
-	SEARCH_RESULT_TRACK = "search_result_track"
-
-	DEVICE_VIEW = "device_view"
-
 	UPDATE_RATE_SEC          = time.Second
 	POLLING_RATE_STATE_SEC   = time.Second * 5
 	VOLUME_INCREMENT_PERCENT = 5
@@ -84,7 +64,7 @@ func New(
 		session:     auth,
 		player:      player,
 		Config:      config,
-		CurrentView: PLAYER_VIEW,
+		CurrentView: views.PLAYER_VIEW,
 	}
 
 	// A nil state here could be due to an inactive device.

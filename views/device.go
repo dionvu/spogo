@@ -6,6 +6,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	lg "github.com/charmbracelet/lipgloss"
 	"github.com/dionvu/spogo/auth"
 	"github.com/dionvu/spogo/components"
 	"github.com/dionvu/spogo/player"
@@ -60,11 +61,13 @@ func (dv *Device) UpdateDevices() {
 
 	devices, _ := player.GetDevices(dv.Session)
 
-	for _, device := range *devices {
-		item := components.ListItem(components.Content(device.Name).AdjustFit(components.DEFAULT_WIDTH - 4))
-		items = append(items, item)
-		dv.deviceMap[device.Name] = &device
-		dv.itemMap[item] = device.Name
+	if devices != nil {
+		for _, device := range *devices {
+			item := components.ListItem(components.Content(device.Name).AdjustFit(components.DEFAULT_WIDTH - 4))
+			items = append(items, item)
+			dv.deviceMap[device.Name] = &device
+			dv.itemMap[item] = device.Name
+		}
 	}
 
 	dv.ListModel = DeviceListModel{list: components.NewCustomList(items,
@@ -89,8 +92,7 @@ func (dv *Device) View(term components.Terminal, device *player.Device) string {
 	img := components.Image{FilePath: filepath.Join(cd, "spogo", "temp500.jpeg")}
 	img.Update(link)
 
-	vs := ViewStatus{}
-	vs.Update(DEVICE_VIEW)
+	vs := ViewStatus{CurrentView: DEVICE_VIEW}
 
 	return components.Join([]string{
 		"\n\n\n\n\n\n" + img.AsciiSmall().Content().PadLinesLeft(0).PadLinesLeft(0).String(),
@@ -133,4 +135,59 @@ func (dlm DeviceListModel) View() string {
 
 func (_ DeviceListModel) Init() tea.Cmd {
 	return nil
+}
+
+type ViewStatus struct {
+	CurrentView string
+}
+
+// Renders the ViewStatus as a content string based on the
+// it's current view.
+func (vs ViewStatus) Content() components.Content {
+	style := struct {
+		Selected lg.Style
+		Normal   lg.Style
+	}{
+		Normal:   lg.NewStyle().Faint(true),
+		Selected: lg.NewStyle(),
+	}
+
+	switch vs.CurrentView {
+	case PLAYER_VIEW:
+		return components.Join([]string{
+			style.Selected.Render("[ "),
+			style.Selected.Render("F1 Player"),
+			style.Normal.Render(" | F2 Playlists | F3 Search | F4 Devices | F5 Help ]"),
+		}, "")
+
+	case PLAYLIST_VIEW:
+		return components.Join([]string{
+			style.Normal.Render("[ F1 Player | "),
+			style.Selected.Render("F2 Playlists"),
+			style.Normal.Render(" | F3 Search | F4 Devices | F5 Help ]"),
+		}, "")
+
+	case HELP_VIEW:
+		return components.Join([]string{
+			style.Normal.Render("[ F1 Player | F2 Playlists | F3 Search | F4 Devices "),
+			style.Selected.Render("| F5 Help ]"),
+		}, "")
+
+	case SEARCH_VIEW_QUERY, SEARCH_VIEW_TYPE, SEARCH_VIEW_RESULTS:
+		return components.Join([]string{
+			style.Normal.Render("[ F1 Player | F2 Playlists | "),
+			style.Selected.Render("F3 Search"),
+			style.Normal.Render(" | F4 Devices | F5 Help ]"),
+		}, "")
+
+	case DEVICE_VIEW:
+		return components.Join([]string{
+			style.Normal.Render("[ F1 Player | F2 Playlists | F3 Search | "),
+			style.Selected.Render("F4 Devices"),
+			style.Normal.Render(" | F5 Help ]"),
+		}, "")
+
+	default:
+		return "Unknown View"
+	}
 }

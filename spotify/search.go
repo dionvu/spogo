@@ -108,7 +108,7 @@ func Search(input string, searchType []string, limit int, s *auth.Session) (*Sea
 	req, err := http.NewRequest(http.MethodGet, spotifyurls.SEARCH+"?"+query.Encode(), nil)
 	if err != nil {
 		err = errors.HTTPRequest.Wrap(err, fmt.Sprintf("failed to make request for search query: %v", input))
-		errors.LogError(err)
+		errors.Log(err)
 		return nil, err
 	}
 	req.Header.Add(headers.Auth, "Bearer "+s.AccessToken.String())
@@ -116,25 +116,25 @@ func Search(input string, searchType []string, limit int, s *auth.Session) (*Sea
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		err = errors.HTTPRequest.WrapWithNoMessage(err)
-		errors.LogError(err)
+		errors.Log(err)
 		return nil, err
 	}
 
 	if res.StatusCode >= http.StatusBadRequest {
 		err = errors.Reauthentication.NewWithNoMessage()
-		errors.LogError(err)
+		errors.Log(err)
 		return nil, err
 	}
 
 	if res.StatusCode != http.StatusOK {
 		err = errors.HTTP.New("bad request")
-		errors.LogError(err)
+		errors.Log(err)
 		return nil, err
 	}
 
 	if err = json.NewDecoder(res.Body).Decode(r); err != nil {
 		err = errors.JSONDecode.WrapWithNoMessage(err)
-		errors.LogError(err)
+		errors.Log(err)
 		return nil, err
 	}
 

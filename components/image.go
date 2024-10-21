@@ -77,7 +77,7 @@ func (img *Image) Update(url string) {
 
 		err := img.Cache()
 		if err != nil {
-			errors.LogError(errors.PlayerViewImageCache.Wrap(err, "failed to cache new image with url: %s", url))
+			errors.Log(errors.PlayerViewImageCache.Wrap(err, "failed to cache new image with url: %s", url))
 		}
 	}
 }
@@ -126,7 +126,7 @@ func AsciiFlagsSmall() aic_package.Flags {
 	flags.Colored = true
 	flags.Dimensions = []int{ASCII_SMALL_HEIGHT, ASCII_SMALL_WIDTH}
 	flags.Braille = true
-	flags.Threshold = 0
+	flags.Threshold = 20
 	return flags
 }
 

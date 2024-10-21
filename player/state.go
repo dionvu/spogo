@@ -50,7 +50,7 @@ func (p *Player) State(s *auth.Session) (*State, error) {
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		err = errors.HTTP.WrapWithNoMessage(err)
-		errors.LogError(err)
+		errors.Log(err)
 		return nil, err
 	}
 
@@ -58,19 +58,19 @@ func (p *Player) State(s *auth.Session) (*State, error) {
 
 	if res.StatusCode == 204 {
 		err = errors.NoDevice.New("playback device is not active")
-		errors.LogError(err)
+		errors.Log(err)
 		return nil, err
 	}
 
 	if res.StatusCode > 204 {
 		err = errors.HTTP.New("bad request")
-		errors.LogError(err)
+		errors.Log(err)
 		return nil, err
 	}
 
 	if err := json.NewDecoder(res.Body).Decode(ps); err != nil {
 		err = errors.JSONDecode.Wrap(err, "failed to decode player state response body")
-		errors.LogError(err)
+		errors.Log(err)
 		return nil, err
 	}
 	defer res.Body.Close()
@@ -80,7 +80,7 @@ func (p *Player) State(s *auth.Session) (*State, error) {
 	itemBytes, err := json.Marshal(itemMap)
 	if err != nil {
 		err = errors.JSONMarshal.Wrap(err, "failed to marshaling response: %v", itemMap)
-		errors.LogError(err)
+		errors.Log(err)
 		return nil, err
 	}
 
@@ -100,6 +100,6 @@ func (p *Player) State(s *auth.Session) (*State, error) {
 	}
 
 	err = errors.HTTP.New("response body is neither type track or episode")
-	errors.LogError(err)
+	errors.Log(err)
 	return nil, err
 }

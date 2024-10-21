@@ -43,7 +43,7 @@ func New(s *auth.Session) (*User, error) {
 	err := json.NewDecoder(res.Body).Decode(u)
 	if err != nil {
 		err = errors.JSONDecode.Wrap(err, "failed to decode user response")
-		errors.LogError(err)
+		errors.Log(err)
 		return nil, err
 	}
 
