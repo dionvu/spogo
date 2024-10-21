@@ -17,10 +17,10 @@ import (
 )
 
 const (
-	SEARCH_VIEW_WIDTH     = 86
-	MAX_RESULT_ITEM_WIDTH = 35
 	MAX_RESULT_WIDTH      = 40
+	MAX_RESULT_ITEM_WIDTH = MAX_RESULT_WIDTH - 5
 	LEFT_WIDTH            = 21
+	SEARCH_VIEW_WIDTH     = LEFT_WIDTH + MAX_RESULT_WIDTH
 
 	CHAR_LIMIT         = 156
 	SEARCH_QUERY_WIDTH = 20
@@ -93,12 +93,7 @@ func (s Search) View(term comp.Terminal, currentView string) string {
 		s.TypeList.View(),
 	})
 
-	mainContainer.AppendRow(table.Row{
-		// Offsets the left to align center, as the right requires more
-		// allocated space for ~40 character result names.
-		comp.Content(queryAndTypeContainer.Render()).PadLinesLeft(MAX_RESULT_WIDTH - LEFT_WIDTH),
-		s.Results.Content(),
-	})
+	queryAndType := comp.Content(queryAndTypeContainer.Render())
 
 	details := func() comp.Content {
 		switch s.Results.CurrentType {
@@ -121,6 +116,28 @@ func (s Search) View(term comp.Terminal, currentView string) string {
 			return "\n\n\n"
 		}
 	}()
+
+	if term.HeightIsSmall() || term.WidthIsSmall() {
+		mainContainer.AppendRow(table.Row{
+			// Offset to match playlist list's position.
+			queryAndType.PadLinesLeft(3),
+			s.Results.Content(),
+		})
+
+		return comp.Join([]comp.Content{
+			comp.InvisibleBarV(6),
+			comp.Content(mainContainer.Render()),
+			"",
+			details,
+			comp.InvisibleBar(SEARCH_VIEW_WIDTH).Append('\n', 1),
+		}).CenterVertical(term).CenterHorizontal(term).String()
+	}
+
+	mainContainer.AppendRow(table.Row{
+		// Offset to match playlist list's position.
+		queryAndType.PadLinesLeft(MAX_RESULT_WIDTH - LEFT_WIDTH - 10),
+		s.Results.Content(),
+	})
 
 	return comp.Join([]comp.Content{
 		comp.InvisibleBarV(6),
@@ -391,10 +408,6 @@ func NewSearchResultView(searchQuery string, searchType string, s *auth.Session)
 	}
 
 	return &srv
-}
-
-func (srv *SearchResultView) i() *spotify.SearchResult {
-	return srv.items
 }
 
 // Converts the number of milliseconds into two string values

@@ -2,6 +2,7 @@ package views
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"os"
 	"path/filepath"
@@ -29,6 +30,8 @@ const (
 	SEARCH_VIEW_TYPE      = "search_view_type"
 	SEARCH_VIEW_RESULTS   = "search_view_results"
 	DEVICE_VIEW           = "device_view"
+	REAUTH_VIEW           = "reauthentication_view"
+	DEVICE_FZF_VIEW       = "device_fzf_view"
 )
 
 const (
@@ -161,7 +164,7 @@ func (pv *Player) EnsureProgressSynced() {
 // and the current size of the terminal.
 func (pv *Player) UpdateContent(term components.Terminal) {
 	pv.Content = func() components.Content {
-		if term.IsSizeSmall() {
+		if term.HeightIsSmall() {
 			switch pv.State {
 			case nil:
 				return pv.StatusBar.Content()
@@ -170,6 +173,19 @@ func (pv *Player) UpdateContent(term components.Terminal) {
 
 				return components.Join([]components.Content{
 					pv.Image.AsciiSmall().Content(),
+					pv.StatusBar.Content(),
+					pv.PlayerDetails.Content(pv.State.Track, pv.ProgressMs, pv.State),
+				}, "\n\n")
+			}
+		} else if term.WidthIsSmall() {
+			switch pv.State {
+			case nil:
+				return pv.StatusBar.Content()
+			default:
+				pv.Image.Update(pv.State.Track.Album.Images[0].Url)
+
+				return components.Join([]components.Content{
+					pv.Image.AsciiNormal().Content(),
 					pv.StatusBar.Content(),
 					pv.PlayerDetails.Content(pv.State.Track, pv.ProgressMs, pv.State),
 				}, "\n\n")
@@ -200,24 +216,34 @@ func (pv *Player) UpdateContent(term components.Terminal) {
 
 // PlayPause toggles playback and updates the
 // StatusBar accordingly.
-func (pv *Player) PlayPause() {
+func (pv *Player) PlayPause() error {
 	if pv.State == nil {
-		return
+		return nil
 	}
 
 	switch pv.State.IsPlaying {
 	case true:
-		pv.Player.Pause(pv.Session)
-
 		// Updates to ensure player updates immediately
 		// since state only updates every POLLING_RATE seconds.
-		pv.State.IsPlaying = false
+		pv.State.IsPlaying = !pv.State.IsPlaying
+
+		err := pv.Player.Pause(pv.Session)
+		if err != nil {
+			return err
+		}
+
 	default:
-		pv.Player.Resume(pv.Session, true)
-		pv.State.IsPlaying = true
+		pv.State.IsPlaying = !pv.State.IsPlaying
+
+		err := pv.Player.Resume(pv.Session, true)
+		if err != nil {
+			return err
+		}
 	}
 
 	pv.StatusBar.Update(pv.State)
+
+	return nil
 }
 
 // Returns a string containing the entire player view, centered with
@@ -234,12 +260,23 @@ func (pv *Player) UpdateStateSync() {
 	pv.State, _ = pv.Player.State(pv.Session)
 }
 
-// Updates state continuously and asyncchronously.
-func (pv *Player) UpdateStateLoop() {
+// Updates state continuously and asyncchronously, runs reauthentication if requried.
+func (pv *Player) UpdateStateLoop(session *auth.Session, config *config.Config) {
 	go func() {
-		pv.State, _ = pv.Player.State(pv.Session)
+		var err error
+
+		pv.State, err = pv.Player.State(pv.Session)
+		if err != nil {
+			err = session.Reauth(config)
+			if err != nil {
+				log.Fatal("ERR: Failed to reauthenticate: ", err)
+				errors.Log(err)
+			}
+		}
+
 		time.Sleep(POLLING_RATE_STATE_SEC)
-		pv.UpdateStateLoop()
+
+		pv.UpdateStateLoop(session, config)
 	}()
 }
 

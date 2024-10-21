@@ -15,8 +15,8 @@ const (
 	MIN_TERMINAL_HEIGHT = 16
 	MIN_TERMINAL_WIDTH  = 42
 
-	MAX_TERMINAL_HEIGHT_SMALL  = 25
-	MAX_TERMINAL_WIDTH_SMALL   = 70
+	MAX_TERMINAL_HEIGHT_SMALL  = 30
+	MAX_TERMINAL_WIDTH_SMALL   = 75
 	MIN_TERMINAL_HEIGHT_NORMAL = 40
 )
 
@@ -62,9 +62,16 @@ func (t Terminal) IsValid() bool {
 	return t.Height >= MIN_TERMINAL_HEIGHT && t.Width >= MIN_TERMINAL_WIDTH
 }
 
-// If the terminal is in minimum dimensions to be considered small.
-func (t Terminal) IsSizeSmall() bool {
-	return t.Height <= MAX_TERMINAL_HEIGHT_SMALL || t.Width <= MAX_TERMINAL_WIDTH_SMALL
+// If the terminal height is in within minimum dimensions
+// to be considered small.
+func (t Terminal) HeightIsSmall() bool {
+	return t.Height <= MAX_TERMINAL_HEIGHT_SMALL
+}
+
+// If the terminal height is in within minimum dimensions
+// to be considered small.
+func (t Terminal) WidthIsSmall() bool {
+	return t.Width <= MAX_TERMINAL_WIDTH_SMALL
 }
 
 // If the terminal exceeds the minimum dimensions to be considered normal.

@@ -130,12 +130,22 @@ func (pv *Playlist) UpdateContent(term components.Terminal) {
 			ascii,
 		})
 
+		if term.WidthIsSmall() || term.HeightIsSmall() {
+			return components.Join([]components.Content{
+				"\n",
+				components.Content(container.Render()).Append('\n', 1).CenterHorizontal(term, -2),
+				pv.PlaylistInfo.Content(term).CenterHorizontal(term),
+				components.Content("").Append('\n', 2),
+			}, "\n").Prepend('\n', 5).CenterVertical(term)
+		}
+
 		return components.Join([]components.Content{
-			components.Content(container.Render()).Append('\n', 1).CenterHorizontal(term),
+			"\n",
+			components.Content(container.Render()).Append('\n', 2).CenterHorizontal(term),
 			pv.PlaylistInfo.Content(term).CenterHorizontal(term),
-			components.Content("").Append('\n', 1),
+			"",
 			vs.Content().CenterHorizontal(term),
-		}, "\n").Prepend('\n', 6).CenterVertical(term)
+		}, "\n").Prepend('\n', 5).CenterVertical(term)
 	}()
 }
 

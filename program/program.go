@@ -93,7 +93,7 @@ func (program *Program) Run() error {
 }
 
 func (p *Program) Init() tea.Cmd {
-	p.Player.UpdateStateLoop()
+	p.Player.UpdateStateLoop(p.session, p.Config)
 	return tea.Tick(UPDATE_RATE_SEC, func(time.Time) tea.Msg {
 		return tickMsg{}
 	})

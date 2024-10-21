@@ -1,16 +1,16 @@
 package views
 
 import (
-	"os"
-	"path/filepath"
-
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	lg "github.com/charmbracelet/lipgloss"
 	"github.com/dionvu/spogo/auth"
-	"github.com/dionvu/spogo/components"
+	comp "github.com/dionvu/spogo/components"
+	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/player"
 )
+
+const MAX_DEVICE_ITEM_WIDTH = comp.DEFAULT_WIDTH - 4
 
 type Device struct {
 	Session   *auth.Session
@@ -19,39 +19,12 @@ type Device struct {
 	itemMap   map[list.Item]string
 }
 
-type DeviceListModel struct {
-	list     list.Model
-	choice   string
-	quitting bool
-}
-
 // Creates a new device view with a list model for the
 // user to select available playback devices.
 func NewDeviceView(s *auth.Session) *Device {
-	items := []list.Item{}
-	deviceMap := map[string]*player.Device{}
-	itemMap := map[list.Item]string{}
-
-	devices, _ := player.GetDevices(s)
-
-	for _, device := range *devices {
-		item := components.ListItem(device.Name)
-		items = append(items, item)
-		deviceMap[device.Name] = &device
-		itemMap[item] = device.Name
+	return &Device{
+		Session: s,
 	}
-
-	dv := Device{
-		Session:   s,
-		deviceMap: deviceMap,
-		itemMap:   itemMap,
-	}
-
-	if len((*devices)) > 0 {
-		dv.ListModel.choice = (*devices)[0].Name
-	}
-
-	return &dv
 }
 
 func (dv *Device) UpdateDevices() {
@@ -63,43 +36,32 @@ func (dv *Device) UpdateDevices() {
 
 	if devices != nil {
 		for _, device := range *devices {
-			item := components.ListItem(components.Content(device.Name).AdjustFit(components.DEFAULT_WIDTH - 4))
+			item := comp.ListItem(comp.Content(device.Name).AdjustFit(MAX_DEVICE_ITEM_WIDTH))
 			items = append(items, item)
 			dv.deviceMap[device.Name] = &device
 			dv.itemMap[item] = device.Name
 		}
 	}
 
-	dv.ListModel = DeviceListModel{list: components.NewCustomList(items,
-		"Devices", components.DEFAULT_WIDTH, 1)}
-
-	dv.ListModel.list.SetShowTitle(false)
-	dv.ListModel.list.SetShowPagination(false)
+	dv.ListModel = DeviceListModel{list: comp.NewDefaultList(items, "Devices")}
 }
 
-func (dv *Device) View(term components.Terminal, device *player.Device) string {
+func (dv *Device) View(term comp.Terminal, device *player.Device, config *config.Config) string {
 	var currDeviceInfo string
 
 	if device == nil {
-		currDeviceInfo = components.Content("Current Selected Device: "+"none"+"\n\n"+"Type: "+"none").Prepend('\n', 1).String()
+		currDeviceInfo = comp.Content("\nCurrent Selected Device: " + "none" + "\n\n" + "Type: " + "none").String()
 	} else {
-		currDeviceInfo = components.Content("Current Selected Device: "+device.Name+"\n\n"+"Type: "+device.Type).Prepend('\n', 1).String()
+		currDeviceInfo = comp.Content("\nCurrent Selected Device: " + device.Name + "\n\n" + "Type: " + device.Type).String()
 	}
 
-	link := "https://i.pinimg.com/736x/7f/cb/55/7fcb55a037d93681c7396e50b6f074aa.jpg"
-
-	cd, _ := os.UserCacheDir()
-	img := components.Image{FilePath: filepath.Join(cd, "spogo", "temp500.jpeg")}
-	img.Update(link)
-
-	vs := ViewStatus{CurrentView: DEVICE_VIEW}
-
-	return components.Join([]string{
-		"\n\n\n\n\n\n" + img.AsciiSmall().Content().PadLinesLeft(0).PadLinesLeft(0).String(),
-		currDeviceInfo + "\n",
-		components.Content(dv.ListModel.View()).Prepend('\n', 0).String() + "    ",
-		vs.Content().Prepend('\n', 1).String(),
-	}, "\n").CenterVertical(term).CenterHorizontal(term).String()
+	return comp.Join([]string{
+		comp.InvisibleBarV(5).String(),
+		dv.ListModel.View(),
+		currDeviceInfo,
+		"\n\n",
+		ViewStatus{CurrentView: DEVICE_VIEW}.Content().Prepend('\n', 1).String(),
+	}).CenterVertical(term).CenterHorizontal(term).String()
 }
 
 func (dv *Device) GetDeviceFromChoice(choice string) *player.Device {
@@ -108,6 +70,12 @@ func (dv *Device) GetDeviceFromChoice(choice string) *player.Device {
 
 func (dv *Device) GetSelectedDevice() *player.Device {
 	return dv.deviceMap[dv.itemMap[dv.ListModel.list.SelectedItem()]]
+}
+
+type DeviceListModel struct {
+	list     list.Model
+	choice   string
+	quitting bool
 }
 
 func (m DeviceListModel) Update(msg tea.Msg) (DeviceListModel, tea.Cmd) {
@@ -133,6 +101,10 @@ func (dlm DeviceListModel) View() string {
 	return dlm.list.View()
 }
 
+func (dlm DeviceListModel) Content() comp.Content {
+	return comp.Content(dlm.list.View())
+}
+
 func (_ DeviceListModel) Init() tea.Cmd {
 	return nil
 }
@@ -143,7 +115,7 @@ type ViewStatus struct {
 
 // Renders the ViewStatus as a content string based on the
 // it's current view.
-func (vs ViewStatus) Content() components.Content {
+func (vs ViewStatus) Content() comp.Content {
 	style := struct {
 		Selected lg.Style
 		Normal   lg.Style
@@ -154,34 +126,34 @@ func (vs ViewStatus) Content() components.Content {
 
 	switch vs.CurrentView {
 	case PLAYER_VIEW:
-		return components.Join([]string{
+		return comp.Join([]string{
 			style.Selected.Render("[ "),
 			style.Selected.Render("F1 Player"),
 			style.Normal.Render(" | F2 Playlists | F3 Search | F4 Devices | F5 Help ]"),
 		}, "")
 
 	case PLAYLIST_VIEW:
-		return components.Join([]string{
+		return comp.Join([]string{
 			style.Normal.Render("[ F1 Player | "),
 			style.Selected.Render("F2 Playlists"),
 			style.Normal.Render(" | F3 Search | F4 Devices | F5 Help ]"),
 		}, "")
 
 	case HELP_VIEW:
-		return components.Join([]string{
+		return comp.Join([]string{
 			style.Normal.Render("[ F1 Player | F2 Playlists | F3 Search | F4 Devices "),
 			style.Selected.Render("| F5 Help ]"),
 		}, "")
 
 	case SEARCH_VIEW_QUERY, SEARCH_VIEW_TYPE, SEARCH_VIEW_RESULTS:
-		return components.Join([]string{
+		return comp.Join([]string{
 			style.Normal.Render("[ F1 Player | F2 Playlists | "),
 			style.Selected.Render("F3 Search"),
 			style.Normal.Render(" | F4 Devices | F5 Help ]"),
 		}, "")
 
 	case DEVICE_VIEW:
-		return components.Join([]string{
+		return comp.Join([]string{
 			style.Normal.Render("[ F1 Player | F2 Playlists | F3 Search | "),
 			style.Selected.Render("F4 Devices"),
 			style.Normal.Render(" | F5 Help ]"),

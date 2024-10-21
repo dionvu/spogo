@@ -39,7 +39,7 @@ var (
 // period has elapsed. This is for faster runtime, should be perfectly okay
 // unless token files are externally tappered.
 // Checks if the access token is valid. If not, refreshes the access token.
-// If the access token is not valid, reauthenticates s. Updating the token
+// If the access token is not valid, reauthenticates. Updating the token
 // file.
 func (s *Session) Authenticate(c *config.Config) error {
 	if time.Now().After(s.AccessToken.Expiry) {
@@ -56,6 +56,19 @@ func (s *Session) Authenticate(c *config.Config) error {
 				errors.Log(err)
 				return err
 			}
+		}
+	}
+
+	return nil
+}
+
+// Forces reauthentication.
+func (s *Session) Reauth(c *config.Config) error {
+	if err := s.AccessToken.Refresh(s.RefreshToken, c); err != nil {
+		if err := getNewTokens(s, c); err != nil {
+			err = err
+			errors.Log(err)
+			return err
 		}
 	}
 

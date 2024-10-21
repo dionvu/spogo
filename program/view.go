@@ -2,12 +2,15 @@ package tui
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/dionvu/spogo/components"
 	"github.com/dionvu/spogo/config"
+	"github.com/dionvu/spogo/errors"
+	"github.com/dionvu/spogo/player"
 	"github.com/dionvu/spogo/spotify"
 	"github.com/dionvu/spogo/views"
 	"github.com/ktr0731/go-fuzzyfinder"
@@ -23,6 +26,30 @@ func (p *Program) View() string {
 
 	case views.HELP_VIEW:
 		return "idk man just press them keys"
+
+	case views.REAUTH_VIEW:
+		err := p.session.Reauth(p.Config)
+		if err != nil {
+			log.Fatal("ERR: Failed to reauthenticate: ", err)
+			errors.Log(err)
+		}
+		p.CurrentView = views.PLAYER_VIEW
+
+		return "reauthenticating..."
+
+	case views.DEVICE_FZF_VIEW:
+		devices, err := player.GetDevices(p.session)
+		if errors.IsReauthenticationErr(err) {
+			p.CurrentView = views.REAUTH_VIEW
+		}
+
+		idx, err := FzfDevices(devices)
+		if err == nil {
+			p.player.SetDevice(&(*devices)[idx], p.Config)
+			p.player.Resume(p.session, false)
+		}
+
+		p.CurrentView = views.PLAYER_VIEW
 
 	case views.PLAYLIST_TRACK_VIEW:
 		playlist := p.Playlist.GetSelectedPlaylist()
@@ -108,7 +135,10 @@ func (p *Program) View() string {
 		// and plays the selected track.
 		idx, err := FzfAlbumTracks(t)
 		if err == nil {
-			p.player.Play(album.Uri, tracks[idx].Uri, p.session)
+			err := p.player.Play(album.Uri, tracks[idx].Uri, p.session)
+			if errors.IsReauthenticationErr(err) {
+				p.CurrentView = views.REAUTH_VIEW
+			}
 
 			go func() {
 				// After playing spotify takes a moment to update the state
@@ -135,14 +165,14 @@ func (p *Program) View() string {
 
 	case views.DEVICE_VIEW:
 		if p.Player.State == nil {
-			return p.Device.View(p.Terminal, nil)
+			return p.Device.View(p.Terminal, nil, p.Config)
 		}
 
 		if p.player.Device() == nil {
-			return p.Device.View(p.Terminal, nil)
+			return p.Device.View(p.Terminal, nil, p.Config)
 		}
 
-		return p.Device.View(p.Terminal, p.player.Device())
+		return p.Device.View(p.Terminal, p.player.Device(), p.Config)
 	}
 
 	return "UNREACHABLE"
@@ -167,6 +197,31 @@ func FzfAlbumTracks(albumTracks *[]spotify.AlbumTrack) (int, error) {
 				tracks[i].Name,
 				mins,
 				secs,
+			)
+		}))
+
+	HideCursor()
+
+	return idx, err
+}
+
+func FzfDevices(devices *[]player.Device) (int, error) {
+	tracks := *devices
+
+	idx, err := fuzzyfinder.Find(
+		tracks,
+		func(i int) string {
+			return tracks[i].Name
+		},
+		fuzzyfinder.WithPreviewWindow(func(i, w, h int) string {
+			if i == -1 {
+				return ""
+			}
+
+			return fmt.Sprintf("Name: %s\nType: %s\nVol: %v%%",
+				tracks[i].Name,
+				tracks[i].Type,
+				tracks[i].VolumePercent,
 			)
 		}))
 

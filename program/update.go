@@ -6,6 +6,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/dionvu/spogo/errors"
 	"github.com/dionvu/spogo/player"
 	"github.com/dionvu/spogo/views"
 )
@@ -88,42 +89,105 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return p, tea.Quit
 
 		case " ":
-			p.Player.PlayPause()
+			err := p.Player.PlayPause()
+			if errors.IsReauthenticationErr(err) {
+				p.CurrentView = views.REAUTH_VIEW
+			}
+
+		case "ctrl+d":
+			p.CurrentView = views.DEVICE_FZF_VIEW
 
 		case "[":
 			t := p.player.Device().Type
 			// Spotify doesn't have a volume control for mobile devices.
-			if p.player.Device() != nil && (t != "smartphone" || t != "tablet") {
+			if p.player.Device() != nil && (t != "Smartphone" && t != "Tablet") {
 				vol := p.PlayerState().Device.VolumePercent
-				p.Player.Player.SetVolume(p.session, vol-VOLUME_INCREMENT_PERCENT)
-				p.Player.State.Device.VolumePercent = vol - VOLUME_INCREMENT_PERCENT
+				newVol := vol - VOLUME_INCREMENT_PERCENT
+
+				if 0 < vol && vol <= 5 {
+					newVol = 0
+				}
+
+				if newVol < 0 || newVol > 100 {
+					break
+				}
+
+				err := p.Player.Player.SetVolume(p.session, newVol)
+				if errors.IsReauthenticationErr(err) {
+					p.CurrentView = views.REAUTH_VIEW
+				}
+				p.Player.State.Device.VolumePercent = newVol
 			}
 
 		case "]":
 			t := p.player.Device().Type
 			// Spotify doesn't have a volume control for mobile devices.
-			if p.player.Device() != nil && (t != "smartphone" || t != "tablet") {
+			if p.player.Device() != nil && (t != "Smartphone" && t != "Tablet") {
+
 				vol := p.PlayerState().Device.VolumePercent
-				p.Player.Player.SetVolume(p.session, vol+VOLUME_INCREMENT_PERCENT)
-				p.Player.State.Device.VolumePercent = vol + VOLUME_INCREMENT_PERCENT
+				newVol := vol + VOLUME_INCREMENT_PERCENT
+
+				if 95 <= vol && vol < 100 {
+					newVol = 100
+				}
+
+				if newVol < 0 || newVol > 100 {
+					break
+				}
+
+				err := p.Player.Player.SetVolume(p.session, newVol)
+				if errors.IsReauthenticationErr(err) {
+					p.CurrentView = views.REAUTH_VIEW
+				}
+				p.Player.State.Device.VolumePercent = newVol
 			}
 
 		case "{":
 			t := p.player.Device().Type
 			// Spotify doesn't have a volume control for mobile devices.
-			if p.player.Device() != nil && (t != "smartphone" || t != "tablet") {
+			if p.player.Device() != nil && (t != "Smartphone" && t != "Tablet") {
 				vol := p.PlayerState().Device.VolumePercent
-				p.Player.Player.SetVolume(p.session, vol-1)
-				p.Player.State.Device.VolumePercent = vol - 1
+				newVol := vol - 1
+
+				if 0 < vol && vol <= 5 {
+					newVol = 0
+				}
+
+				if newVol < 0 || newVol > 100 {
+					break
+				}
+
+				err := p.Player.Player.SetVolume(p.session, newVol)
+				if errors.IsReauthenticationErr(err) {
+					p.CurrentView = views.REAUTH_VIEW
+				}
+				p.Player.State.Device.VolumePercent = newVol
 			}
 
 		case "}":
 			t := p.player.Device().Type
 			// Spotify doesn't have a volume control for mobile devices.
-			if p.player.Device() != nil && (t != "smartphone" || t != "tablet") {
+			if p.player.Device() != nil && (t != "Smartphone" && t != "Tablet") {
 				vol := p.PlayerState().Device.VolumePercent
-				p.Player.Player.SetVolume(p.session, vol+1)
-				p.Player.State.Device.VolumePercent = vol + 1
+				newVol := vol + 1
+
+				if 95 <= vol && vol < 100 {
+					newVol = 100
+				}
+
+				if 0 < vol && vol <= 5 {
+					newVol = 0
+				}
+
+				if newVol < 0 || newVol > 100 {
+					break
+				}
+
+				err := p.Player.Player.SetVolume(p.session, newVol)
+				if errors.IsReauthenticationErr(err) {
+					p.CurrentView = views.REAUTH_VIEW
+				}
+				p.Player.State.Device.VolumePercent = newVol
 			}
 
 		case "f1", "1":
@@ -173,10 +237,16 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case views.SEARCH_VIEW_RESULTS:
 				switch p.Search.SelectedType() {
 				case "track":
-					p.player.Play(p.Search.Results.SelectedTrack().Album.Uri, p.Search.Results.SelectedTrack().Uri, p.session)
+					err := p.player.Play(p.Search.Results.SelectedTrack().Album.Uri, p.Search.Results.SelectedTrack().Uri, p.session)
+					if errors.IsReauthenticationErr(err) {
+						p.CurrentView = views.REAUTH_VIEW
+					}
 					p.Player.UpdateStateSync()
 				case "album":
-					p.player.Play(p.Search.Results.SelectedAlbum().Uri, "", p.session)
+					err := p.player.Play(p.Search.Results.SelectedAlbum().Uri, "", p.session)
+					if errors.IsReauthenticationErr(err) {
+						p.CurrentView = views.REAUTH_VIEW
+					}
 					p.Player.UpdateStateSync()
 				}
 			}
@@ -215,10 +285,18 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "r":
 			switch p.PlayerState().RepeatState {
 			case "off":
-				p.player.Repeat(true, p.session)
+				err := p.player.Repeat(true, p.session)
+				if errors.IsReauthenticationErr(err) {
+					p.CurrentView = views.REAUTH_VIEW
+				}
+
 				p.PlayerState().RepeatState = "context"
 			default:
-				p.player.Repeat(false, p.session)
+				err := p.player.Repeat(false, p.session)
+				if errors.IsReauthenticationErr(err) {
+					p.CurrentView = views.REAUTH_VIEW
+				}
+
 				p.PlayerState().RepeatState = "off"
 			}
 		}

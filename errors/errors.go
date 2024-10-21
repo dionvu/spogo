@@ -61,6 +61,13 @@ func Print(err error) {
 	fmt.Printf("%v %v\n", color.RedString("Error:"), err.(*errorx.Error).Message())
 }
 
+func IsReauthenticationErr(err error) bool {
+	if errorx.GetTypeName(err) == Reauthentication.String() {
+		return true
+	}
+	return false
+}
+
 var (
 	App           = errorx.NewNamespace("app")
 	HTTP          = App.NewType("http")

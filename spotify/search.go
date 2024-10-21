@@ -120,6 +120,8 @@ func Search(input string, searchType []string, limit int, s *auth.Session) (*Sea
 		return nil, err
 	}
 
+	errors.LogApiCall(spotifyurls.SEARCH, res.StatusCode)
+
 	if res.StatusCode >= http.StatusBadRequest {
 		err = errors.Reauthentication.NewWithNoMessage()
 		errors.Log(err)
