@@ -27,6 +27,10 @@ type State struct {
 	ShuffleState bool    `json:"shuffle_state"`
 	RepeatState  string  `json:"repeat_state"`
 
+	Context struct {
+		Type string `json:"type"`
+	} `json:"context"`
+
 	// Each State will have either a nil track or episode,
 	// depending on what the user is playing.
 	Track   *spotify.Track

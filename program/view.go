@@ -3,12 +3,8 @@ package tui
 import (
 	"fmt"
 	"log"
-	"os"
-	"path/filepath"
 	"time"
 
-	"github.com/dionvu/spogo/components"
-	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/errors"
 	"github.com/dionvu/spogo/player"
 	"github.com/dionvu/spogo/spotify"
@@ -66,18 +62,18 @@ func (p *Program) View() string {
 		}
 
 		tracks := *t
-		asciis := make([]string, len(tracks))
+		// asciis := make([]string, len(tracks))
 
 		p.CurrentView = views.PLAYER_VIEW
 
-		cd, _ := os.UserCacheDir()
-		imagePath := filepath.Join(cd, config.APPNAME, playlist.ID, "temp")
-		os.MkdirAll(imagePath, os.ModePerm)
-		for i, track := range tracks {
-			image := components.Image{FilePath: fmt.Sprint(imagePath, i, ".jpeg")}
-			image.Update(track.Album.Images[0].Url)
-			asciis[i] = image.AsciiSmall().String()
-		}
+		// cd, _ := os.UserCacheDir()
+		// imagePath := filepath.Join(cd, config.APPNAME, playlist.ID, "temp")
+		// os.MkdirAll(imagePath, os.ModePerm)
+		// for i, track := range tracks {
+		// 	image := components.Image{FilePath: fmt.Sprint(imagePath, i, ".jpeg")}
+		// 	image.Update(track.Album.Images[0].Url)
+		// 	asciis[i] = image.AsciiSmall().String()
+		// }
 
 		// Fzf tracks from the playlist currently slected
 		// and plays the selected track.
@@ -93,17 +89,17 @@ func (p *Program) View() string {
 
 				mins, secs := views.MsToMinutesAndSeconds(tracks[i].DurationMs)
 
-				return fmt.Sprintf("Track: %s \nArtist: %s\nAlbum: %s\nDuration: %sm:%ss\n\n%s",
+				return fmt.Sprintf("Track: %s \nArtist: %s\nAlbum: %s\nDuration: %sm:%ss", //\n\n%s",
 					tracks[i].Name,
 					tracks[i].Artists[0].Name,
 					tracks[i].Album.Name,
 					mins,
 					secs,
-					asciis[i],
+					// asciis[i],
 				)
 			}))
 
-		contextUri := p.Playlist.GetSelectedPlaylist().URI
+		contextUri := p.Playlist.GetSelectedPlaylist().Uri
 
 		// Prevents user pressing Esc from playing the first track.
 		if err == nil {

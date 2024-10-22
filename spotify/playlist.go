@@ -21,7 +21,7 @@ type Playlist struct {
 	Tracks      struct {
 		Total int `json:"total"`
 	} `json:"tracks"`
-	URI          string `json:"uri"`
+	Uri          string `json:"uri"`
 	ExternalUrls struct {
 		Spotify string `json:"spotify"`
 	} `json:"external_urls"`

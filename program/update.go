@@ -201,7 +201,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			p.CurrentView = views.SEARCH_VIEW_QUERY
 
 		case "f4", "4":
-			p.Device.UpdateDevices()
+			p.Device.UpdateNumberDevices()
 			p.CurrentView = views.DEVICE_VIEW
 
 		case "f5", "5":
@@ -214,7 +214,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch p.CurrentView {
 			case views.PLAYLIST_VIEW:
 				pl := p.Playlist.GetSelectedPlaylist()
-				p.player.Play(pl.URI, "", p.session)
+				p.player.Play(pl.Uri, "", p.session)
 
 				p.Player.UpdateStateSync()
 
@@ -222,28 +222,27 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				p.Search.Input = p.Search.Input.HideCursor()
 				p.CurrentView = views.SEARCH_VIEW_TYPE
 
-			case views.DEVICE_VIEW:
-				device := p.Device.GetSelectedDevice()
-
-				p.player.SetDevice(device, p.Config)
-
-				// Transfers playback to the newly select device.
-				p.player.Resume(p.session, false)
-
 			case views.SEARCH_VIEW_TYPE:
 				p.Search.Results = p.Search.Results.Refresh(p.Search.Input.Query(), p.Search.SelectedType(), p.session)
 				p.CurrentView = views.SEARCH_VIEW_RESULTS
 
 			case views.SEARCH_VIEW_RESULTS:
 				switch p.Search.SelectedType() {
-				case "track":
+				case views.TRACK:
 					err := p.player.Play(p.Search.Results.SelectedTrack().Album.Uri, p.Search.Results.SelectedTrack().Uri, p.session)
 					if errors.IsReauthenticationErr(err) {
 						p.CurrentView = views.REAUTH_VIEW
 					}
 					p.Player.UpdateStateSync()
-				case "album":
+				case views.ALBUM:
 					err := p.player.Play(p.Search.Results.SelectedAlbum().Uri, "", p.session)
+					if errors.IsReauthenticationErr(err) {
+						p.CurrentView = views.REAUTH_VIEW
+					}
+					p.Player.UpdateStateSync()
+
+				case views.PLAYLIST:
+					err := p.player.Play(p.Search.Results.SelectedPlaylist().Uri, "", p.session)
 					if errors.IsReauthenticationErr(err) {
 						p.CurrentView = views.REAUTH_VIEW
 					}
@@ -310,10 +309,10 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		// Handles updates from the device list.
-		if p.CurrentView == views.DEVICE_VIEW {
-			p.Device.ListModel, cmd = p.Device.ListModel.Update(msg)
-			return p, cmd
-		}
+		// if p.CurrentView == views.DEVICE_VIEW {
+		// 	p.Device.ListModel, cmd = p.Device.ListModel.Update(msg)
+		// 	return p, cmd
+		// }
 
 		if p.CurrentView == views.SEARCH_VIEW_QUERY {
 			p.Search.Input, cmd = p.Search.Input.Update(msg)

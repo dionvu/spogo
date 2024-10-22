@@ -18,20 +18,18 @@ import (
 
 const (
 	MAX_RESULT_WIDTH      = 40
-	MAX_RESULT_ITEM_WIDTH = MAX_RESULT_WIDTH - 5
 	LEFT_WIDTH            = 21
+	TEXT_INPUT_CHAR_LIMIT = 156
+	SEARCH_RESULT_LIMIT   = 42
+	MAX_RESULT_ITEM_WIDTH = MAX_RESULT_WIDTH - 5
 	SEARCH_VIEW_WIDTH     = LEFT_WIDTH + MAX_RESULT_WIDTH
 
-	CHAR_LIMIT         = 156
-	SEARCH_QUERY_WIDTH = 20
-
-	SEARCH_LIMIT = 42
-
-	TRACK = "track"
-	ALBUM = "album"
+	TRACK    = "track"
+	ALBUM    = "album"
+	PLAYLIST = "playlist"
 )
 
-var SEARCH_TYPES = []string{TRACK, ALBUM}
+var SEARCH_TYPES = []string{TRACK, ALBUM, PLAYLIST}
 
 type Search struct {
 	Input    SearchQuery
@@ -51,7 +49,7 @@ func NewSearch(session *auth.Session) Search {
 	searchTypeListItemMap := map[list.Item]string{}
 	searchTypeListItems := make([]list.Item, len(SEARCH_TYPES))
 
-	for i, searchType := range []string{ALBUM, TRACK} {
+	for i, searchType := range SEARCH_TYPES {
 		item := comp.ListItem(searchType)
 		searchTypeListItems[i] = item
 		searchTypeListItemMap[item] = searchType
@@ -71,6 +69,10 @@ func (r Results) SelectedTrack() *spotify.Track {
 
 func (r Results) SelectedAlbum() *spotify.Album {
 	return r.albumMap[r.listAlbums.SelectedItem()]
+}
+
+func (r Results) SelectedPlaylist() *spotify.Playlist {
+	return r.playlistMap[r.listPlaylists.SelectedItem()]
 }
 
 func (s Search) SelectedType() string {
@@ -110,6 +112,13 @@ func (s Search) View(term comp.Terminal, currentView string) string {
 				[]string{
 					s.Results.SelectedAlbum().Artists[0].Name,
 					" Tracks: " + fmt.Sprint(s.Results.SelectedAlbum().TotalTracks),
+				}, "\n\n")
+
+		case PLAYLIST:
+			return comp.Join(
+				[]string{
+					s.Results.SelectedPlaylist().Owner.DisplayName,
+					" Tracks: " + fmt.Sprint(s.Results.SelectedPlaylist().Tracks.Total),
 				}, "\n\n")
 
 		default:
@@ -158,6 +167,9 @@ type Results struct {
 
 	listAlbums list.Model
 	albumMap   map[list.Item]*spotify.Album
+
+	listPlaylists list.Model
+	playlistMap   map[list.Item]*spotify.Playlist
 }
 
 // Called whenever the user has finished inputing a search query and selected the search type
@@ -166,7 +178,7 @@ type Results struct {
 func (r Results) Refresh(query string, selectedType string, s *auth.Session) Results {
 	r.CurrentType = selectedType
 
-	searchResults, err := spotify.Search(query, SEARCH_TYPES, SEARCH_LIMIT, s)
+	searchResults, err := spotify.Search(query, SEARCH_TYPES, SEARCH_RESULT_LIMIT, s)
 	if err != nil {
 		errors.Log(err)
 	}
@@ -197,7 +209,22 @@ func (r Results) Refresh(query string, selectedType string, s *auth.Session) Res
 			}
 			r.albumMap[listItems[i]] = album
 		}
+
 		r.listAlbums = comp.NewDefaultUniqueItemList(listItems, "Albums")
+
+	case PLAYLIST:
+		listItems := make([]list.Item, len(searchResults.Playlists))
+		r.playlistMap = map[list.Item]*spotify.Playlist{}
+
+		for i, playlist := range searchResults.Playlists {
+			listItems[i] = comp.UniqueItem{
+				Name: comp.Content(playlist.Name).AdjustFit(MAX_RESULT_ITEM_WIDTH).String(),
+				Id:   playlist.ID,
+			}
+			r.playlistMap[listItems[i]] = playlist
+		}
+
+		r.listPlaylists = comp.NewDefaultUniqueItemList(listItems, "Playlist")
 	}
 
 	return r
@@ -222,10 +249,12 @@ func (r Results) Update(msg tea.Msg) (Results, tea.Cmd) {
 	}
 
 	switch r.CurrentType {
-	case "track":
+	case TRACK:
 		r.listTracks, cmd = r.listTracks.Update(msg)
-	case "album":
+	case ALBUM:
 		r.listAlbums, cmd = r.listAlbums.Update(msg)
+	case PLAYLIST:
+		r.listPlaylists, cmd = r.listPlaylists.Update(msg)
 	}
 
 	return r, cmd
@@ -237,10 +266,12 @@ func (r Results) Update(msg tea.Msg) (Results, tea.Cmd) {
 // the result content.
 func (r Results) view() string {
 	switch r.CurrentType {
-	case "track":
+	case TRACK:
 		return r.listTracks.View()
-	case "album":
+	case ALBUM:
 		return r.listAlbums.View()
+	case PLAYLIST:
+		return r.listPlaylists.View()
 	}
 
 	// User's first time in the search view,
@@ -324,8 +355,8 @@ func NewSearchQuery() SearchQuery {
 	ti := textinput.New()
 	ti.Placeholder = "What's on your mind?"
 	ti.Focus()
-	ti.CharLimit = CHAR_LIMIT
-	ti.Width = SEARCH_QUERY_WIDTH
+	ti.CharLimit = TEXT_INPUT_CHAR_LIMIT
+	ti.Width = LEFT_WIDTH - 1
 	ti.Cursor.SetMode(cursor.CursorBlink)
 
 	return SearchQuery{
@@ -395,7 +426,7 @@ func NewSearchResultView(searchQuery string, searchType string, s *auth.Session)
 	fmt.Println(searchType)
 	switch searchType {
 	case "track":
-		results, err := spotify.Search(searchQuery, []string{"track"}, SEARCH_LIMIT, s)
+		results, err := spotify.Search(searchQuery, []string{"track"}, SEARCH_RESULT_LIMIT, s)
 		if err != nil {
 			log.Fatal("Error getting results")
 		}
