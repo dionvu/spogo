@@ -40,33 +40,6 @@ const (
 	VOLUME_INCREMENT_PERCENT = 5
 )
 
-var statusBarStyle = struct {
-	NowPlaying lg.Style
-	Paused     lg.Style
-	NoPlayer   lg.Style
-}{
-	NowPlaying: lg.NewStyle().
-		Bold(true).
-		Foreground(lg.Color("#282828")).
-		Background(lg.Color("#98971a")).
-		PaddingLeft(1).
-		PaddingRight(1),
-
-	Paused: lg.NewStyle().
-		Bold(true).
-		Foreground(lg.Color("#282828")).
-		Background(lg.Color("#d79921")).
-		PaddingLeft(1).
-		PaddingRight(1),
-
-	NoPlayer: lg.NewStyle().
-		Bold(true).
-		Foreground(lg.Color("#282828")).
-		Background(lg.Color("#cc241d")).
-		PaddingLeft(1).
-		PaddingRight(1),
-}
-
 // The view struct that displays player state
 // details, the current track's album art,
 // and other relevant information to the user.
@@ -103,7 +76,7 @@ type Player struct {
 }
 
 func NewPlayerView(
-	auth *auth.Session, player *player.Player,
+	auth *auth.Session, player *player.Player, c *config.Config,
 ) *Player {
 	cd, _ := os.UserCacheDir()
 	path := filepath.Join(cd, config.APPNAME, "player.jpeg")
@@ -120,12 +93,39 @@ func NewPlayerView(
 
 	pv.UpdateStateSync()
 
-	pv.StatusBar.Update(pv.State)
-
 	if pv.State != nil {
 		pv.ProgressMs = pv.State.ProgressMs
 		pv.TrackID = pv.State.Track.ID
 	}
+
+	pv.StatusBar.Style = struct {
+		NowPlaying lg.Style
+		Paused     lg.Style
+		NoPlayer   lg.Style
+	}{
+		NowPlaying: lg.NewStyle().
+			Bold(c.Player.Style.StatusBar.NowPlaying.Bold).
+			Foreground(lg.Color(c.Player.Style.StatusBar.NowPlaying.Foreground)).
+			Background(lg.Color(c.Player.Style.StatusBar.NowPlaying.Background)).
+			PaddingLeft(1).
+			PaddingRight(1),
+
+		Paused: lg.NewStyle().
+			Bold(c.Player.Style.StatusBar.Paused.Bold).
+			Foreground(lg.Color(c.Player.Style.StatusBar.Paused.Foreground)).
+			Background(lg.Color(c.Player.Style.StatusBar.Paused.Background)).
+			PaddingLeft(1).
+			PaddingRight(1),
+
+		NoPlayer: lg.NewStyle().
+			Bold(c.Player.Style.StatusBar.NoPlayer.Bold).
+			Foreground(lg.Color(c.Player.Style.StatusBar.NoPlayer.Foreground)).
+			Background(lg.Color(c.Player.Style.StatusBar.NoPlayer.Background)).
+			PaddingLeft(1).
+			PaddingRight(1),
+	}
+
+	pv.StatusBar.Update(pv.State)
 
 	return pv
 }
@@ -167,7 +167,7 @@ func (pv *Player) UpdateContent(term comp.Terminal) {
 		if term.HeightIsSmall() {
 			switch pv.State {
 			case nil:
-				return pv.StatusBar.Content()
+				return "Ctrl+D to select a device\n\n" + pv.StatusBar.Content()
 			default:
 				pv.Image.Update(pv.State.Track.Album.Images[0].Url)
 
@@ -180,7 +180,7 @@ func (pv *Player) UpdateContent(term comp.Terminal) {
 		} else if term.WidthIsSmall() {
 			switch pv.State {
 			case nil:
-				return pv.StatusBar.Content()
+				return "Ctrl+D to select a device\n\n" + pv.StatusBar.Content()
 			default:
 				pv.Image.Update(pv.State.Track.Album.Images[0].Url)
 
@@ -380,18 +380,23 @@ func (pd *PlayerDetails) Content(track *spotify.Track, progressMs int, state *pl
 // The title status bar indicating whether the player is
 // playing, paused or an invalid device is selected.
 type StatusBar struct {
-	Status string
-	Style  lg.Style
+	Style struct {
+		NowPlaying lg.Style
+		Paused     lg.Style
+		NoPlayer   lg.Style
+	}
+	Status       string
+	CurrentStyle lg.Style
 }
 
 // Renders the status bar as a string.
 func (sb *StatusBar) Render() string {
-	return sb.Style.Render(sb.Status)
+	return sb.CurrentStyle.Render(sb.Status)
 }
 
 // Renders the status bar as a content string.
 func (sb *StatusBar) Content() comp.Content {
-	return comp.Content(sb.Style.Render(sb.Status))
+	return comp.Content(sb.CurrentStyle.Render(sb.Status))
 }
 
 // Updates the status bar given the player's state.
@@ -403,13 +408,13 @@ func (sb *StatusBar) Update(state *player.State) {
 	)
 
 	if state != nil && state.IsPlaying {
-		sb.Style = statusBarStyle.NowPlaying
+		sb.CurrentStyle = sb.Style.NowPlaying
 		sb.Status = NOW_PLAYING
 	} else if state != nil && !state.IsPlaying {
-		sb.Style = statusBarStyle.Paused
+		sb.CurrentStyle = sb.Style.Paused
 		sb.Status = PAUSED
 	} else {
-		sb.Style = statusBarStyle.NoPlayer
+		sb.CurrentStyle = sb.Style.NoPlayer
 		sb.Status = NO_PLAYER
 	}
 }

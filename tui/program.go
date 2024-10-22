@@ -74,7 +74,7 @@ func New(
 
 	p.Terminal.Width, p.Terminal.Height = comp.GetTerminalSize()
 
-	p.Player = views.NewPlayerView(auth, player)
+	p.Player = views.NewPlayerView(auth, player, config)
 	p.Playlist = views.NewPlaylistView(auth, p.Terminal)
 	p.Device = &views.Device{Session: p.session}
 	p.Search = views.NewSearch(p.session)

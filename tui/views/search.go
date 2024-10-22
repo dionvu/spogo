@@ -375,8 +375,11 @@ func (sq SearchQuery) Update(msg tea.Msg) (SearchQuery, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
-		case tea.KeyEnter, tea.KeyCtrlC, tea.KeyEsc:
+		case tea.KeyCtrlC:
 			return sq, tea.Quit
+
+		case tea.KeyEsc:
+			return sq, nil
 		}
 	}
 

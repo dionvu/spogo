@@ -52,7 +52,6 @@ func (s *Session) Authenticate(c *config.Config) error {
 
 		if err := s.AccessToken.Refresh(s.RefreshToken, c); err != nil {
 			if err := getNewTokens(s, c); err != nil {
-				err = err
 				errors.Log(err)
 				return err
 			}
@@ -66,7 +65,6 @@ func (s *Session) Authenticate(c *config.Config) error {
 func (s *Session) Reauth(c *config.Config) error {
 	if err := s.AccessToken.Refresh(s.RefreshToken, c); err != nil {
 		if err := getNewTokens(s, c); err != nil {
-			err = err
 			errors.Log(err)
 			return err
 		}
@@ -170,7 +168,7 @@ func startServer() {
 	go func() {
 		err := http.ListenAndServe(":"+PORT, nil)
 		if err != nil {
-			err := errors.HTTP.Wrap(err, fmt.Sprint("failed to start server on port: %v", PORT))
+			err := errors.HTTP.Wrap(err, fmt.Sprintf("failed to start server on port: %v", PORT))
 			errors.Log(err)
 			log.Fatal(err)
 		}

@@ -32,7 +32,6 @@ func New(c *config.Config) (*Player, error) {
 
 	if !deviceCacheExist(c) {
 		if err := createCache(c); err != nil {
-			err = err
 			errors.Log(err)
 			return nil, err
 		}

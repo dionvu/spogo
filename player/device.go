@@ -120,7 +120,7 @@ func getCachedPlaybackDevice(c *config.Config) (*Device, error) {
 }
 
 func (d Device) IsMobile() bool {
-	return d.Type == "Smartphone" && d.Type == "Tablet"
+	return d.Type == "Smartphone" || d.Type == "Tablet"
 }
 
 func IsValidVolume(vol int) bool {

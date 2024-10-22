@@ -32,10 +32,10 @@ const (
 	KEY_SEARCH_VIEW     = "f3"
 	KEY_SEARCH_VIEW_ALT = "/"
 
-	KEY_DEVICE_VIEW = "f4"
+	KEY_DEVICE_VIEW = "UNDEFINED"
 
-	KEY_HELP_VIEW = "f5"
-	KEY_HELP_ALT  = "ctrl+s"
+	KEY_HELP_VIEW     = "f4"
+	KEY_HELP_VIEW_ALT = "ctrl+h"
 
 	KEY_VOLUME_DOWN_BIG   = "["
 	KEY_VOLUME_DOWN_SMALL = "{"
@@ -43,7 +43,7 @@ const (
 	KEY_VOLUME_UP_SMALL   = "}"
 
 	KEY_FZF_DEVICES      = "ctrl+d"
-	KEY_FZF_ALBUM_TRACKS = "a"
+	KEY_FZF_ALBUM_TRACKS = "ctrl+a"
 
 	VOLUME_INCREMENT_PERCENT = 5
 )
@@ -84,7 +84,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Prevents search query from activating any commands, enless esc or enter.
 		key := msg.String()
 
-		if p.CurrentView == views.SEARCH_VIEW_RESULTS &&
+		if p.CurrentView != views.SEARCH_VIEW_QUERY &&
 			(key == KEY_SEARCH_VIEW || key == KEY_SEARCH_VIEW_ALT) {
 			p.Search.Input.Text.Focus()
 			p.CurrentView = views.SEARCH_VIEW_QUERY
@@ -151,8 +151,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case KEY_VOLUME_UP_BIG:
-			// Spotify doesn't have a volume control for mobile devices.
-			if p.player.Device() != nil && p.player.Device().IsMobile() {
+			if p.player.Device() != nil && !p.player.Device().IsMobile() {
 				vol := p.PlayerState().Device.VolumePercent
 				newVol := vol + VOLUME_INCREMENT_PERCENT
 
@@ -172,9 +171,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case KEY_VOLUME_DOWN_SMALL:
-			t := p.player.Device().Type
-			// Spotify doesn't have a volume control for mobile devices.
-			if p.player.Device() != nil && (t != "Smartphone" && t != "Tablet") {
+			if p.player.Device() != nil && !p.player.Device().IsMobile() {
 				vol := p.PlayerState().Device.VolumePercent
 				newVol := vol - 1
 
@@ -194,9 +191,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 
 		case KEY_VOLUME_UP_SMALL:
-			t := p.player.Device().Type
-			// Spotify doesn't have a volume control for mobile devices.
-			if p.player.Device() != nil && (t != "Smartphone" && t != "Tablet") {
+			if p.player.Device() != nil && !p.player.Device().IsMobile() {
 				vol := p.PlayerState().Device.VolumePercent
 				newVol := vol + 1
 
@@ -222,14 +217,13 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			p.CurrentView = views.PLAYLIST_VIEW
 
 		case KEY_SEARCH_VIEW, KEY_SEARCH_VIEW_ALT:
-			p.Search.Input.Text.Focus()
-			p.CurrentView = views.SEARCH_VIEW_QUERY
+			// Requires handling priority, logic is at the top.
 
-		case KEY_DEVICE_VIEW:
-			p.Device.UpdateNumberDevices()
-			p.CurrentView = views.DEVICE_VIEW
+		// case KEY_DEVICE_VIEW:
+		// 	p.Device.UpdateNumberDevices()
+		// 	p.CurrentView = views.DEVICE_VIEW
 
-		case KEY_HELP_VIEW, KEY_HELP_ALT:
+		case KEY_HELP_VIEW, KEY_HELP_VIEW_ALT:
 			p.CurrentView = views.HELP_VIEW
 
 		case KEY_ENTER:
@@ -352,12 +346,19 @@ func (p *Program) PlayerState() *player.State {
 	return p.Player.State
 }
 
+// Returns is a keys that should always go through,
+// for exmaple keys to change the view, quit keys
+// are excluded since search query uses q.
 func IsImportantKey(key string) bool {
 	keys := []string{
+		KEY_ENTER,
 		KEY_PLAYER_VIEW, KEY_PLAYER_VIEW_ALT,
 		KEY_PLAYLIST_VIEW, KEY_PLAYER_VIEW_ALT,
 		KEY_SEARCH_VIEW, KEY_SEARCH_VIEW_ALT,
 		KEY_DEVICE_VIEW,
+		KEY_HELP_VIEW, KEY_HELP_VIEW_ALT,
+		KEY_FZF_DEVICES,
+		KEY_FZF_ALBUM_TRACKS,
 	}
 
 	for _, k := range keys {

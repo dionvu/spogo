@@ -2,4 +2,18 @@ spotify:
   client_id: "YOUR_CLIENT_ID" # Replace with your spotify client id
   client_secret: "YOUR_CLIENT_SECRET" # Replace with your spotify client secret
 
-options:
+player:
+  style:
+    status_bar:
+      now_playing:
+        bold: true
+        fg: "#282828"
+        bg: "#98971a"
+      paused:
+        bold: true
+        fg: "#282828"
+        bg: "#d79921"
+      no_player:
+        bold: true
+        fg: "#282828"
+        bg: "#cc241d"

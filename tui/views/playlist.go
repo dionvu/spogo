@@ -18,6 +18,11 @@ import (
 // Just a random image from a youtube channel.
 const DEFAULT_PLAYLIST_IMAGE_URL = "https://yt3.googleusercontent.com/Rrn4HYgcjL1us1TVcr2MjePqJ6fPvKwCNZ6STs4-8oUyJg0Z86xJs1FFEnVQ8mshVeY31nIjxw=s160-c-k-c0x00ffffff-no-rj"
 
+const (
+	MAX_PLAYLIST_WIDTH      = 35
+	MAX_PLAYLIST_ITEM_WIDTH = 30
+)
+
 // The view that handles everything related to
 // the user's playlist library.
 type Playlist struct {
@@ -84,7 +89,7 @@ func NewPlaylistView(s *auth.Session, initialTerm comp.Terminal) *Playlist {
 			pv.Images[i].Update(DEFAULT_PLAYLIST_IMAGE_URL)
 		}
 
-		item := comp.ListItem(playlist.Name)
+		item := comp.ListItem(comp.Content(playlist.Name).AdjustFit(MAX_PLAYLIST_ITEM_WIDTH))
 		items = append(items, item)
 
 		pv.imageMap[item] = &pv.Images[i]
@@ -117,7 +122,7 @@ func (pv *Playlist) UpdateContent(term comp.Terminal) {
 				pv.PlaylistList.Content().
 					Prepend('\n', 1),
 
-				comp.Content("").Append(' ', 35),
+				comp.Content("").Append(' ', MAX_PLAYLIST_WIDTH),
 			}, "\n"),
 		})
 

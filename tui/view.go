@@ -44,7 +44,12 @@ func (p *Program) View() string {
 		idx, err := FzfDevices(devices)
 		if err == nil {
 			p.player.SetDevice(&(*devices)[idx], p.Config)
-			p.player.Resume(p.session, false)
+
+			if p.Player.State != nil && p.Player.State.IsPlaying {
+				p.player.Resume(p.session, true)
+			} else {
+				p.player.Resume(p.session, false)
+			}
 		}
 
 		p.CurrentView = views.PLAYER_VIEW
