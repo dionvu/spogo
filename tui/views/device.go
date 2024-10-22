@@ -4,23 +4,15 @@ import (
 	"fmt"
 
 	lg "github.com/charmbracelet/lipgloss"
-	"github.com/dionvu/spogo/auth"
-	comp "github.com/dionvu/spogo/components"
 	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/player"
+	"github.com/dionvu/spogo/spotify/auth"
+	comp "github.com/dionvu/spogo/tui/views/components"
 )
 
 type Device struct {
 	Session    *auth.Session
 	NumDevices int
-}
-
-// Creates a new device view with a list model for the
-// user to select available playback devices.
-func NewDeviceView(s *auth.Session) *Device {
-	return &Device{
-		Session: s,
-	}
 }
 
 func (dv *Device) UpdateNumberDevices() {
@@ -38,14 +30,15 @@ func (dv *Device) View(term comp.Terminal, device *player.Device, config *config
 			"\n\nCtrl+D to select a device\n\nCurrent Device: " + "none").String()
 	} else {
 		currDeviceInfo = comp.Content("Avaliable Devices: " + fmt.Sprint(dv.NumDevices) +
-			"\n\nCtrl+D to select a device\n\nCurrent Device: " + device.Name + " " + "(" + device.Type + ")").String()
+			"\n\nCtrl+D to select a device\n\nCurrent Device: " + device.Name + " " + "(" +
+			device.Type + ")").String()
 	}
 
 	return comp.Join([]string{
 		comp.InvisibleBarV(10).String(),
 		currDeviceInfo,
-		comp.InvisibleBarV(6).String(),
-		ViewStatus{CurrentView: DEVICE_VIEW}.Content().Prepend('\n', 1).String(),
+		comp.InvisibleBarV(7).String(),
+		ViewStatus{CurrentView: DEVICE_VIEW}.Content().String(),
 	}).CenterVertical(term).CenterHorizontal(term).String()
 }
 

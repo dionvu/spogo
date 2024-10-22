@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	lg "github.com/charmbracelet/lipgloss"
+	"github.com/jedib0t/go-pretty/v6/table"
 )
 
 const (
@@ -191,6 +192,17 @@ func NewCustomUniqueItemList(items []list.Item, title string, height int, width 
 	l.SetFilteringEnabled(false)
 	l.SetShowStatusBar(false)
 	l.SetShowHelp(false)
+
+	return l
+}
+
+// Returns a new table.Writer that has visble
+// seperators and borders completely disabled.
+func NewDefaultTable() table.Writer {
+	l := table.NewWriter()
+	l.Style().Options.DrawBorder = false
+	l.Style().Options.SeparateColumns = false
+	l.Style().Options.SeparateRows = false
 
 	return l
 }

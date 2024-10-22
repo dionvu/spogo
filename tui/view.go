@@ -5,10 +5,10 @@ import (
 	"log"
 	"time"
 
-	"github.com/dionvu/spogo/errors"
+	"github.com/dionvu/spogo/err"
 	"github.com/dionvu/spogo/player"
 	"github.com/dionvu/spogo/spotify"
-	"github.com/dionvu/spogo/views"
+	"github.com/dionvu/spogo/tui/views"
 	"github.com/ktr0731/go-fuzzyfinder"
 )
 
@@ -185,11 +185,6 @@ func FzfDevices(devices *[]player.Device) (int, error) {
 	return idx, err
 }
 
-// Hides the user's cursor after fzf.
-func HideCursor() {
-	fmt.Print("\033[?25l")
-}
-
 func FzfPlaylistTracks(t *[]spotify.Track) (int, error) {
 	if t == nil {
 		log.Fatal("Unreachable")
@@ -220,4 +215,9 @@ func FzfPlaylistTracks(t *[]spotify.Track) (int, error) {
 	HideCursor()
 
 	return idx, err
+}
+
+// Hides the user's cursor after fzf.
+func HideCursor() {
+	fmt.Print("\033[?25l")
 }

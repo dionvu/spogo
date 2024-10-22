@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/dionvu/spogo/auth"
-	"github.com/dionvu/spogo/errors"
+	"github.com/dionvu/spogo/err"
+	"github.com/dionvu/spogo/spotify/auth"
 )
 
 type User struct {

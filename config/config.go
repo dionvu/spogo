@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dionvu/spogo/errors"
+	"github.com/dionvu/spogo/err"
 	"github.com/fatih/color"
 	"gopkg.in/yaml.v3"
 )

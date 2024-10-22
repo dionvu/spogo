@@ -7,10 +7,10 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/dionvu/spogo/auth"
-	"github.com/dionvu/spogo/components"
 	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/spotify"
+	"github.com/dionvu/spogo/spotify/auth"
+	comp "github.com/dionvu/spogo/tui/views/components"
 	"github.com/jedib0t/go-pretty/v6/table"
 )
 
@@ -23,7 +23,7 @@ const DEFAULT_PLAYLIST_IMAGE_URL = "https://yt3.googleusercontent.com/Rrn4HYgcjL
 type Playlist struct {
 	// The content to be displayed when the view
 	// is being displayed.
-	Content components.Content
+	Content comp.Content
 
 	// The playlists of the user.
 	UserPlaylists *[]spotify.Playlist
@@ -33,8 +33,8 @@ type Playlist struct {
 	PlaylistList PlaylistList
 
 	// The images of all the user's playlists.
-	Images   []components.Image
-	imageMap map[list.Item]*components.Image
+	Images   []comp.Image
+	imageMap map[list.Item]*comp.Image
 
 	// The detailed information about the selected
 	// playlist.
@@ -53,7 +53,7 @@ type Playlist struct {
 
 // Creates the new playlist view by fetching the user's spotify playlists, determining
 // their images to be displayed. Appending all playlists to a bubbletea list.
-func NewPlaylistView(s *auth.Session, initialTerm components.Terminal) *Playlist {
+func NewPlaylistView(s *auth.Session, initialTerm comp.Terminal) *Playlist {
 	// Will holds our playlist names as "list items" to be displayed visually.
 	items := []list.Item{}
 
@@ -62,11 +62,11 @@ func NewPlaylistView(s *auth.Session, initialTerm components.Terminal) *Playlist
 	path := filepath.Join(cd, config.APPNAME, "playlist")
 
 	pv := &Playlist{
-		Images:       []components.Image{},
+		Images:       []comp.Image{},
 		PlaylistInfo: &PlaylistInfo{},
 		ViewStatus:   &ViewStatus{},
 		playlistsMap: map[list.Item]*spotify.Playlist{},
-		imageMap:     map[list.Item]*components.Image{},
+		imageMap:     map[list.Item]*comp.Image{},
 		Session:      s,
 	}
 
@@ -76,7 +76,7 @@ func NewPlaylistView(s *auth.Session, initialTerm components.Terminal) *Playlist
 	}
 
 	for i, playlist := range *pv.UserPlaylists {
-		pv.Images = append(pv.Images, components.Image{FilePath: path + fmt.Sprint(i) + ".jpeg"})
+		pv.Images = append(pv.Images, comp.Image{FilePath: path + fmt.Sprint(i) + ".jpeg"})
 
 		if len(playlist.Images) != 0 {
 			pv.Images[i].Update(playlist.Images[0].Url)
@@ -84,14 +84,14 @@ func NewPlaylistView(s *auth.Session, initialTerm components.Terminal) *Playlist
 			pv.Images[i].Update(DEFAULT_PLAYLIST_IMAGE_URL)
 		}
 
-		item := components.ListItem(playlist.Name)
+		item := comp.ListItem(playlist.Name)
 		items = append(items, item)
 
 		pv.imageMap[item] = &pv.Images[i]
 		pv.playlistsMap[item] = &playlist
 	}
 
-	pv.PlaylistList = PlaylistList{list: components.NewDefaultList(items, "Playlists")}
+	pv.PlaylistList = PlaylistList{list: comp.NewDefaultList(items, "Playlists")}
 
 	// Sets the initial choice, else the list will not move.
 	if len(items) > 0 {
@@ -102,46 +102,46 @@ func NewPlaylistView(s *auth.Session, initialTerm components.Terminal) *Playlist
 }
 
 // Updates the content to be displayed based on the dimensions of the terminal.
-func (pv *Playlist) UpdateContent(term components.Terminal) {
-	var ascii components.Content
-	container := components.NewDefaultTable()
-	t := components.NewDefaultTable()
+func (pv *Playlist) UpdateContent(term comp.Terminal) {
+	var ascii comp.Content
+	container := comp.NewDefaultTable()
+	t := comp.NewDefaultTable()
 
 	pv.PlaylistInfo.Update(pv.GetSelectedPlaylist())
 
 	vs := ViewStatus{CurrentView: PLAYLIST_VIEW}
 
-	pv.Content = func() components.Content {
+	pv.Content = func() comp.Content {
 		t.AppendRow(table.Row{
-			components.Join([]components.Content{
+			comp.Join([]comp.Content{
 				pv.PlaylistList.Content().
-					Prepend('\n', 1).Append('\n', 0),
+					Prepend('\n', 1),
 
-				components.Content("").Append(' ', 35),
+				comp.Content("").Append(' ', 35),
 			}, "\n"),
 		})
 
 		ascii = pv.SelectedImage().AsciiSmall().Content().
-			Prepend('\n', 0).Append('\n', 1).
+			Append('\n', 1).
 			PadLinesLeft(2)
 
 		container.AppendRow(table.Row{
-			components.Content(t.Render()),
+			comp.Content(t.Render()),
 			ascii,
 		})
 
 		if term.WidthIsSmall() || term.HeightIsSmall() {
-			return components.Join([]components.Content{
+			return comp.Join([]comp.Content{
 				"\n",
-				components.Content(container.Render()).Append('\n', 1).CenterHorizontal(term, -2),
+				comp.Content(container.Render()).Append('\n', 1).CenterHorizontal(term, -2),
 				pv.PlaylistInfo.Content(term).CenterHorizontal(term),
-				components.Content("").Append('\n', 2),
+				comp.Content("").Append('\n', 2),
 			}, "\n").Prepend('\n', 5).CenterVertical(term)
 		}
 
-		return components.Join([]components.Content{
+		return comp.Join([]comp.Content{
 			"\n",
-			components.Content(container.Render()).Append('\n', 2).CenterHorizontal(term),
+			comp.Content(container.Render()).Append('\n', 2).CenterHorizontal(term),
 			pv.PlaylistInfo.Content(term).CenterHorizontal(term),
 			"",
 			vs.Content().CenterHorizontal(term),
@@ -156,12 +156,12 @@ func (pv *Playlist) GetSelectedPlaylist() *spotify.Playlist {
 }
 
 // The selected playlist's image.
-func (pv *Playlist) SelectedImage() *components.Image {
+func (pv *Playlist) SelectedImage() *comp.Image {
 	return pv.imageMap[pv.PlaylistList.list.SelectedItem()]
 }
 
 // Updates the content and renders the view as a string.
-func (pv *Playlist) View(playerView *Player, term components.Terminal) string {
+func (pv *Playlist) View(playerView *Player, term comp.Terminal) string {
 	pv.UpdateContent(term)
 	return pv.Content.String()
 }
@@ -182,8 +182,8 @@ func (pi *PlaylistInfo) Update(playlist *spotify.Playlist) {
 }
 
 // Renders the playlistInfo as a content string.
-func (pi PlaylistInfo) Content(term components.Terminal) components.Content {
-	return components.Join(
+func (pi PlaylistInfo) Content(term comp.Terminal) comp.Content {
+	return comp.Join(
 		[]string{
 			pi.Name.AdjustFit(term).String() + "\n",
 			"Tracks: " + fmt.Sprint(pi.TotalTracks),
@@ -194,8 +194,8 @@ type PlaylistName string
 
 // Adjusts the playlist string to fit
 // within the terminal if it is too big.
-func (pn PlaylistName) AdjustFit(term components.Terminal) PlaylistName {
-	c := components.Content(pn)
+func (pn PlaylistName) AdjustFit(term comp.Terminal) PlaylistName {
+	c := comp.Content(pn)
 
 	return PlaylistName(c.AdjustFit(term.Width))
 }
@@ -232,8 +232,8 @@ func (pll PlaylistList) Update(msg tea.Msg) (PlaylistList, tea.Cmd) {
 }
 
 // The list as a content string.
-func (pl PlaylistList) Content() components.Content {
-	return components.Content(pl.list.View())
+func (pl PlaylistList) Content() comp.Content {
+	return comp.Content(pl.list.View())
 }
 
 func (pl PlaylistList) View() string {

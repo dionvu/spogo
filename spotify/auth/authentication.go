@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/dionvu/spogo/config"
-	"github.com/dionvu/spogo/errors"
+	"github.com/dionvu/spogo/err"
 	"github.com/dionvu/spogo/spotify/api/scopes"
 	"github.com/dionvu/spogo/spotify/api/urls"
 	"github.com/fatih/color"

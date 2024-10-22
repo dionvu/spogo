@@ -9,10 +9,10 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	lg "github.com/charmbracelet/lipgloss"
-	"github.com/dionvu/spogo/auth"
-	comp "github.com/dionvu/spogo/components"
-	"github.com/dionvu/spogo/errors"
+	"github.com/dionvu/spogo/err"
 	"github.com/dionvu/spogo/spotify"
+	"github.com/dionvu/spogo/spotify/auth"
+	comp "github.com/dionvu/spogo/tui/views/components"
 	"github.com/jedib0t/go-pretty/v6/table"
 )
 

@@ -7,10 +7,10 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/dionvu/spogo/auth"
-	"github.com/dionvu/spogo/errors"
+	"github.com/dionvu/spogo/err"
 	"github.com/dionvu/spogo/spotify/api/headers"
 	"github.com/dionvu/spogo/spotify/api/urls"
+	"github.com/dionvu/spogo/spotify/auth"
 )
 
 const (
@@ -38,63 +38,33 @@ type searchResponse struct {
 }
 
 type tracksSearchResponse struct {
-	Href     string  `json:"href"`
-	Limit    int     `json:"limit"`
-	Next     string  `json:"next"`
-	Offset   int     `json:"offset"`
-	Previous string  `json:"previous"`
-	Total    int     `json:"total"`
-	Items    []Track `json:"items"`
+	Total int     `json:"total"`
+	Items []Track `json:"items"`
 }
 
 type albumsSearchResponse struct {
-	Href     string  `json:"href"`
-	Limit    int     `json:"limit"`
-	Next     string  `json:"next"`
-	Offset   int     `json:"offset"`
-	Previous string  `json:"previous"`
-	Total    int     `json:"total"`
-	Items    []Album `json:"items"`
+	Total int     `json:"total"`
+	Items []Album `json:"items"`
 }
 
 type playlistsSearchResponse struct {
-	Href     string     `json:"href"`
-	Limit    int        `json:"limit"`
-	Next     string     `json:"next"`
-	Offset   int        `json:"offset"`
-	Previous string     `json:"previous"`
-	Total    int        `json:"total"`
-	Items    []Playlist `json:"items"`
+	Total int        `json:"total"`
+	Items []Playlist `json:"items"`
 }
 
 type artistsSearchResponse struct {
-	Href     string   `json:"href"`
-	Limit    int      `json:"limit"`
-	Next     string   `json:"next"`
-	Offset   int      `json:"offset"`
-	Previous string   `json:"previous"`
-	Total    int      `json:"total"`
-	Items    []Artist `json:"items"`
+	Total int      `json:"total"`
+	Items []Artist `json:"items"`
 }
 
 type showsSearchResponse struct {
-	Href     string `json:"href"`
-	Limit    int    `json:"limit"`
-	Next     string `json:"next"`
-	Offset   int    `json:"offset"`
-	Previous string `json:"previous"`
-	Total    int    `json:"total"`
-	Items    []Show `json:"items"`
+	Total int    `json:"total"`
+	Items []Show `json:"items"`
 }
 
 type EpisodesSearchResponse struct {
-	Href     string    `json:"href"`
-	Limit    int       `json:"limit"`
-	Next     string    `json:"next"`
-	Offset   int       `json:"offset"`
-	Previous string    `json:"previous"`
-	Total    int       `json:"total"`
-	Items    []Episode `json:"items"`
+	Total int       `json:"total"`
+	Items []Episode `json:"items"`
 }
 
 func Search(input string, searchType []string, limit int, s *auth.Session) (*SearchResult, error) {

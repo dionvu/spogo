@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/TheZoraiz/ascii-image-converter/aic_package"
-	"github.com/dionvu/spogo/errors"
+	"github.com/dionvu/spogo/err"
 )
 
 const (

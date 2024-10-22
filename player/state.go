@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/dionvu/spogo/auth"
-	"github.com/dionvu/spogo/errors"
+	"github.com/dionvu/spogo/err"
 	"github.com/dionvu/spogo/spotify"
 	"github.com/dionvu/spogo/spotify/api/headers"
 	"github.com/dionvu/spogo/spotify/api/urls"
+	"github.com/dionvu/spogo/spotify/auth"
 )
 
 const (

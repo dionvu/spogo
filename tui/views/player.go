@@ -10,12 +10,12 @@ import (
 	"time"
 
 	lg "github.com/charmbracelet/lipgloss"
-	"github.com/dionvu/spogo/auth"
-	"github.com/dionvu/spogo/components"
 	"github.com/dionvu/spogo/config"
-	"github.com/dionvu/spogo/errors"
+	"github.com/dionvu/spogo/err"
 	"github.com/dionvu/spogo/player"
 	"github.com/dionvu/spogo/spotify"
+	"github.com/dionvu/spogo/spotify/auth"
+	comp "github.com/dionvu/spogo/tui/views/components"
 )
 
 const (
@@ -73,7 +73,7 @@ var statusBarStyle = struct {
 type Player struct {
 	// The string of content to be displayed when the
 	// player is viewed.
-	Content components.Content
+	Content comp.Content
 
 	// Indicates the playing status of the the track.
 	StatusBar *StatusBar
@@ -87,7 +87,7 @@ type Player struct {
 	ViewStatus *ViewStatus
 
 	// Album art image of the track currently playing.
-	Image *components.Image
+	Image *comp.Image
 
 	Session *auth.Session
 	Player  *player.Player
@@ -115,7 +115,7 @@ func NewPlayerView(
 		PlayerDetails: &PlayerDetails{},
 		StatusBar:     &StatusBar{},
 		ViewStatus:    &ViewStatus{CurrentView: PLAYER_VIEW},
-		Image:         &components.Image{FilePath: path},
+		Image:         &comp.Image{FilePath: path},
 	}
 
 	pv.UpdateStateSync()
@@ -162,8 +162,8 @@ func (pv *Player) EnsureProgressSynced() {
 
 // Updates the view content based on the state of the player,
 // and the current size of the terminal.
-func (pv *Player) UpdateContent(term components.Terminal) {
-	pv.Content = func() components.Content {
+func (pv *Player) UpdateContent(term comp.Terminal) {
+	pv.Content = func() comp.Content {
 		if term.HeightIsSmall() {
 			switch pv.State {
 			case nil:
@@ -171,7 +171,7 @@ func (pv *Player) UpdateContent(term components.Terminal) {
 			default:
 				pv.Image.Update(pv.State.Track.Album.Images[0].Url)
 
-				return components.Join([]components.Content{
+				return comp.Join([]comp.Content{
 					pv.Image.AsciiSmall().Content(),
 					pv.StatusBar.Content(),
 					pv.PlayerDetails.Content(pv.State.Track, pv.ProgressMs, pv.State),
@@ -184,7 +184,7 @@ func (pv *Player) UpdateContent(term components.Terminal) {
 			default:
 				pv.Image.Update(pv.State.Track.Album.Images[0].Url)
 
-				return components.Join([]components.Content{
+				return comp.Join([]comp.Content{
 					pv.Image.AsciiNormal().Content(),
 					pv.StatusBar.Content(),
 					pv.PlayerDetails.Content(pv.State.Track, pv.ProgressMs, pv.State),
@@ -194,7 +194,7 @@ func (pv *Player) UpdateContent(term components.Terminal) {
 
 		switch pv.State {
 		case nil:
-			return components.Join([]components.Content{
+			return comp.Join([]comp.Content{
 				pv.StatusBar.Content().Append('\n', 10).Prepend('\n', 12),
 				pv.ViewStatus.Content(),
 			}, "\n\n")
@@ -204,7 +204,7 @@ func (pv *Player) UpdateContent(term components.Terminal) {
 				pv.Image.Update(pv.State.Track.Album.Images[0].Url)
 			}
 
-			return components.Join([]components.Content{
+			return comp.Join([]comp.Content{
 				pv.Image.AsciiNormal().Content(),
 				pv.StatusBar.Content(),
 				pv.PlayerDetails.Content(pv.State.Track, pv.ProgressMs, pv.State),
@@ -248,7 +248,7 @@ func (pv *Player) PlayPause() error {
 
 // Returns a string containing the entire player view, centered with
 // the size dynamic to the terminal size.
-func (pv *Player) View(term components.Terminal) string {
+func (pv *Player) View(term comp.Terminal) string {
 	pv.UpdateContent(term)
 	pv.PlayerDetails.Update(pv.ProgressMs, pv.State)
 
@@ -323,9 +323,9 @@ func (pd *PlayerDetails) Update(progressMs int, state *player.State) {
 func (pd *PlayerDetails) Render(track *spotify.Track, progressMs int, state *player.State) string {
 	pd.Update(progressMs, state)
 
-	title := components.Content(fmt.Sprintf("%s - %s", pd.Track, pd.Artists))
+	title := comp.Content(fmt.Sprintf("%s - %s", pd.Track, pd.Artists))
 
-	timer := components.Content(fmt.Sprintf("%sm:%ss / %sm:%ss", pd.ProgressMin, pd.ProgressSec, pd.DurationMin, pd.DurationSec))
+	timer := comp.Content(fmt.Sprintf("%sm:%ss / %sm:%ss", pd.ProgressMin, pd.ProgressSec, pd.DurationMin, pd.DurationSec))
 
 	var repeat string
 	switch state.RepeatState {
@@ -343,18 +343,18 @@ func (pd *PlayerDetails) Render(track *spotify.Track, progressMs int, state *pla
 		shuffle = "off"
 	}
 
-	options := components.Content(fmt.Sprintf("vol: %s%% sfl: %v rpt: %v", pd.VolumePercent, shuffle, repeat))
+	options := comp.Content(fmt.Sprintf("vol: %s%% sfl: %v rpt: %v", pd.VolumePercent, shuffle, repeat))
 
-	return components.Join([]components.Content{title, timer, options}, "\n\n").String()
+	return comp.Join([]comp.Content{title, timer, options}, "\n\n").String()
 }
 
 // Renders the player details as a content string.
-func (pd *PlayerDetails) Content(track *spotify.Track, progressMs int, state *player.State) components.Content {
+func (pd *PlayerDetails) Content(track *spotify.Track, progressMs int, state *player.State) comp.Content {
 	pd.Update(progressMs, state)
 
-	title := components.Content(fmt.Sprintf("%s - %s", pd.Track, pd.Artists))
+	title := comp.Content(fmt.Sprintf("%s - %s", pd.Track, pd.Artists))
 
-	timer := components.Content(fmt.Sprintf("%sm:%ss / %sm:%ss", pd.ProgressMin, pd.ProgressSec, pd.DurationMin, pd.DurationSec))
+	timer := comp.Content(fmt.Sprintf("%sm:%ss / %sm:%ss", pd.ProgressMin, pd.ProgressSec, pd.DurationMin, pd.DurationSec))
 
 	var repeat string
 	switch state.RepeatState {
@@ -372,9 +372,9 @@ func (pd *PlayerDetails) Content(track *spotify.Track, progressMs int, state *pl
 		shuffle = "off"
 	}
 
-	options := components.Content(fmt.Sprintf("Vol: %s%%  Sfl: %v  Rep: %v", pd.VolumePercent, shuffle, repeat))
+	options := comp.Content(fmt.Sprintf("Vol: %s%%  Sfl: %v  Rep: %v", pd.VolumePercent, shuffle, repeat))
 
-	return components.Join([]components.Content{title, timer, options}, "\n\n")
+	return comp.Join([]comp.Content{title, timer, options}, "\n\n")
 }
 
 // The title status bar indicating whether the player is
@@ -390,8 +390,8 @@ func (sb *StatusBar) Render() string {
 }
 
 // Renders the status bar as a content string.
-func (sb *StatusBar) Content() components.Content {
-	return components.Content(sb.Style.Render(sb.Status))
+func (sb *StatusBar) Content() comp.Content {
+	return comp.Content(sb.Style.Render(sb.Status))
 }
 
 // Updates the status bar given the player's state.

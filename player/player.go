@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dionvu/spogo/auth"
 	"github.com/dionvu/spogo/config"
-	"github.com/dionvu/spogo/errors"
+	"github.com/dionvu/spogo/err"
 	"github.com/dionvu/spogo/spotify/api/headers"
 	"github.com/dionvu/spogo/spotify/api/urls"
+	"github.com/dionvu/spogo/spotify/auth"
 	"github.com/joomcode/errorx"
 )
 

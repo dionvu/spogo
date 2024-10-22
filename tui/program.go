@@ -4,17 +4,16 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/dionvu/spogo/auth"
-	"github.com/dionvu/spogo/components"
 	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/player"
-	"github.com/dionvu/spogo/views"
+	"github.com/dionvu/spogo/spotify/auth"
+	"github.com/dionvu/spogo/tui/views"
+	comp "github.com/dionvu/spogo/tui/views/components"
 )
 
 const (
-	UPDATE_RATE_SEC          = time.Second
-	POLLING_RATE_STATE_SEC   = time.Second * 5
-	VOLUME_INCREMENT_PERCENT = 5
+	UPDATE_RATE_SEC        = time.Second
+	POLLING_RATE_STATE_SEC = time.Second * 5
 )
 
 // The struct that integrates every view
@@ -44,7 +43,7 @@ type Program struct {
 
 	// The programs's current terminal size, this
 	// is updated consistantly.
-	Terminal components.Terminal
+	Terminal comp.Terminal
 
 	// Stuff necessary to access the spotify api.
 	session *auth.Session
@@ -73,11 +72,11 @@ func New(
 		player.Resume(auth, false)
 	}
 
-	p.Terminal.Width, p.Terminal.Height = components.GetTerminalSize()
+	p.Terminal.Width, p.Terminal.Height = comp.GetTerminalSize()
 
 	p.Player = views.NewPlayerView(auth, player)
 	p.Playlist = views.NewPlaylistView(auth, p.Terminal)
-	p.Device = views.NewDeviceView(p.session)
+	p.Device = &views.Device{Session: p.session}
 	p.Search = views.NewSearch(p.session)
 
 	return p
@@ -94,6 +93,7 @@ func (program *Program) Run() error {
 
 func (p *Program) Init() tea.Cmd {
 	p.Player.UpdateStateLoop(p.session, p.Config)
+
 	return tea.Tick(UPDATE_RATE_SEC, func(time.Time) tea.Msg {
 		return tickMsg{}
 	})

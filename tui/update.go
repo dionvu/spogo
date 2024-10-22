@@ -6,9 +6,9 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/dionvu/spogo/errors"
+	"github.com/dionvu/spogo/err"
 	"github.com/dionvu/spogo/player"
-	"github.com/dionvu/spogo/views"
+	"github.com/dionvu/spogo/tui/views"
 )
 
 const (
@@ -44,6 +44,8 @@ const (
 
 	KEY_FZF_DEVICES      = "ctrl+d"
 	KEY_FZF_ALBUM_TRACKS = "a"
+
+	VOLUME_INCREMENT_PERCENT = 5
 )
 
 // Handles updates associate with the current selected view.
