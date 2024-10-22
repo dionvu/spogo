@@ -12,6 +12,8 @@ import (
 	"github.com/ktr0731/go-fuzzyfinder"
 )
 
+const EMPTY = "" // lol
+
 func (p *Program) View() string {
 	switch p.CurrentView {
 	case views.PLAYER_VIEW:
@@ -52,86 +54,43 @@ func (p *Program) View() string {
 
 		if playlist == nil {
 			p.CurrentView = views.PLAYLIST_VIEW
-			return ""
+			return EMPTY
 		}
 
-		t, err := spotify.PlaylistTracks(p.session, playlist.ID)
-		if t == nil || err != nil || len(*t) < 1 {
+		tracks, err := spotify.PlaylistTracks(p.session, playlist.ID)
+		if tracks == nil || err != nil || len(*tracks) < 1 {
 			p.CurrentView = views.PLAYLIST_VIEW
-			return ""
+			return EMPTY
 		}
-
-		tracks := *t
-		// asciis := make([]string, len(tracks))
 
 		p.CurrentView = views.PLAYER_VIEW
 
-		// cd, _ := os.UserCacheDir()
-		// imagePath := filepath.Join(cd, config.APPNAME, playlist.ID, "temp")
-		// os.MkdirAll(imagePath, os.ModePerm)
-		// for i, track := range tracks {
-		// 	image := components.Image{FilePath: fmt.Sprint(imagePath, i, ".jpeg")}
-		// 	image.Update(track.Album.Images[0].Url)
-		// 	asciis[i] = image.AsciiSmall().String()
-		// }
-
-		// Fzf tracks from the playlist currently slected
-		// and plays the selected track.
-		idx, err := fuzzyfinder.Find(
-			tracks,
-			func(i int) string {
-				return tracks[i].Name + " - " + tracks[i].Artists[0].Name
-			},
-			fuzzyfinder.WithPreviewWindow(func(i, w, h int) string {
-				if i == -1 {
-					return ""
-				}
-
-				mins, secs := views.MsToMinutesAndSeconds(tracks[i].DurationMs)
-
-				return fmt.Sprintf("Track: %s \nArtist: %s\nAlbum: %s\nDuration: %sm:%ss", //\n\n%s",
-					tracks[i].Name,
-					tracks[i].Artists[0].Name,
-					tracks[i].Album.Name,
-					mins,
-					secs,
-					// asciis[i],
-				)
-			}))
-
-		contextUri := p.Playlist.GetSelectedPlaylist().Uri
-
-		// Prevents user pressing Esc from playing the first track.
-		if err == nil {
-			p.player.Play(contextUri, tracks[idx].Uri, p.session)
-		}
-
-		HideCursor()
+		idx, err := FzfPlaylistTracks(tracks)
 
 		if err == nil {
+			p.player.Play(p.Playlist.GetSelectedPlaylist().Uri, (*tracks)[idx].Uri, p.session)
 			p.CurrentView = views.PLAYER_VIEW
 		} else {
 			p.CurrentView = views.PLAYLIST_VIEW
 		}
 
-		return ""
+		return EMPTY
 
 	case views.ALBUM_TRACK_VIEW:
 		if p.Player.State == nil || p.Player.State.Track == nil {
 			p.CurrentView = views.PLAYER_VIEW
-			return ""
+			return EMPTY
 		}
 
 		album := &p.Player.State.Track.Album
 
-		t, _ := spotify.AlbumTracks(p.session, album.ID)
-		tracks := *t
+		tracks, _ := spotify.AlbumTracks(p.session, album.ID)
 
 		// Fzf tracks from the album currently playing
 		// and plays the selected track.
-		idx, err := FzfAlbumTracks(t)
+		idx, err := FzfAlbumTracks(tracks)
 		if err == nil {
-			err := p.player.Play(album.Uri, tracks[idx].Uri, p.session)
+			err := p.player.Play(album.Uri, (*tracks)[idx].Uri, p.session)
 			if errors.IsReauthenticationErr(err) {
 				p.CurrentView = views.REAUTH_VIEW
 			}
@@ -148,7 +107,7 @@ func (p *Program) View() string {
 
 		p.CurrentView = views.PLAYER_VIEW
 
-		return ""
+		return EMPTY
 
 	case views.REFRESH_VIEW:
 		return "Refreshing..."
@@ -171,7 +130,7 @@ func (p *Program) View() string {
 		return p.Device.View(p.Terminal, p.player.Device(), p.Config)
 	}
 
-	return "UNREACHABLE"
+	return EMPTY
 }
 
 func FzfAlbumTracks(albumTracks *[]spotify.AlbumTrack) (int, error) {
@@ -184,7 +143,7 @@ func FzfAlbumTracks(albumTracks *[]spotify.AlbumTrack) (int, error) {
 		},
 		fuzzyfinder.WithPreviewWindow(func(i, w, h int) string {
 			if i == -1 {
-				return ""
+				return EMPTY
 			}
 
 			mins, secs := views.MsToMinutesAndSeconds(tracks[i].DurationMs)
@@ -211,7 +170,7 @@ func FzfDevices(devices *[]player.Device) (int, error) {
 		},
 		fuzzyfinder.WithPreviewWindow(func(i, w, h int) string {
 			if i == -1 {
-				return ""
+				return EMPTY
 			}
 
 			return fmt.Sprintf("Name: %s\nType: %s\nVol: %v%%",
@@ -229,4 +188,36 @@ func FzfDevices(devices *[]player.Device) (int, error) {
 // Hides the user's cursor after fzf.
 func HideCursor() {
 	fmt.Print("\033[?25l")
+}
+
+func FzfPlaylistTracks(t *[]spotify.Track) (int, error) {
+	if t == nil {
+		log.Fatal("Unreachable")
+	}
+	tracks := *t
+
+	idx, err := fuzzyfinder.Find(
+		tracks,
+		func(i int) string {
+			return tracks[i].Name + " - " + tracks[i].Artists[0].Name
+		},
+		fuzzyfinder.WithPreviewWindow(func(i, w, h int) string {
+			if i == -1 {
+				return EMPTY
+			}
+
+			mins, secs := views.MsToMinutesAndSeconds(tracks[i].DurationMs)
+
+			return fmt.Sprintf("Track: %s \nArtist: %s\nAlbum: %s\nDuration: %sm:%ss", //\n\n%s",
+				tracks[i].Name,
+				tracks[i].Artists[0].Name,
+				tracks[i].Album.Name,
+				mins,
+				secs,
+			)
+		}))
+
+	HideCursor()
+
+	return idx, err
 }

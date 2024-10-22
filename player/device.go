@@ -118,3 +118,11 @@ func getCachedPlaybackDevice(c *config.Config) (*Device, error) {
 
 	return d, nil
 }
+
+func (d Device) IsMobile() bool {
+	return d.Type == "Smartphone" && d.Type == "Tablet"
+}
+
+func IsValidVolume(vol int) bool {
+	return 0 <= vol && vol <= 100
+}

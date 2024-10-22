@@ -11,6 +11,41 @@ import (
 	"github.com/dionvu/spogo/views"
 )
 
+const (
+	KEY_ESC      = "esc"
+	KEY_ENTER    = "enter"
+	KEY_QUIT     = "q"
+	KEY_QUIT_ALT = "ctrl+c"
+
+	KEY_VISUAL_REFRESH = "ctrl+r"
+
+	KEY_PLAYER_VIEW      = "f1"
+	KEY_PLAYER_VIEW_ALT  = "ctrl+v"
+	KEY_PLAY_PAUSE       = " "
+	KEY_TOGGLE_SHUFFLING = "s"
+	KEY_TOGGLE_REPEAT    = "r"
+
+	KEY_PLAYLIST_VIEW       = "f2"
+	KEY_PLAYLIST_VIEW_ALT   = "ctrl+p"
+	KEY_FZF_PLAYLIST_TRACKS = "t"
+
+	KEY_SEARCH_VIEW     = "f3"
+	KEY_SEARCH_VIEW_ALT = "/"
+
+	KEY_DEVICE_VIEW = "f4"
+
+	KEY_HELP_VIEW = "f5"
+	KEY_HELP_ALT  = "ctrl+s"
+
+	KEY_VOLUME_DOWN_BIG   = "["
+	KEY_VOLUME_DOWN_SMALL = "{"
+	KEY_VOLUME_UP_BIG     = "]"
+	KEY_VOLUME_UP_SMALL   = "}"
+
+	KEY_FZF_DEVICES      = "ctrl+d"
+	KEY_FZF_ALBUM_TRACKS = "a"
+)
+
 // Handles updates associate with the current selected view.
 func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	p.Terminal.UpdateSize()
@@ -47,60 +82,54 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Prevents search query from activating any commands, enless esc or enter.
 		key := msg.String()
 
-		if p.CurrentView == views.SEARCH_VIEW_RESULTS && key == "/" {
+		if p.CurrentView == views.SEARCH_VIEW_RESULTS &&
+			(key == KEY_SEARCH_VIEW || key == KEY_SEARCH_VIEW_ALT) {
 			p.Search.Input.Text.Focus()
 			p.CurrentView = views.SEARCH_VIEW_QUERY
 			return p, nil
 		}
 
-		if p.CurrentView == views.SEARCH_VIEW_QUERY &&
-			key != "enter" && key != "esc" &&
-			key != "f1" && key != "f2" && key != "f4" && key != "f5" {
-
+		if p.CurrentView == views.SEARCH_VIEW_QUERY && !IsImportantKey(key) {
 			var cmd tea.Cmd
 			p.Search.Input, cmd = p.Search.Input.Update(msg)
 			return p, cmd
-
 		}
 
-		if p.CurrentView == views.SEARCH_VIEW_TYPE &&
-			key != "enter" && key != "esc" &&
-			key != "f1" && key != "f2" && key != "f4" && key != "f5" {
-
+		if p.CurrentView == views.SEARCH_VIEW_TYPE && !IsImportantKey(key) {
 			var cmd tea.Cmd
 			p.Search.TypeList, cmd = p.Search.TypeList.Update(msg)
 			return p, cmd
 		}
 
-		if (key == "/" || key == "3") && p.CurrentView != views.SEARCH_VIEW_QUERY {
+		if (key == KEY_SEARCH_VIEW || key == KEY_SEARCH_VIEW_ALT) &&
+			p.CurrentView != views.SEARCH_VIEW_QUERY {
 			p.CurrentView = views.SEARCH_VIEW_QUERY
 			return p, nil
 		}
 
 		switch msg.String() {
-		case "esc":
+		case KEY_ESC:
 			switch p.CurrentView {
 			case views.SEARCH_VIEW_QUERY:
 				p.CurrentView = views.PLAYER_VIEW
 			default:
 			}
 
-		case "ctrl+c", "q":
+		case KEY_QUIT, KEY_QUIT_ALT:
 			return p, tea.Quit
 
-		case " ":
+		case KEY_PLAY_PAUSE:
 			err := p.Player.PlayPause()
 			if errors.IsReauthenticationErr(err) {
 				p.CurrentView = views.REAUTH_VIEW
 			}
 
-		case "ctrl+d":
+		case KEY_FZF_DEVICES:
 			p.CurrentView = views.DEVICE_FZF_VIEW
 
-		case "[":
-			t := p.player.Device().Type
+		case KEY_VOLUME_DOWN_BIG:
 			// Spotify doesn't have a volume control for mobile devices.
-			if p.player.Device() != nil && (t != "Smartphone" && t != "Tablet") {
+			if p.player.Device() != nil && !p.player.Device().IsMobile() {
 				vol := p.PlayerState().Device.VolumePercent
 				newVol := vol - VOLUME_INCREMENT_PERCENT
 
@@ -108,7 +137,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					newVol = 0
 				}
 
-				if newVol < 0 || newVol > 100 {
+				if !player.IsValidVolume(newVol) {
 					break
 				}
 
@@ -119,11 +148,9 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				p.Player.State.Device.VolumePercent = newVol
 			}
 
-		case "]":
-			t := p.player.Device().Type
+		case KEY_VOLUME_UP_BIG:
 			// Spotify doesn't have a volume control for mobile devices.
-			if p.player.Device() != nil && (t != "Smartphone" && t != "Tablet") {
-
+			if p.player.Device() != nil && p.player.Device().IsMobile() {
 				vol := p.PlayerState().Device.VolumePercent
 				newVol := vol + VOLUME_INCREMENT_PERCENT
 
@@ -131,7 +158,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					newVol = 100
 				}
 
-				if newVol < 0 || newVol > 100 {
+				if !player.IsValidVolume(newVol) {
 					break
 				}
 
@@ -142,7 +169,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				p.Player.State.Device.VolumePercent = newVol
 			}
 
-		case "{":
+		case KEY_VOLUME_DOWN_SMALL:
 			t := p.player.Device().Type
 			// Spotify doesn't have a volume control for mobile devices.
 			if p.player.Device() != nil && (t != "Smartphone" && t != "Tablet") {
@@ -153,7 +180,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					newVol = 0
 				}
 
-				if newVol < 0 || newVol > 100 {
+				if !player.IsValidVolume(newVol) {
 					break
 				}
 
@@ -164,7 +191,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				p.Player.State.Device.VolumePercent = newVol
 			}
 
-		case "}":
+		case KEY_VOLUME_UP_SMALL:
 			t := p.player.Device().Type
 			// Spotify doesn't have a volume control for mobile devices.
 			if p.player.Device() != nil && (t != "Smartphone" && t != "Tablet") {
@@ -175,11 +202,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					newVol = 100
 				}
 
-				if 0 < vol && vol <= 5 {
-					newVol = 0
-				}
-
-				if newVol < 0 || newVol > 100 {
+				if !player.IsValidVolume(newVol) {
 					break
 				}
 
@@ -190,24 +213,24 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				p.Player.State.Device.VolumePercent = newVol
 			}
 
-		case "f1", "1":
+		case KEY_PLAYER_VIEW, KEY_PLAYER_VIEW_ALT:
 			p.CurrentView = views.PLAYER_VIEW
 
-		case "f2", "2":
+		case KEY_PLAYLIST_VIEW, KEY_PLAYLIST_VIEW_ALT:
 			p.CurrentView = views.PLAYLIST_VIEW
 
-		case "f3", "3", "/":
+		case KEY_SEARCH_VIEW, KEY_SEARCH_VIEW_ALT:
 			p.Search.Input.Text.Focus()
 			p.CurrentView = views.SEARCH_VIEW_QUERY
 
-		case "f4", "4":
+		case KEY_DEVICE_VIEW:
 			p.Device.UpdateNumberDevices()
 			p.CurrentView = views.DEVICE_VIEW
 
-		case "f5", "5":
+		case KEY_HELP_VIEW, KEY_HELP_ALT:
 			p.CurrentView = views.HELP_VIEW
 
-		case "enter":
+		case KEY_ENTER:
 
 			// The enter key has different actions it needs to perform depending on the
 			// current view.
@@ -250,7 +273,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 
-		case "ctrl+r":
+		case KEY_VISUAL_REFRESH:
 			// Refreshes the terminal fixing any visual glitches. This doesn't yet force any
 			// updates to, for example, listed playlist devices.
 			go func() {
@@ -265,15 +288,15 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				cmd.Run()
 			}()
 
-		case "t":
+		case KEY_FZF_PLAYLIST_TRACKS:
 			if p.CurrentView == views.PLAYLIST_VIEW {
 				p.CurrentView = views.PLAYLIST_TRACK_VIEW
 			}
 
-		case "a":
+		case KEY_FZF_ALBUM_TRACKS:
 			p.CurrentView = views.ALBUM_TRACK_VIEW
 
-		case "s":
+		case KEY_TOGGLE_SHUFFLING:
 			// Enables or disables shuffling on current album or playlist.
 			state := p.PlayerState().ShuffleState
 
@@ -281,7 +304,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			p.player.Shuffle(!state, p.session)
 
-		case "r":
+		case KEY_TOGGLE_REPEAT:
 			switch p.PlayerState().RepeatState {
 			case "off":
 				err := p.player.Repeat(true, p.session)
@@ -308,12 +331,6 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return p, cmd
 		}
 
-		// Handles updates from the device list.
-		// if p.CurrentView == views.DEVICE_VIEW {
-		// 	p.Device.ListModel, cmd = p.Device.ListModel.Update(msg)
-		// 	return p, cmd
-		// }
-
 		if p.CurrentView == views.SEARCH_VIEW_QUERY {
 			p.Search.Input, cmd = p.Search.Input.Update(msg)
 			return p, cmd
@@ -331,4 +348,21 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // Returns the player state from the model's player view.
 func (p *Program) PlayerState() *player.State {
 	return p.Player.State
+}
+
+func IsImportantKey(key string) bool {
+	keys := []string{
+		KEY_PLAYER_VIEW, KEY_PLAYER_VIEW_ALT,
+		KEY_PLAYLIST_VIEW, KEY_PLAYER_VIEW_ALT,
+		KEY_SEARCH_VIEW, KEY_SEARCH_VIEW_ALT,
+		KEY_DEVICE_VIEW,
+	}
+
+	for _, k := range keys {
+		if key == k {
+			return true
+		}
+	}
+
+	return false
 }
