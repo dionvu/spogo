@@ -144,11 +144,19 @@ func FzfAlbumTracks(albumTracks *[]spotify.AlbumTrack) (int, error) {
 	idx, err := fuzzyfinder.Find(
 		tracks,
 		func(i int) string {
+			if tracks[i].Name == "" {
+				return "Unavailable"
+			}
+
 			return tracks[i].Name
 		},
 		fuzzyfinder.WithPreviewWindow(func(i, w, h int) string {
 			if i == -1 {
 				return EMPTY
+			}
+
+			if tracks[i].Name == "" {
+				return "Content is unavailable :("
 			}
 
 			mins, secs := views.MsToMinutesAndSeconds(tracks[i].DurationMs)
@@ -178,6 +186,10 @@ func FzfDevices(devices *[]player.Device) (int, error) {
 				return EMPTY
 			}
 
+			if tracks[i].Name == "" {
+				return "Unavailable"
+			}
+
 			return fmt.Sprintf("Name: %s\nType: %s\nVol: %v%%",
 				tracks[i].Name,
 				tracks[i].Type,
@@ -194,11 +206,16 @@ func FzfPlaylistTracks(t *[]spotify.Track) (int, error) {
 	if t == nil {
 		log.Fatal("Unreachable")
 	}
+
 	tracks := *t
 
 	idx, err := fuzzyfinder.Find(
 		tracks,
 		func(i int) string {
+			if tracks[i].Name == "" {
+				return "Unavailable"
+			}
+
 			return tracks[i].Name + " - " + tracks[i].Artists[0].Name
 		},
 		fuzzyfinder.WithPreviewWindow(func(i, w, h int) string {
@@ -207,6 +224,10 @@ func FzfPlaylistTracks(t *[]spotify.Track) (int, error) {
 			}
 
 			mins, secs := views.MsToMinutesAndSeconds(tracks[i].DurationMs)
+
+			if tracks[i].Name == "" {
+				return "Content is unavailable :("
+			}
 
 			return fmt.Sprintf("Track: %s \nArtist: %s\nAlbum: %s\nDuration: %sm:%ss", //\n\n%s",
 				tracks[i].Name,

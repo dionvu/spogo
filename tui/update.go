@@ -67,7 +67,11 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if p.PlayerState() == nil {
 			p.Player.StatusBar.Update(p.PlayerState())
 
-			p.player.Resume(p.session, false)
+			if p.Player.State != nil && p.Player.State.IsPlaying {
+				p.player.Resume(p.session, false)
+			} else {
+				p.player.Resume(p.session, true)
+			}
 
 			return p, tea.Tick(4*UPDATE_RATE_SEC, func(time.Time) tea.Msg {
 				return tickMsg{}
