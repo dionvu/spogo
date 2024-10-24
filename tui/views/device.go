@@ -12,6 +12,7 @@ import (
 
 type Device struct {
 	Session    *auth.Session
+	Cfg        *config.Config
 	NumDevices int
 }
 
@@ -38,7 +39,7 @@ func (dv *Device) View(term comp.Terminal, device *player.Device, config *config
 		comp.InvisibleBarV(10).String(),
 		currDeviceInfo,
 		comp.InvisibleBarV(7).String(),
-		ViewStatus{CurrentView: DEVICE_VIEW}.Content().String(),
+		ViewStatus{CurrentView: DEVICE_VIEW}.Content(dv.Cfg).String(),
 	}).CenterVertical(term).CenterHorizontal(term).String()
 }
 
@@ -48,13 +49,17 @@ type ViewStatus struct {
 
 // Renders the ViewStatus as a content string based on the
 // it's current view.
-func (vs ViewStatus) Content() comp.Content {
+func (vs ViewStatus) Content(cfg *config.Config) comp.Content {
 	style := struct {
 		Selected lg.Style
 		Normal   lg.Style
 	}{
 		Normal:   lg.NewStyle().Faint(true),
 		Selected: lg.NewStyle(),
+	}
+
+	if !cfg.ControlBar.Enabled {
+		return ""
 	}
 
 	switch vs.CurrentView {
@@ -84,13 +89,6 @@ func (vs ViewStatus) Content() comp.Content {
 			style.Selected.Render("F3 Search"),
 			style.Normal.Render(" | F4 Help ]"),
 		}, "")
-
-	// case DEVICE_VIEW:
-	// 	return comp.Join([]string{
-	// 		style.Normal.Render("[ F1 Player | F2 Playlists | F3 Search | "),
-	// 		style.Selected.Render("F4 Device"),
-	// 		style.Normal.Render(" | F5 Help ]"),
-	// 	}, "")
 
 	default:
 		return "Unknown View"

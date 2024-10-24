@@ -30,8 +30,8 @@ type Config struct {
 	cachePath string
 	Spotify   Credentials `yaml:"spotify"`
 	Player    struct {
-		Style struct {
-			StatusBar struct {
+		StatusBar struct {
+			Style struct {
 				NowPlaying struct {
 					Bold       bool   `yaml:"bold"`
 					Foreground string `yaml:"fg"`
@@ -49,9 +49,17 @@ type Config struct {
 					Foreground string `yaml:"fg"`
 					Background string `yaml:"bg"`
 				} `yaml:"no_player"`
-			} `yaml:"status_bar"`
-		} `yaml:"style"`
+			} `yaml:"style"`
+		} `yaml:"status_bar"`
 	} `yaml:"player"`
+	Ascii struct {
+		Threshold int  `yaml:"threshold"`
+		Grayscale bool `yaml:"grayscale"`
+		Enabled   bool `yaml:"enabled"`
+	} `yaml:"ascii"`
+	ControlBar struct {
+		Enabled bool `yaml:"enabled"`
+	} `yaml:"control_bar"`
 }
 
 // Creates spogo config root directory, "config.yaml",

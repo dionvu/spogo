@@ -17,6 +17,10 @@ const EMPTY = "" // lol
 func (p *Program) View() string {
 	switch p.CurrentView {
 	case views.PLAYER_VIEW:
+		if p.Player.State != nil && p.Player.State.Episode != nil {
+			return "episode and podcast support is coming!"
+		}
+
 		return p.Player.View(p.Terminal)
 
 	case views.PLAYLIST_VIEW:

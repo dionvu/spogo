@@ -19,22 +19,22 @@ import (
 )
 
 const (
-	PLAYER_VIEW           = "player_view"
-	PLAYLIST_VIEW         = "playlist_view"
-	PLAYLIST_TRACK_VIEW   = "playlist_track_view"
-	ALBUM_TRACK_VIEW      = "album_track_view"
-	REFRESH_VIEW          = "refresh_view"
-	HELP_VIEW             = "help_view"
-	TERMINAL_WARNING_VIEW = "terminal_warning_view"
-	SEARCH_VIEW_QUERY     = "search_view_query"
-	SEARCH_VIEW_TYPE      = "search_view_type"
-	SEARCH_VIEW_RESULTS   = "search_view_results"
-	DEVICE_VIEW           = "device_view"
-	REAUTH_VIEW           = "reauthentication_view"
-	DEVICE_FZF_VIEW       = "device_fzf_view"
-)
-
-const (
+	PLAYER_VIEW              = "player_view"
+	PLAYLIST_VIEW            = "playlist_view"
+	PLAYLIST_TRACK_VIEW      = "playlist_track_view"
+	ALBUM_TRACK_VIEW         = "album_track_view"
+	REFRESH_VIEW             = "refresh_view"
+	HELP_VIEW                = "help_view"
+	TERMINAL_WARNING_VIEW    = "terminal_warning_view"
+	SEARCH_VIEW_QUERY        = "search_view_query"
+	SEARCH_VIEW_TYPE         = "search_view_type"
+	SEARCH_VIEW_RESULTS      = "search_view_results"
+	DEVICE_VIEW              = "device_view"
+	REAUTH_VIEW              = "reauthentication_view"
+	DEVICE_FZF_VIEW          = "device_fzf_view"
+	ENABLED                  = "on"
+	DISABLED                 = "off"
+	PLAYER_IMAGE_FILE        = "player" + comp.FILE_EXTENSION
 	UPDATE_RATE_SEC          = time.Second
 	POLLING_RATE_STATE_SEC   = time.Second * 5
 	VOLUME_INCREMENT_PERCENT = 5
@@ -63,6 +63,7 @@ type Player struct {
 	Image *comp.Image
 
 	Session *auth.Session
+	Config  *config.Config
 	Player  *player.Player
 	State   *player.State
 
@@ -76,20 +77,20 @@ type Player struct {
 }
 
 func NewPlayerView(
-	auth *auth.Session, player *player.Player, c *config.Config,
+	auth *auth.Session, player *player.Player, cfg *config.Config,
 ) *Player {
-	cd, _ := os.UserCacheDir()
-	path := filepath.Join(cd, config.APPNAME, "player.jpeg")
-
 	pv := &Player{
 		Session: auth,
 		Player:  player,
+		Config:  cfg,
 
 		PlayerDetails: &PlayerDetails{},
 		StatusBar:     &StatusBar{},
 		ViewStatus:    &ViewStatus{CurrentView: PLAYER_VIEW},
-		Image:         &comp.Image{FilePath: path},
+		Image:         &comp.Image{FilePath: filepath.Join(cfg.CachePath(), IMAGES_FOLDER_NAME, PLAYER_IMAGE_FILE)},
 	}
+
+	os.MkdirAll(filepath.Join(cfg.CachePath(), IMAGES_FOLDER_NAME), os.ModePerm)
 
 	pv.UpdateStateSync()
 
@@ -104,23 +105,23 @@ func NewPlayerView(
 		NoPlayer   lg.Style
 	}{
 		NowPlaying: lg.NewStyle().
-			Bold(c.Player.Style.StatusBar.NowPlaying.Bold).
-			Foreground(lg.Color(c.Player.Style.StatusBar.NowPlaying.Foreground)).
-			Background(lg.Color(c.Player.Style.StatusBar.NowPlaying.Background)).
+			Bold(cfg.Player.StatusBar.Style.NowPlaying.Bold).
+			Foreground(lg.Color(cfg.Player.StatusBar.Style.NowPlaying.Foreground)).
+			Background(lg.Color(cfg.Player.StatusBar.Style.NowPlaying.Background)).
 			PaddingLeft(1).
 			PaddingRight(1),
 
 		Paused: lg.NewStyle().
-			Bold(c.Player.Style.StatusBar.Paused.Bold).
-			Foreground(lg.Color(c.Player.Style.StatusBar.Paused.Foreground)).
-			Background(lg.Color(c.Player.Style.StatusBar.Paused.Background)).
+			Bold(cfg.Player.StatusBar.Style.Paused.Bold).
+			Foreground(lg.Color(cfg.Player.StatusBar.Style.Paused.Foreground)).
+			Background(lg.Color(cfg.Player.StatusBar.Style.Paused.Background)).
 			PaddingLeft(1).
 			PaddingRight(1),
 
 		NoPlayer: lg.NewStyle().
-			Bold(c.Player.Style.StatusBar.NoPlayer.Bold).
-			Foreground(lg.Color(c.Player.Style.StatusBar.NoPlayer.Foreground)).
-			Background(lg.Color(c.Player.Style.StatusBar.NoPlayer.Background)).
+			Bold(cfg.Player.StatusBar.Style.NoPlayer.Bold).
+			Foreground(lg.Color(cfg.Player.StatusBar.Style.NoPlayer.Foreground)).
+			Background(lg.Color(cfg.Player.StatusBar.Style.NoPlayer.Background)).
 			PaddingLeft(1).
 			PaddingRight(1),
 	}
@@ -140,7 +141,7 @@ func (pv *Player) EnsureProgressSynced() {
 	// the update method.
 	pv.StatusBar.Update(pv.State)
 
-	if pv.State.IsPlaying {
+	if pv.State.IsPlaying && pv.ProgressMs < pv.State.Track.DurationMs {
 		pv.ProgressMs += int(UPDATE_RATE_SEC.Milliseconds())
 	}
 
@@ -172,7 +173,7 @@ func (pv *Player) UpdateContent(term comp.Terminal) {
 				pv.Image.Update(pv.State.Track.Album.Images[0].Url)
 
 				return comp.Join([]comp.Content{
-					pv.Image.AsciiSmall().Content(),
+					pv.Image.AsciiSmall(pv.Config).Content(),
 					pv.StatusBar.Content(),
 					pv.PlayerDetails.Content(pv.State.Track, pv.ProgressMs, pv.State),
 				}, "\n\n")
@@ -185,7 +186,7 @@ func (pv *Player) UpdateContent(term comp.Terminal) {
 				pv.Image.Update(pv.State.Track.Album.Images[0].Url)
 
 				return comp.Join([]comp.Content{
-					pv.Image.AsciiNormal().Content(),
+					pv.Image.AsciiNormal(pv.Config).Content(),
 					pv.StatusBar.Content(),
 					pv.PlayerDetails.Content(pv.State.Track, pv.ProgressMs, pv.State),
 				}, "\n\n")
@@ -195,8 +196,9 @@ func (pv *Player) UpdateContent(term comp.Terminal) {
 		switch pv.State {
 		case nil:
 			return comp.Join([]comp.Content{
+				"",
 				pv.StatusBar.Content().Append('\n', 10).Prepend('\n', 12),
-				pv.ViewStatus.Content(),
+				pv.ViewStatus.Content(pv.Config),
 			}, "\n\n")
 
 		default:
@@ -205,10 +207,11 @@ func (pv *Player) UpdateContent(term comp.Terminal) {
 			}
 
 			return comp.Join([]comp.Content{
-				pv.Image.AsciiNormal().Content(),
+				"",
+				pv.Image.AsciiNormal(pv.Config).Content(),
 				pv.StatusBar.Content(),
 				pv.PlayerDetails.Content(pv.State.Track, pv.ProgressMs, pv.State),
-				pv.ViewStatus.Content(),
+				pv.ViewStatus.Content(pv.Config),
 			}, "\n\n")
 		}
 	}()
@@ -293,7 +296,6 @@ type PlayerDetails struct {
 // Updates PlayerDetails with information in given state and track.
 func (pd *PlayerDetails) Update(progressMs int, state *player.State) {
 	if state == nil || state.Device == nil || state.Track == nil {
-		errors.Log(errors.PlayerViewInvalidState.New("invalid state passed, cannot update player details"))
 		return
 	}
 
@@ -319,35 +321,6 @@ func (pd *PlayerDetails) Update(progressMs int, state *player.State) {
 	}
 }
 
-// Renders the player details as a string.
-func (pd *PlayerDetails) Render(track *spotify.Track, progressMs int, state *player.State) string {
-	pd.Update(progressMs, state)
-
-	title := comp.Content(fmt.Sprintf("%s - %s", pd.Track, pd.Artists))
-
-	timer := comp.Content(fmt.Sprintf("%sm:%ss / %sm:%ss", pd.ProgressMin, pd.ProgressSec, pd.DurationMin, pd.DurationSec))
-
-	var repeat string
-	switch state.RepeatState {
-	case "off":
-		repeat = "off"
-	default:
-		repeat = "on"
-	}
-
-	var shuffle string
-	switch state.ShuffleState {
-	case true:
-		shuffle = "on"
-	default:
-		shuffle = "off"
-	}
-
-	options := comp.Content(fmt.Sprintf("vol: %s%% sfl: %v rpt: %v", pd.VolumePercent, shuffle, repeat))
-
-	return comp.Join([]comp.Content{title, timer, options}, "\n\n").String()
-}
-
 // Renders the player details as a content string.
 func (pd *PlayerDetails) Content(track *spotify.Track, progressMs int, state *player.State) comp.Content {
 	pd.Update(progressMs, state)
@@ -358,18 +331,18 @@ func (pd *PlayerDetails) Content(track *spotify.Track, progressMs int, state *pl
 
 	var repeat string
 	switch state.RepeatState {
-	case "off":
-		repeat = "off"
+	case DISABLED:
+		repeat = DISABLED
 	default:
-		repeat = "on"
+		repeat = ENABLED
 	}
 
 	var shuffle string
 	switch state.ShuffleState {
 	case true:
-		shuffle = "on"
+		shuffle = ENABLED
 	default:
-		shuffle = "off"
+		shuffle = DISABLED
 	}
 
 	options := comp.Content(fmt.Sprintf("Vol: %s%%  Sfl: %v  Rep: %v", pd.VolumePercent, shuffle, repeat))

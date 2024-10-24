@@ -14,13 +14,12 @@ import (
 	"github.com/jedib0t/go-pretty/v6/table"
 )
 
-// TEMP
-// Just a random image from a youtube channel.
-const DEFAULT_PLAYLIST_IMAGE_URL = "https://yt3.googleusercontent.com/Rrn4HYgcjL1us1TVcr2MjePqJ6fPvKwCNZ6STs4-8oUyJg0Z86xJs1FFEnVQ8mshVeY31nIjxw=s160-c-k-c0x00ffffff-no-rj"
-
 const (
-	MAX_PLAYLIST_WIDTH      = 35
-	MAX_PLAYLIST_ITEM_WIDTH = 30
+	DEFAULT_PLAYLIST_IMAGE_URL = "https://i.pinimg.com/control/564x/84/29/d1/8429d1c27414bdf99dc5adf9b25a96b3.jpg"
+	IMAGES_FOLDER_NAME         = "assets"
+	MAX_PLAYLIST_WIDTH         = 35
+	MAX_PLAYLIST_ITEM_WIDTH    = 30
+	TOP_MARGIN_PLAYLIST        = 7
 )
 
 // The view that handles everything related to
@@ -49,22 +48,18 @@ type Playlist struct {
 	// current view (player view) highlighted.
 	ViewStatus *ViewStatus
 
-	// Used to access playlists from a selected item or
+	// Used to access playlists from a selected playlistListItem or
 	// selected playlist name.
 	playlistsMap map[list.Item]*spotify.Playlist
 
 	Session *auth.Session
+	Config  *config.Config
 }
 
 // Creates the new playlist view by fetching the user's spotify playlists, determining
 // their images to be displayed. Appending all playlists to a bubbletea list.
-func NewPlaylistView(s *auth.Session, initialTerm comp.Terminal) *Playlist {
-	// Will holds our playlist names as "list items" to be displayed visually.
-	items := []list.Item{}
-
-	// Necessary to cache playlist images.
-	cd, _ := os.UserCacheDir()
-	path := filepath.Join(cd, config.APPNAME, "playlist")
+func NewPlaylistView(s *auth.Session, initialTerm comp.Terminal, cfg *config.Config) *Playlist {
+	playlistListItems := []list.Item{}
 
 	pv := &Playlist{
 		Images:       []comp.Image{},
@@ -73,6 +68,7 @@ func NewPlaylistView(s *auth.Session, initialTerm comp.Terminal) *Playlist {
 		playlistsMap: map[list.Item]*spotify.Playlist{},
 		imageMap:     map[list.Item]*comp.Image{},
 		Session:      s,
+		Config:       cfg,
 	}
 
 	pv.UserPlaylists, _ = spotify.UserPlaylists(pv.Session)
@@ -80,8 +76,10 @@ func NewPlaylistView(s *auth.Session, initialTerm comp.Terminal) *Playlist {
 		return pv
 	}
 
+	os.MkdirAll(filepath.Join(cfg.CachePath(), IMAGES_FOLDER_NAME), os.ModePerm)
+
 	for i, playlist := range *pv.UserPlaylists {
-		pv.Images = append(pv.Images, comp.Image{FilePath: path + fmt.Sprint(i) + ".jpeg"})
+		pv.Images = append(pv.Images, comp.Image{FilePath: filepath.Join(cfg.CachePath(), IMAGES_FOLDER_NAME, playlist.ID+comp.FILE_EXTENSION)})
 
 		if len(playlist.Images) != 0 {
 			pv.Images[i].Update(playlist.Images[0].Url)
@@ -89,68 +87,55 @@ func NewPlaylistView(s *auth.Session, initialTerm comp.Terminal) *Playlist {
 			pv.Images[i].Update(DEFAULT_PLAYLIST_IMAGE_URL)
 		}
 
-		item := comp.ListItem(comp.Content(playlist.Name).AdjustFit(MAX_PLAYLIST_ITEM_WIDTH))
-		items = append(items, item)
+		playlistListItem := comp.ListItem(comp.Content(playlist.Name).AdjustFit(MAX_PLAYLIST_ITEM_WIDTH))
+		playlistListItems = append(playlistListItems, playlistListItem)
 
-		pv.imageMap[item] = &pv.Images[i]
-		pv.playlistsMap[item] = &playlist
+		pv.imageMap[playlistListItem] = &pv.Images[i]
+		pv.playlistsMap[playlistListItem] = &playlist
 	}
 
-	pv.PlaylistList = PlaylistList{list: comp.NewDefaultList(items, "Playlists")}
-
-	// Sets the initial choice, else the list will not move.
-	if len(items) > 0 {
-		pv.PlaylistList.choice = (*pv.UserPlaylists)[0].Name
-	}
+	pv.PlaylistList = PlaylistList{list: comp.NewDefaultList(playlistListItems, "Playlists")}
 
 	return pv
 }
 
 // Updates the content to be displayed based on the dimensions of the terminal.
 func (pv *Playlist) UpdateContent(term comp.Terminal) {
-	var ascii comp.Content
-	container := comp.NewDefaultTable()
-	t := comp.NewDefaultTable()
+	mainContainer := comp.NewDefaultTable()
+	leftContainer := comp.NewDefaultTable()
 
 	pv.PlaylistInfo.Update(pv.GetSelectedPlaylist())
 
 	vs := ViewStatus{CurrentView: PLAYLIST_VIEW}
 
 	pv.Content = func() comp.Content {
-		t.AppendRow(table.Row{
+		leftContainer.AppendRow(table.Row{
 			comp.Join([]comp.Content{
-				pv.PlaylistList.Content().
-					Prepend('\n', 1),
-
-				comp.Content("").Append(' ', MAX_PLAYLIST_WIDTH),
-			}, "\n"),
+				pv.PlaylistList.Content().Prepend('\n', 1),
+				comp.InvisibleBar(MAX_PLAYLIST_WIDTH),
+			}),
 		})
 
-		ascii = pv.SelectedImage().AsciiSmall().Content().
-			Append('\n', 1).
-			PadLinesLeft(2)
-
-		container.AppendRow(table.Row{
-			comp.Content(t.Render()),
-			ascii,
+		mainContainer.AppendRow(table.Row{
+			comp.Content(leftContainer.Render()),
+			pv.SelectedImage().AsciiSmall(pv.Config).Content().Append('\n', 1).PadLinesLeft(2),
 		})
 
 		if term.WidthIsSmall() || term.HeightIsSmall() {
 			return comp.Join([]comp.Content{
-				"\n",
-				comp.Content(container.Render()).Append('\n', 1).CenterHorizontal(term, -2),
-				pv.PlaylistInfo.Content(term).CenterHorizontal(term),
-				comp.Content("").Append('\n', 2),
-			}, "\n").Prepend('\n', 5).CenterVertical(term)
+				comp.InvisibleBarV(TOP_MARGIN_PLAYLIST),
+				comp.Content(mainContainer.Render()).Append('\n', 1).CenterHorizontal(term, -2),
+				pv.PlaylistInfo.Content(term).Append('\n', 1).CenterHorizontal(term),
+				comp.InvisibleBarV(1),
+			}).CenterVertical(term)
 		}
 
 		return comp.Join([]comp.Content{
-			"\n",
-			comp.Content(container.Render()).Append('\n', 2).CenterHorizontal(term),
-			pv.PlaylistInfo.Content(term).CenterHorizontal(term),
-			"",
-			vs.Content().CenterHorizontal(term),
-		}, "\n").Prepend('\n', 5).CenterVertical(term)
+			comp.InvisibleBarV(TOP_MARGIN_PLAYLIST),
+			comp.Content(mainContainer.Render()).Append('\n', 2),
+			pv.PlaylistInfo.Content(term).Append('\n', 2),
+			vs.Content(pv.Config),
+		}).CenterVertical(term).CenterHorizontal(term)
 	}()
 }
 
@@ -190,9 +175,9 @@ func (pi *PlaylistInfo) Update(playlist *spotify.Playlist) {
 func (pi PlaylistInfo) Content(term comp.Terminal) comp.Content {
 	return comp.Join(
 		[]string{
-			pi.Name.AdjustFit(term).String() + "\n",
-			"Tracks: " + fmt.Sprint(pi.TotalTracks),
-		}, "\n")
+			pi.Name.AdjustFit(term).String(),
+			"\nTracks: " + fmt.Sprint(pi.TotalTracks),
+		})
 }
 
 type PlaylistName string
@@ -245,6 +230,6 @@ func (pl PlaylistList) View() string {
 	return pl.list.View()
 }
 
-func (pl PlaylistList) Init() tea.Cmd {
+func (_ PlaylistList) Init() tea.Cmd {
 	return nil
 }

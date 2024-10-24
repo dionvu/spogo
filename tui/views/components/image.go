@@ -6,14 +6,16 @@ import (
 	"os"
 
 	"github.com/TheZoraiz/ascii-image-converter/aic_package"
+	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/err"
 )
 
 const (
+	FILE_EXTENSION      = ".jpeg"
 	ASCII_SMALL_HEIGHT  = 22
-	ASCII_SMALL_WIDTH   = 11
-	ASCII_MEDIUM_HEIGHT = 34
-	ASCII_MEDIUM_WIDTH  = 16
+	ASCII_SMALL_WIDTH   = ASCII_SMALL_HEIGHT / 2
+	ASCII_MEDIUM_HEIGHT = 32
+	ASCII_MEDIUM_WIDTH  = ASCII_MEDIUM_HEIGHT / 2
 )
 
 // Image is a struct that allows caching of the Image
@@ -42,22 +44,22 @@ func (a Ascii) Content() Content {
 
 // Shorthand for rendering image as ascii with size
 // normal flags.
-func (i *Image) AsciiNormal() Ascii {
-	return i.Ascii(AsciiFlagsNormal())
-}
+func (i *Image) AsciiNormal(cfg *config.Config) Ascii {
+	if !cfg.Ascii.Enabled {
+		return Ascii(InvisibleBarV(ASCII_MEDIUM_HEIGHT/2 - 1).PadLinesLeft(ASCII_MEDIUM_WIDTH))
+	}
 
-func (i *Image) AsciiNormalBW() Ascii {
-	return i.Ascii(AsciiFlagsNormalBW())
+	return i.Ascii(AsciiFlagsNormal(cfg))
 }
 
 // Shorthand for rendering image as ascii with size
 // small flags.
-func (i *Image) AsciiSmall() Ascii {
-	return i.Ascii(AsciiFlagsSmall())
-}
+func (i *Image) AsciiSmall(cfg *config.Config) Ascii {
+	if !cfg.Ascii.Enabled {
+		return Ascii(InvisibleBarV(ASCII_SMALL_HEIGHT/2 - 1).PadLinesLeft(ASCII_SMALL_WIDTH))
+	}
 
-func (i *Image) AsciiSmallBW() Ascii {
-	return i.Ascii(AsciiFlagsSmallBW())
+	return i.Ascii(AsciiFlagsSmall(cfg))
 }
 
 // Renders the ascii as a string.
@@ -102,40 +104,35 @@ func (img *Image) Cache() error {
 	return nil
 }
 
-func AsciiFlagsNormal() aic_package.Flags {
+func AsciiFlagsNormal(cfg *config.Config) aic_package.Flags {
 	flags := aic_package.DefaultFlags()
 	flags.Dimensions = []int{ASCII_MEDIUM_HEIGHT, ASCII_MEDIUM_WIDTH}
-	flags.Colored = true
+	flags.Threshold = cfg.Ascii.Threshold
+
+	if cfg.Ascii.Grayscale {
+		flags.Grayscale = true
+	} else {
+		flags.Colored = true
+	}
+
 	flags.Braille = true
-	flags.Threshold = 20
+
 	return flags
 }
 
-func AsciiFlagsNormalBW() aic_package.Flags {
+func AsciiFlagsSmall(cfg *config.Config) aic_package.Flags {
 	flags := aic_package.DefaultFlags()
-	// flags.Colored = false
-	flags.Grayscale = true
-	flags.Dimensions = []int{ASCII_MEDIUM_HEIGHT, ASCII_MEDIUM_WIDTH}
-	flags.Braille = true
-	flags.Threshold = 80
-	return flags
-}
-
-func AsciiFlagsSmall() aic_package.Flags {
-	flags := aic_package.DefaultFlags()
-	flags.Colored = true
 	flags.Dimensions = []int{ASCII_SMALL_HEIGHT, ASCII_SMALL_WIDTH}
-	flags.Braille = true
-	flags.Threshold = 20
-	return flags
-}
 
-func AsciiFlagsSmallBW() aic_package.Flags {
-	flags := aic_package.DefaultFlags()
-	// flags.Colored = false
-	flags.Grayscale = true
-	flags.Dimensions = []int{ASCII_SMALL_HEIGHT, ASCII_SMALL_WIDTH}
+	flags.Threshold = cfg.Ascii.Threshold
+
+	if cfg.Ascii.Grayscale {
+		flags.Grayscale = true
+	} else {
+		flags.Colored = true
+	}
+
 	flags.Braille = true
-	flags.Threshold = 80
+
 	return flags
 }

@@ -89,7 +89,7 @@ func (p *Player) State(s *auth.Session) (*State, error) {
 	}
 
 	var track spotify.Track
-	var episode spotify.Episode
+	// var episode spotify.Episode
 
 	if err := json.Unmarshal(itemBytes, &track); err == nil {
 		ps.Track = &track
@@ -97,11 +97,11 @@ func (p *Player) State(s *auth.Session) (*State, error) {
 		return ps, nil
 	}
 
-	if err := json.Unmarshal(itemBytes, &episode); err == nil {
-		ps.Episode = &episode
-
-		return ps, nil
-	}
+	// if err := json.Unmarshal(itemBytes, &episode); err == nil {
+	// 	ps.Episode = &episode
+	//
+	// 	return ps, nil
+	// }
 
 	err = errors.HTTP.New("response body is neither type track or episode")
 	errors.Log(err)

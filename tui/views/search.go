@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	lg "github.com/charmbracelet/lipgloss"
+	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/err"
 	"github.com/dionvu/spogo/spotify"
 	"github.com/dionvu/spogo/spotify/auth"
@@ -21,6 +22,7 @@ const (
 	LEFT_WIDTH            = 21
 	TEXT_INPUT_CHAR_LIMIT = 156
 	SEARCH_RESULT_LIMIT   = 42
+	TOP_MARGIN_SEARCH     = 8
 	MAX_RESULT_ITEM_WIDTH = MAX_RESULT_WIDTH - 5
 	SEARCH_VIEW_WIDTH     = LEFT_WIDTH + MAX_RESULT_WIDTH
 
@@ -34,18 +36,15 @@ var SEARCH_TYPES = []string{TRACK, ALBUM, PLAYLIST}
 type Search struct {
 	Input    SearchQuery
 	TypeList SearchTypeList
-
-	// Used to map the selected search
-	// type item to the search type as
-	// a string.
-	typeMap map[list.Item]string
-
-	Results Results
+	Results  Results
+	Config   *config.Config
 
 	session *auth.Session
+
+	typeMap map[list.Item]string
 }
 
-func NewSearch(session *auth.Session) Search {
+func NewSearch(session *auth.Session, cfg *config.Config) Search {
 	searchTypeListItemMap := map[list.Item]string{}
 	searchTypeListItems := make([]list.Item, len(SEARCH_TYPES))
 
@@ -56,6 +55,8 @@ func NewSearch(session *auth.Session) Search {
 	}
 
 	return Search{
+		session:  session,
+		Config:   cfg,
 		Input:    NewSearchQuery(),
 		TypeList: NewSearchTypeList(searchTypeListItems),
 		typeMap:  searchTypeListItemMap,
@@ -134,10 +135,10 @@ func (s Search) View(term comp.Terminal, currentView string) string {
 		})
 
 		return comp.Join([]comp.Content{
-			comp.InvisibleBarV(6),
+			comp.InvisibleBarV(TOP_MARGIN_SEARCH),
 			comp.Content(mainContainer.Render()),
 			"",
-			details,
+			details.Append('\n', 1),
 			comp.InvisibleBar(SEARCH_VIEW_WIDTH).Append('\n', 1),
 		}).CenterVertical(term).CenterHorizontal(term).String()
 	}
@@ -149,12 +150,12 @@ func (s Search) View(term comp.Terminal, currentView string) string {
 	})
 
 	return comp.Join([]comp.Content{
-		comp.InvisibleBarV(6),
+		comp.InvisibleBarV(TOP_MARGIN_SEARCH),
 		comp.Content(mainContainer.Render()),
 		"\n",
-		details,
+		details.Append('\n', 1),
 		comp.InvisibleBar(SEARCH_VIEW_WIDTH),
-		ViewStatus{CurrentView: SEARCH_VIEW_RESULTS}.Content(),
+		ViewStatus{CurrentView: SEARCH_VIEW_RESULTS}.Content(s.Config),
 	}).CenterVertical(term).CenterHorizontal(term).String()
 }
 
@@ -287,7 +288,7 @@ func (r Results) Content() comp.Content {
 	})
 }
 
-func (r Results) init() tea.Cmd {
+func (_ Results) init() tea.Cmd {
 	return nil
 }
 
@@ -342,7 +343,7 @@ func (m SearchTypeList) View() string {
 	return m.list.View()
 }
 
-func (m SearchTypeList) Init() tea.Cmd {
+func (_ SearchTypeList) Init() tea.Cmd {
 	return nil
 }
 
