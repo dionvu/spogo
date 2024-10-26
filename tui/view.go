@@ -9,16 +9,16 @@ import (
 	"github.com/dionvu/spogo/player"
 	"github.com/dionvu/spogo/spotify"
 	"github.com/dionvu/spogo/tui/views"
+	comp "github.com/dionvu/spogo/tui/views/components"
 	"github.com/ktr0731/go-fuzzyfinder"
 )
-
-const EMPTY = "" // lol
 
 func (p *Program) View() string {
 	switch p.CurrentView {
 	case views.PLAYER_VIEW:
-		if p.Player.State != nil && p.Player.State.Episode != nil {
-			return "episode and podcast support is coming!"
+		if p.Player.State != nil && p.Player.State.CurrentPlayingType == views.EPISODE {
+			return comp.Content("Does not support podcasts, but support is coming soon!").
+				CenterVertical(p.Terminal).CenterHorizontal(p.Terminal).String()
 		}
 
 		return p.Player.View(p.Terminal)
@@ -27,7 +27,7 @@ func (p *Program) View() string {
 		return p.Playlist.View(p.Player, p.Terminal)
 
 	case views.HELP_VIEW:
-		return "idk man just press them keys"
+		return p.Help.View()
 
 	case views.REAUTH_VIEW:
 		err := p.session.Reauth(p.Config)

@@ -12,40 +12,32 @@ import (
 )
 
 const (
-	KEY_ESC      = "esc"
-	KEY_ENTER    = "enter"
-	KEY_QUIT     = "q"
-	KEY_QUIT_ALT = "ctrl+c"
-
-	KEY_VISUAL_REFRESH = "ctrl+r"
-
-	KEY_PLAYER_VIEW      = "f1"
-	KEY_PLAYER_VIEW_ALT  = "ctrl+v"
-	KEY_PLAY_PAUSE       = " "
-	KEY_TOGGLE_SHUFFLING = "s"
-	KEY_TOGGLE_REPEAT    = "r"
-
-	KEY_PLAYLIST_VIEW       = "f2"
-	KEY_PLAYLIST_VIEW_ALT   = "ctrl+p"
-	KEY_FZF_PLAYLIST_TRACKS = "t"
-
-	KEY_SEARCH_VIEW     = "f3"
-	KEY_SEARCH_VIEW_ALT = "/"
-
-	KEY_DEVICE_VIEW = "UNDEFINED"
-
-	KEY_HELP_VIEW     = "f4"
-	KEY_HELP_VIEW_ALT = "ctrl+h"
-
-	KEY_VOLUME_DOWN_BIG   = "["
-	KEY_VOLUME_DOWN_SMALL = "{"
-	KEY_VOLUME_UP_BIG     = "]"
-	KEY_VOLUME_UP_SMALL   = "}"
-
-	KEY_FZF_DEVICES      = "ctrl+d"
-	KEY_FZF_ALBUM_TRACKS = "ctrl+a"
-
+	KEY_ESC                  = "esc"
+	KEY_ENTER                = "enter"
+	KEY_QUIT                 = "q"
+	KEY_QUIT_ALT             = "ctrl+c"
+	KEY_VISUAL_REFRESH       = "ctrl+r"
+	KEY_PLAYER_VIEW          = "f1"
+	KEY_PLAYER_VIEW_ALT      = "ctrl+v"
+	KEY_PLAY_PAUSE           = " "
+	KEY_TOGGLE_SHUFFLING     = "s"
+	KEY_TOGGLE_REPEAT        = "r"
+	KEY_PLAYLIST_VIEW        = "f2"
+	KEY_PLAYLIST_VIEW_ALT    = "ctrl+p"
+	KEY_FZF_PLAYLIST_TRACKS  = "t"
+	KEY_SEARCH_VIEW          = "f3"
+	KEY_SEARCH_VIEW_ALT      = "/"
+	KEY_DEVICE_VIEW          = "UNDEFINED"
+	KEY_HELP_VIEW            = "f4"
+	KEY_HELP_VIEW_ALT        = "ctrl+h"
+	KEY_VOLUME_DOWN_BIG      = "["
+	KEY_VOLUME_DOWN_SMALL    = "{"
+	KEY_VOLUME_UP_BIG        = "]"
+	KEY_VOLUME_UP_SMALL      = "}"
+	KEY_FZF_DEVICES          = "ctrl+d"
+	KEY_FZF_ALBUM_TRACKS     = "ctrl+a"
 	VOLUME_INCREMENT_PERCENT = 5
+	EMPTY                    = ""
 )
 
 // Handles updates associate with the current selected view.
@@ -58,6 +50,12 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if p.CurrentView == views.TERMINAL_WARNING_VIEW && p.Terminal.IsValid() {
 		p.CurrentView = views.PLAYER_VIEW
+	}
+
+	var cmd tea.Cmd
+	if p.CurrentView == views.HELP_VIEW {
+		p.Help, cmd = p.Help.Update(msg)
+		return p, cmd
 	}
 
 	switch msg := msg.(type) {
@@ -223,17 +221,10 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case KEY_SEARCH_VIEW, KEY_SEARCH_VIEW_ALT:
 			// Requires handling priority, logic is at the top.
 
-		// case KEY_DEVICE_VIEW:
-		// 	p.Device.UpdateNumberDevices()
-		// 	p.CurrentView = views.DEVICE_VIEW
-
 		case KEY_HELP_VIEW, KEY_HELP_VIEW_ALT:
 			p.CurrentView = views.HELP_VIEW
 
 		case KEY_ENTER:
-
-			// The enter key has different actions it needs to perform depending on the
-			// current view.
 			switch p.CurrentView {
 			case views.PLAYLIST_VIEW:
 				pl := p.Playlist.GetSelectedPlaylist()

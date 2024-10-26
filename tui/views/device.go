@@ -2,7 +2,10 @@ package views
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/charmbracelet/bubbles/viewport"
+	tea "github.com/charmbracelet/bubbletea"
 	lg "github.com/charmbracelet/lipgloss"
 	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/player"
@@ -93,4 +96,89 @@ func (vs ViewStatus) Content(cfg *config.Config) comp.Content {
 	default:
 		return "Unknown View"
 	}
+}
+
+var (
+	titleStyle = func() lg.Style {
+		b := lg.RoundedBorder()
+		b.Right = "├"
+		return lg.NewStyle().BorderStyle(b).Padding(0, 1)
+	}()
+
+	infoStyle = func() lg.Style {
+		b := lg.RoundedBorder()
+		b.Left = "┤"
+		return titleStyle.BorderStyle(b)
+	}()
+)
+
+type Help struct {
+	content  string
+	viewport viewport.Model
+}
+
+func NewHelpView() Help {
+	content := ""
+
+	x, y := comp.GetTerminalSize()
+
+	vp := viewport.New(int(float64(x)*0.5), int(float64(y)*0.5))
+
+	return Help{content: string(content), viewport: vp}
+}
+
+func (m Help) View() string {
+	return fmt.Sprintf("%s\n%s\n%s", m.headerView(), m.viewport.View(), m.footerView())
+}
+
+func (m Help) headerView() string {
+	title := titleStyle.Render("Pager")
+	line := strings.Repeat("─", max(0, m.viewport.Width-lg.Width(title)))
+	return lg.JoinHorizontal(lg.Center, title, line)
+}
+
+func (m Help) footerView() string {
+	info := infoStyle.Render(fmt.Sprintf("%3.f%%", m.viewport.ScrollPercent()*100))
+	line := strings.Repeat("─", max(0, m.viewport.Width-lg.Width(info)))
+	return lg.JoinHorizontal(lg.Center, line, info)
+}
+
+func (m Help) Update(msg tea.Msg) (Help, tea.Cmd) {
+	var (
+		cmd  tea.Cmd
+		cmds []tea.Cmd
+	)
+
+	// x, y := comp.GetTerminalSize()
+	// m.viewport.Height = int(float64(x) * 0.5)
+	// m.viewport.Width = int(float64(y) * 0.5)
+
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		if k := msg.String(); k == "ctrl+c" || k == "q" || k == "esc" {
+			return m, tea.Quit
+		}
+
+		// case tea.WindowSizeMsg:
+		// 	headerHeight := lg.Height(m.headerView())
+		// 	footerHeight := lg.Height(m.footerView())
+		// 	verticalMarginHeight := headerHeight + footerHeight
+		//
+		// 	m.viewport = viewport.New(msg.Width, msg.Height-verticalMarginHeight)
+		// 	m.viewport.YPosition = headerHeight
+		// 	m.viewport.SetContent(m.content)
+		//
+		// 	m.viewport.YPosition = headerHeight + 1
+		// }
+	}
+
+	// Handle keyboard and mouse events in the viewport
+	m.viewport, cmd = m.viewport.Update(msg)
+	cmds = append(cmds, cmd)
+
+	return m, tea.Batch(cmds...)
+}
+
+func (m Help) Init() tea.Cmd {
+	return nil
 }

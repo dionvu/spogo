@@ -41,6 +41,8 @@ type Program struct {
 
 	Search views.Search
 
+	Help views.Help
+
 	// The programs's current terminal size, this
 	// is updated consistantly.
 	Terminal comp.Terminal
@@ -64,6 +66,7 @@ func New(
 		player:      player,
 		Config:      config,
 		CurrentView: views.PLAYER_VIEW,
+		Help:        views.NewHelpView(),
 	}
 
 	// A nil state here could be due to an inactive device.
@@ -83,7 +86,7 @@ func New(
 }
 
 func (program *Program) Run() error {
-	tp := tea.NewProgram(program, tea.WithAltScreen())
+	tp := tea.NewProgram(program, tea.WithAltScreen(), tea.WithMouseCellMotion())
 	if _, err := tp.Run(); err != nil {
 		return err
 	}

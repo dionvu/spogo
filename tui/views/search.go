@@ -28,6 +28,7 @@ const (
 
 	TRACK    = "track"
 	ALBUM    = "album"
+	EPISODE  = "episode"
 	PLAYLIST = "playlist"
 )
 
