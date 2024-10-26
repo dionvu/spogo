@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Delta456/box-cli-maker/v2"
 	lg "github.com/charmbracelet/lipgloss"
 	"github.com/dionvu/spogo/config"
 	"github.com/dionvu/spogo/err"
@@ -16,6 +17,8 @@ import (
 	"github.com/dionvu/spogo/spotify"
 	"github.com/dionvu/spogo/spotify/auth"
 	comp "github.com/dionvu/spogo/tui/views/components"
+	"github.com/fatih/color"
+	"github.com/jedib0t/go-pretty/v6/table"
 )
 
 const (
@@ -161,6 +164,8 @@ func (pv *Player) EnsureProgressSynced() {
 	}
 }
 
+var Box = box.New(box.Config{Px: 2, Py: 1, Type: "Round", Color: "HiGreen", TitlePos: "Bottom"}) // TEMP
+
 // Updates the view content based on the state of the player,
 // and the current size of the terminal.
 func (pv *Player) UpdateContent(term comp.Terminal) {
@@ -206,13 +211,20 @@ func (pv *Player) UpdateContent(term comp.Terminal) {
 				pv.Image.Update(pv.State.Track.Album.Images[0].Url)
 			}
 
-			return comp.Join([]comp.Content{
-				"",
-				pv.Image.AsciiNormal(pv.Config).Content(),
+			t := comp.NewDefaultTable()
+
+			c := comp.Join([]comp.Content{
+				"\n",
+				pv.PlayerDetails.Content(pv.State.Track, pv.ProgressMs, pv.State).AdjustFit(47),
 				pv.StatusBar.Content(),
-				pv.PlayerDetails.Content(pv.State.Track, pv.ProgressMs, pv.State),
-				pv.ViewStatus.Content(pv.Config),
 			}, "\n\n")
+
+			t.AppendRow(table.Row{
+				pv.Image.AsciiNormal(pv.Config).Content(),
+				c.PadLinesLeft(3),
+			})
+
+			return comp.Content(Box.String("[ Spogo 󰝚 ] "+pv.ViewStatus.Content(pv.Config).String(), comp.InvisibleBar(80).String()+"\n"+t.Render()+"\n"))
 		}
 	}()
 }
@@ -325,7 +337,9 @@ func (pd *PlayerDetails) Update(progressMs int, state *player.State) {
 func (pd *PlayerDetails) Content(track *spotify.Track, progressMs int, state *player.State) comp.Content {
 	pd.Update(progressMs, state)
 
-	title := comp.Content(fmt.Sprintf("%s - %s", pd.Track, pd.Artists))
+	name := pd.Track
+
+	artists := pd.Artists
 
 	timer := comp.Content(fmt.Sprintf("%sm:%ss / %sm:%ss", pd.ProgressMin, pd.ProgressSec, pd.DurationMin, pd.DurationSec))
 
@@ -347,7 +361,12 @@ func (pd *PlayerDetails) Content(track *spotify.Track, progressMs int, state *pl
 
 	options := comp.Content(fmt.Sprintf("Vol: %s%%  Sfl: %v  Rep: %v", pd.VolumePercent, shuffle, repeat))
 
-	return comp.Join([]comp.Content{title, timer, options}, "\n\n")
+	return comp.Join([]comp.Content{
+		comp.Content(color.HiGreenString("Track: ")) + comp.Content(name),
+		comp.Content(color.HiGreenString("Artist: ")) + comp.Content(artists),
+		comp.Content(color.HiGreenString("Progress: ")) + timer,
+		comp.Content(color.HiGreenString("Options: ")) + options,
+	}, "\n\n")
 }
 
 // The title status bar indicating whether the player is

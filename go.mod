@@ -25,6 +25,7 @@ require (
 	github.com/go-openapi/strfmt v0.23.0 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/gookit/color v1.5.4 // indirect
+	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/ktr0731/go-ansisgr v0.1.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
@@ -36,6 +37,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
+	github.com/muesli/reflow v0.3.0 // indirect
 	github.com/muesli/termenv v0.15.2 // indirect
 	github.com/nathan-fiscaletti/consolesize-go v0.0.0-20210105204122-a87d9f614b9d // indirect
 	github.com/nsf/termbox-go v1.1.1 // indirect
@@ -53,6 +55,7 @@ require (
 )
 
 require (
+	github.com/Delta456/box-cli-maker/v2 v2.3.0
 	github.com/TheZoraiz/ascii-image-converter v1.13.1
 	github.com/charmbracelet/bubbletea v1.1.0
 	github.com/fatih/color v1.17.0
