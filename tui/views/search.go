@@ -14,6 +14,7 @@ import (
 	"github.com/dionvu/spogo/spotify"
 	"github.com/dionvu/spogo/spotify/auth"
 	comp "github.com/dionvu/spogo/tui/views/components"
+	"github.com/fatih/color"
 	"github.com/jedib0t/go-pretty/v6/table"
 )
 
@@ -89,12 +90,13 @@ func (s Search) View(term comp.Terminal, currentView string) string {
 
 	s.TypeList = s.TypeList.UpdateSelected(currentView)
 
-	queryAndTypeContainer.AppendRow(table.Row{
-		s.Input.Content().PadLinesLeft(2),
-	})
-
-	queryAndTypeContainer.AppendRow(table.Row{
-		s.TypeList.View(),
+	queryAndTypeContainer.AppendRows([]table.Row{
+		{
+			s.Input.Content(),
+		},
+		{
+			s.TypeList.View(),
+		},
 	})
 
 	queryAndType := comp.Content(queryAndTypeContainer.Render())
@@ -105,22 +107,22 @@ func (s Search) View(term comp.Terminal, currentView string) string {
 			mins, secs := MsToMinutesAndSeconds(s.Results.SelectedTrack().DurationMs)
 			return comp.Join(
 				[]string{
-					s.Results.SelectedTrack().Artists[0].Name,
-					mins + "m:" + secs + "s",
+					color.HiGreenString("Artist: ") + s.Results.SelectedTrack().Artists[0].Name,
+					color.HiGreenString("Duration: ") + mins + "m:" + secs + "s",
 				}, "\n\n")
 
 		case ALBUM:
 			return comp.Join(
 				[]string{
-					s.Results.SelectedAlbum().Artists[0].Name,
-					" Tracks: " + fmt.Sprint(s.Results.SelectedAlbum().TotalTracks),
+					color.HiGreenString("Artist: ") + s.Results.SelectedAlbum().Artists[0].Name,
+					color.HiGreenString("Tracks: ") + fmt.Sprint(s.Results.SelectedAlbum().TotalTracks),
 				}, "\n\n")
 
 		case PLAYLIST:
 			return comp.Join(
 				[]string{
 					s.Results.SelectedPlaylist().Owner.DisplayName,
-					" Tracks: " + fmt.Sprint(s.Results.SelectedPlaylist().Tracks.Total),
+					"Tracks: " + fmt.Sprint(s.Results.SelectedPlaylist().Tracks.Total),
 				}, "\n\n")
 
 		default:
@@ -128,36 +130,33 @@ func (s Search) View(term comp.Terminal, currentView string) string {
 		}
 	}()
 
-	if term.HeightIsSmall() || term.WidthIsSmall() {
-		mainContainer.AppendRow(table.Row{
-			// Offset to match playlist list's position.
-			queryAndType.PadLinesLeft(3),
-			s.Results.Content(),
-		})
-
-		return comp.Join([]comp.Content{
-			comp.InvisibleBarV(TOP_MARGIN_SEARCH),
-			comp.Content(mainContainer.Render()),
-			"",
-			details.Append('\n', 1),
-			comp.InvisibleBar(SEARCH_VIEW_WIDTH).Append('\n', 1),
-		}).CenterVertical(term).CenterHorizontal(term).String()
-	}
+	// if term.HeightIsSmall() || term.WidthIsSmall() {
+	// 	mainContainer.AppendRow(table.Row{
+	// 		// Offset to match playlist list's position.
+	// 		queryAndType.PadLinesLeft(3),
+	// 		s.Results.Content(),
+	// 	})
+	//
+	// 	return comp.Join([]comp.Content{
+	// 		comp.InvisibleBarV(TOP_MARGIN_SEARCH),
+	// 		comp.Content(mainContainer.Render()),
+	// 		"",
+	// 		details.Append('\n', 1),
+	// 		comp.InvisibleBar(SEARCH_VIEW_WIDTH).Append('\n', 1),
+	// 	}).CenterVertical(term).CenterHorizontal(term).String()
+	// }
 
 	mainContainer.AppendRow(table.Row{
-		// Offset to match playlist list's position.
-		queryAndType.PadLinesLeft(MAX_RESULT_WIDTH - LEFT_WIDTH - 10),
+		queryAndType.PadLinesLeft(5),
 		s.Results.Content(),
 	})
 
-	return comp.Join([]comp.Content{
-		comp.InvisibleBarV(TOP_MARGIN_SEARCH),
-		comp.Content(mainContainer.Render()),
-		"\n",
-		details.Append('\n', 1),
-		comp.InvisibleBar(SEARCH_VIEW_WIDTH),
-		ViewStatus{CurrentView: SEARCH_VIEW_RESULTS}.Content(s.Config),
-	}).CenterVertical(term).CenterHorizontal(term).String()
+	c := comp.Join([]comp.Content{
+		"\n" + comp.Content(mainContainer.Render()),
+		"\n" + details.PadLinesLeft(7),
+	}).String()
+
+	return comp.Content(Box.String("[ Spogo 󰝚 ] "+ViewStatus{CurrentView: SEARCH_VIEW_RESULTS}.Content(s.Config).String(), comp.InvisibleBar(80).String()+"\n"+c+"\n")).CenterHorizontal(term).CenterVertical(term).String()
 }
 
 type Results struct {

@@ -106,8 +106,6 @@ func (pv *Playlist) UpdateContent(term comp.Terminal) {
 
 	pv.PlaylistInfo.Update(pv.GetSelectedPlaylist())
 
-	vs := ViewStatus{CurrentView: PLAYLIST_VIEW}
-
 	pv.Content = func() comp.Content {
 		leftContainer.AppendRow(table.Row{
 			comp.Join([]comp.Content{
@@ -134,7 +132,7 @@ func (pv *Playlist) UpdateContent(term comp.Terminal) {
 			comp.InvisibleBarV(TOP_MARGIN_PLAYLIST),
 			comp.Content(mainContainer.Render()).Append('\n', 2),
 			pv.PlaylistInfo.Content(term).Append('\n', 2),
-			vs.Content(pv.Config),
+			ViewStatus{CurrentView: PLAYLIST_VIEW}.Content(pv.Config),
 		}).CenterVertical(term).CenterHorizontal(term)
 	}()
 }
