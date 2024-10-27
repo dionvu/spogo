@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Delta456/box-cli-maker/v2"
@@ -39,7 +40,7 @@ const (
 
 	UPDATE_RATE_SEC          = time.Second
 	POLLING_RATE_STATE_SEC   = time.Second * 5
-	PLAYER_MAX_CHAR_NORMAL   = 50
+	PLAYER_MAX_CHAR          = 50
 	VOLUME_INCREMENT_PERCENT = 5
 	PLAYER_IMAGE_FILE        = "player" + comp.FILE_EXTENSION
 	ENABLED                  = "on"
@@ -209,7 +210,7 @@ func (pv *Player) View(term comp.Terminal) string {
 				return comp.Join([]comp.Content{
 					pv.image.AsciiSmall(pv.config).Content(),
 					pv.statusBar.Content(),
-					pv.playerDetails.Content(pv.State.Track, pv.progressMs, pv.State),
+					pv.playerDetails.Content(pv.State.Track, pv.progressMs, pv.State, PLAYER_MAX_CHAR),
 				}, "\n\n")
 			}
 		}()
@@ -227,7 +228,7 @@ func (pv *Player) View(term comp.Terminal) string {
 				return comp.Join([]comp.Content{
 					pv.image.AsciiNormal(pv.config).Content(),
 					pv.statusBar.Content(),
-					pv.playerDetails.Content(pv.State.Track, pv.progressMs, pv.State),
+					pv.playerDetails.Content(pv.State.Track, pv.progressMs, pv.State, PLAYER_MAX_CHAR),
 				}, "\n\n")
 			}
 		}()
@@ -268,8 +269,8 @@ func (pv *Player) View(term comp.Terminal) string {
 			}
 
 			c := comp.Join([]comp.Content{
-				pv.playerDetails.Content(pv.State.Track, pv.progressMs, pv.State).Prepend(NL, 3).AdjustFit(PLAYER_MAX_CHAR_NORMAL),
-				pv.statusBar.Content(),
+				pv.statusBar.Content().Prepend(NL, 3),
+				pv.playerDetails.Content(pv.State.Track, pv.progressMs, pv.State, PLAYER_MAX_CHAR),
 			}, "\n\n")
 
 			mainContainer := func() comp.Content {
@@ -332,33 +333,38 @@ type PlayerDetails struct {
 }
 
 // Renders the player details as a content string.
-func (pd *PlayerDetails) Content(track *spotify.Track, progressMs int, state *player.State) comp.Content {
+func (pd *PlayerDetails) Content(track *spotify.Track, progressMs int, state *player.State, maxChar int) comp.Content {
 	pd.Update(progressMs, state)
 
 	repeat := func() string {
 		if pd.RepeatState == DISABLED {
-			return DISABLED
+			// return DISABLED
+			return " "
 		}
-		return ENABLED
+		// return ENABLED
+		return "X"
 	}()
 
 	shuffle := func() string {
 		if pd.ShuffleState {
-			return ENABLED
+			// return ENABLED
+			return "X"
 		}
-		return DISABLED
+		// return DISABLED
+		return " "
 	}()
 
 	timer := fmt.Sprintf("%sm:%ss / %sm:%ss", pd.ProgressMin, pd.ProgressSec, pd.DurationMin, pd.DurationSec)
 
-	options := fmt.Sprintf("Vol: %s%%  Sfl: %v  Rep: %v", pd.VolumePercent, shuffle, repeat)
+	options := fmt.Sprintf("Sfl [%v]  Rep [%v]  Vol [%s%%]", shuffle, repeat, pd.VolumePercent)
 
-	return comp.Join([]string{
-		color.HiGreenString("Track:     ") + pd.Track,
-		color.HiGreenString("Artist:    ") + pd.Artists,
-		color.HiGreenString("Album:     ") + pd.Album,
-		color.HiGreenString("Progress:  ") + timer,
-		color.HiGreenString("Options:   ") + options,
+	return comp.Join([]comp.Content{
+		comp.Content(color.HiGreenString("Track:   ") + pd.Track).AdjustFit(maxChar),
+		comp.Content(color.HiGreenString("Artist:  ") + pd.Artists).AdjustFit(maxChar),
+		comp.Content(color.HiGreenString("Album:   ") + pd.Album).AdjustFit(maxChar),
+		comp.Content(color.HiGreenString("Option:  ") + options).AdjustFit(maxChar),
+		// AdjustFit works weird on this so it requires more room
+		comp.Content(progressBar(20, float64(state.ProgressMs)/float64(state.Track.DurationMs)*100) + " " + timer).AdjustFit(maxChar + 10),
 	}, "\n\n")
 }
 
@@ -384,6 +390,21 @@ func (pd *PlayerDetails) Update(progressMs int, state *player.State) {
 			*time = "0" + *time
 		}
 	}
+}
+
+func progressBar(width int, percentage float64) string {
+	completedSegments := int((percentage / 100) * float64(width))
+
+	// Style for completed and remaining segments
+	completedStyle := lg.NewStyle().Background(lg.Color("2")).Foreground(lg.Color("0"))
+	remainingStyle := lg.NewStyle().Foreground(lg.Color("8"))
+
+	// Create completed and remaining parts of the bar
+	completedPart := completedStyle.Render(strings.Repeat(" ", completedSegments))
+	remainingPart := remainingStyle.Render(strings.Repeat("-", width-completedSegments))
+
+	// Combine parts and enclose in brackets
+	return fmt.Sprintf("[%s%s]", completedPart, remainingPart)
 }
 
 // The title status bar indicating whether the player is
