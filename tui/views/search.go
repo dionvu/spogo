@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	MAX_RESULT_WIDTH      = 40
+	MAX_RESULT_WIDTH      = 48
 	LEFT_WIDTH            = 21
 	TEXT_INPUT_CHAR_LIMIT = 156
 	SEARCH_RESULT_LIMIT   = 42
@@ -92,7 +92,7 @@ func (s Search) View(term comp.Terminal, currentView string) string {
 
 	queryAndTypeContainer.AppendRows([]table.Row{
 		{
-			s.Input.Content(),
+			s.Input.Content().PadLinesLeft(2),
 		},
 		{
 			s.TypeList.View(),
@@ -107,28 +107,30 @@ func (s Search) View(term comp.Terminal, currentView string) string {
 			mins, secs := MsToMinutesAndSeconds(s.Results.SelectedTrack().DurationMs)
 			return comp.Join(
 				[]string{
-					color.HiGreenString("Artist: ") + s.Results.SelectedTrack().Artists[0].Name,
-					color.HiGreenString("Duration: ") + mins + "m:" + secs + "s",
+					color.HiGreenString("Artist:    ") + s.Results.SelectedTrack().Artists[0].Name,
+					color.HiGreenString("Duration:  ") + mins + "m:" + secs + "s",
 				}, "\n\n")
 
 		case ALBUM:
 			return comp.Join(
 				[]string{
-					color.HiGreenString("Artist: ") + s.Results.SelectedAlbum().Artists[0].Name,
-					color.HiGreenString("Tracks: ") + fmt.Sprint(s.Results.SelectedAlbum().TotalTracks),
+					color.HiGreenString("Artist:  ") + s.Results.SelectedAlbum().Artists[0].Name,
+					color.HiGreenString("Tracks:  ") + fmt.Sprint(s.Results.SelectedAlbum().TotalTracks),
 				}, "\n\n")
 
 		case PLAYLIST:
 			return comp.Join(
 				[]string{
-					s.Results.SelectedPlaylist().Owner.DisplayName,
-					"Tracks: " + fmt.Sprint(s.Results.SelectedPlaylist().Tracks.Total),
+					color.HiGreenString("Owner:   ") + s.Results.SelectedPlaylist().Owner.DisplayName,
+					color.HiGreenString("Tracks:  ") + fmt.Sprint(s.Results.SelectedPlaylist().Tracks.Total),
 				}, "\n\n")
 
 		default:
 			return "\n\n\n"
 		}
 	}()
+
+	details = details.PadLinesLeft(28).AdjustFit(76)
 
 	// if term.HeightIsSmall() || term.WidthIsSmall() {
 	// 	mainContainer.AppendRow(table.Row{
@@ -147,13 +149,13 @@ func (s Search) View(term comp.Terminal, currentView string) string {
 	// }
 
 	mainContainer.AppendRow(table.Row{
-		queryAndType.PadLinesLeft(5),
+		queryAndType,
 		s.Results.Content(),
 	})
 
 	c := comp.Join([]comp.Content{
 		"\n" + comp.Content(mainContainer.Render()),
-		"\n" + details.PadLinesLeft(7),
+		"\n" + details.PadLinesLeft(4),
 	}).String()
 
 	return comp.Content(Box.String("[ Spogo 󰝚 ] "+ViewStatus{CurrentView: SEARCH_VIEW_RESULTS}.Content(s.Config).String(), comp.InvisibleBar(80).String()+"\n"+c+"\n")).CenterHorizontal(term).CenterVertical(term).String()

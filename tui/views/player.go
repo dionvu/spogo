@@ -43,6 +43,8 @@ const (
 	VOLUME_INCREMENT_PERCENT = 5
 )
 
+var Box = box.New(box.Config{Px: 3, Py: 1, Type: "Round", Color: "HiGreen", TitlePos: "Bottom"}) // TEMP
+
 // The view struct that displays player state
 // details, the current track's album art,
 // and other relevant information to the user.
@@ -164,8 +166,6 @@ func (pv *Player) EnsureProgressSynced() {
 	}
 }
 
-var Box = box.New(box.Config{Px: 2, Py: 1, Type: "Round", Color: "HiGreen", TitlePos: "Bottom"}) // TEMP
-
 // Updates the view content based on the state of the player,
 // and the current size of the terminal.
 func (pv *Player) UpdateContent(term comp.Terminal) {
@@ -215,7 +215,7 @@ func (pv *Player) UpdateContent(term comp.Terminal) {
 
 			c := comp.Join([]comp.Content{
 				"\n",
-				pv.PlayerDetails.Content(pv.State.Track, pv.ProgressMs, pv.State).AdjustFit(47),
+				pv.PlayerDetails.Content(pv.State.Track, pv.ProgressMs, pv.State).AdjustFit(48),
 				pv.StatusBar.Content(),
 			}, "\n\n")
 
@@ -362,10 +362,10 @@ func (pd *PlayerDetails) Content(track *spotify.Track, progressMs int, state *pl
 	options := comp.Content(fmt.Sprintf("Vol: %s%%  Sfl: %v  Rep: %v", pd.VolumePercent, shuffle, repeat))
 
 	return comp.Join([]comp.Content{
-		comp.Content(color.HiGreenString("Track: ")) + comp.Content(name),
-		comp.Content(color.HiGreenString("Artist: ")) + comp.Content(artists),
-		comp.Content(color.HiGreenString("Progress: ")) + timer,
-		comp.Content(color.HiGreenString("Options: ")) + options,
+		comp.Content(color.HiGreenString("Track:     ")) + comp.Content(name),
+		comp.Content(color.HiGreenString("Artist:    ")) + comp.Content(artists),
+		comp.Content(color.HiGreenString("Progress:  ")) + timer,
+		comp.Content(color.HiGreenString("Options:   ")) + options,
 	}, "\n\n")
 }
 

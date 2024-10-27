@@ -1,6 +1,7 @@
 package components
 
 import (
+	"fmt"
 	"strings"
 
 	lg "github.com/charmbracelet/lipgloss"
@@ -138,6 +139,21 @@ func (v Content) PadLinesLeft(count int) Content {
 
 	for i, line := range lines {
 		lines[i] = pad + line
+	}
+
+	return Content(strings.Join(lines, "\n"))
+}
+
+// Appends a i to the front of each line of
+// the string for the and repeats count amount
+// of times.
+func (v Content) DebugHeight() Content {
+	s := string(v)
+
+	lines := strings.Split(s, "\n")
+
+	for i, line := range lines {
+		lines[i] = fmt.Sprint(i) + line
 	}
 
 	return Content(strings.Join(lines, "\n"))

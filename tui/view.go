@@ -77,8 +77,8 @@ func (p *Program) View() string {
 		idx, err := FzfPlaylistTracks(tracks)
 
 		if err == nil {
-			p.player.Play(p.Playlist.GetSelectedPlaylist().Uri, (*tracks)[idx].Uri, p.session)
 			p.CurrentView = views.PLAYER_VIEW
+			p.player.Play(p.Playlist.GetSelectedPlaylist().Uri, (*tracks)[idx].Uri, p.session)
 		} else {
 			p.CurrentView = views.PLAYLIST_VIEW
 		}

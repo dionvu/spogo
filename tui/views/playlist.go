@@ -11,6 +11,7 @@ import (
 	"github.com/dionvu/spogo/spotify"
 	"github.com/dionvu/spogo/spotify/auth"
 	comp "github.com/dionvu/spogo/tui/views/components"
+	"github.com/fatih/color"
 	"github.com/jedib0t/go-pretty/v6/table"
 )
 
@@ -99,44 +100,6 @@ func NewPlaylistView(s *auth.Session, initialTerm comp.Terminal, cfg *config.Con
 	return pv
 }
 
-// Updates the content to be displayed based on the dimensions of the terminal.
-func (pv *Playlist) UpdateContent(term comp.Terminal) {
-	mainContainer := comp.NewDefaultTable()
-	leftContainer := comp.NewDefaultTable()
-
-	pv.PlaylistInfo.Update(pv.GetSelectedPlaylist())
-
-	pv.Content = func() comp.Content {
-		leftContainer.AppendRow(table.Row{
-			comp.Join([]comp.Content{
-				pv.PlaylistList.Content().Prepend('\n', 1),
-				comp.InvisibleBar(MAX_PLAYLIST_WIDTH),
-			}),
-		})
-
-		mainContainer.AppendRow(table.Row{
-			comp.Content(leftContainer.Render()),
-			pv.SelectedImage().AsciiSmall(pv.Config).Content().Append('\n', 1).PadLinesLeft(2),
-		})
-
-		if term.WidthIsSmall() || term.HeightIsSmall() {
-			return comp.Join([]comp.Content{
-				comp.InvisibleBarV(TOP_MARGIN_PLAYLIST),
-				comp.Content(mainContainer.Render()).Append('\n', 1).CenterHorizontal(term, -2),
-				pv.PlaylistInfo.Content(term).Append('\n', 1).CenterHorizontal(term),
-				comp.InvisibleBarV(1),
-			}).CenterVertical(term)
-		}
-
-		return comp.Join([]comp.Content{
-			comp.InvisibleBarV(TOP_MARGIN_PLAYLIST),
-			comp.Content(mainContainer.Render()).Append('\n', 2),
-			pv.PlaylistInfo.Content(term).Append('\n', 2),
-			ViewStatus{CurrentView: PLAYLIST_VIEW}.Content(pv.Config),
-		}).CenterVertical(term).CenterHorizontal(term)
-	}()
-}
-
 // Gets the playlist struct corresponding to the playlist that the user
 // is hovering or selected.
 func (pv *Playlist) GetSelectedPlaylist() *spotify.Playlist {
@@ -150,8 +113,41 @@ func (pv *Playlist) SelectedImage() *comp.Image {
 
 // Updates the content and renders the view as a string.
 func (pv *Playlist) View(playerView *Player, term comp.Terminal) string {
-	pv.UpdateContent(term)
-	return pv.Content.String()
+	mainContainerTable := comp.NewDefaultTable()
+	leftContainerTable := comp.NewDefaultTable()
+
+	pv.PlaylistInfo.Update(pv.GetSelectedPlaylist())
+
+	leftContainerTable.AppendRow(table.Row{
+		"\n" + pv.PlaylistList.Content(),
+	})
+
+	leftContainer := comp.Content(leftContainerTable.Render())
+
+	mainContainerTable.AppendRow(table.Row{
+		pv.SelectedImage().AsciiSmall(pv.Config).Content(),
+		leftContainer.PadLinesLeft(3),
+	})
+
+	mainContainer := comp.Content(mainContainerTable.Render())
+
+	return func() comp.Content {
+		// if term.WidthIsSmall() || term.HeightIsSmall() {
+		// 	return comp.Join([]comp.Content{
+		// 		mainContainer.Append('\n', 1).CenterHorizontal(term, -2),
+		// 		pv.PlaylistInfo.Content(term).Append('\n', 1).CenterHorizontal(term),
+		// 	})
+		// }
+
+		return comp.Content(Box.String(
+			"[ Spogo 󰝚 ] "+ViewStatus{CurrentView: PLAYLIST_VIEW}.Content(pv.Config).String(),
+			comp.InvisibleBar(80).String()+"\n"+
+				comp.Join([]comp.Content{
+					"\n" + mainContainer,
+					"\n" + pv.PlaylistInfo.Content(term).PadLinesLeft(2) + "\n",
+				}).String())) +
+			"\n"
+	}().CenterVertical(term, 1).CenterHorizontal(term).String()
 }
 
 // The detailed infomation about a playlist to
@@ -173,9 +169,9 @@ func (pi *PlaylistInfo) Update(playlist *spotify.Playlist) {
 func (pi PlaylistInfo) Content(term comp.Terminal) comp.Content {
 	return comp.Join(
 		[]string{
-			pi.Name.AdjustFit(term).String(),
-			"\nTracks: " + fmt.Sprint(pi.TotalTracks),
-		})
+			color.HiGreenString("Name:    ") + pi.Name.String(),
+			color.HiGreenString("Tracks:  ") + fmt.Sprint(pi.TotalTracks),
+		}, "\n\n")
 }
 
 type PlaylistName string
