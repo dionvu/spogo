@@ -77,3 +77,24 @@ func AlbumTracks(s *auth.Session, albumID string) (*[]AlbumTrack, error) {
 
 	return &response.Items, nil
 }
+
+// Returns a string of every artist seperated
+// by a comma.
+func (a Album) ArtistsString(count ...int) string {
+	numArtists := len(a.Artists)
+
+	if len(count) > 0 {
+		numArtists = min(numArtists, count[0])
+	}
+
+	s := ""
+	for i := 0; i < numArtists; i++ {
+		s += a.Artists[i].Name
+
+		if i != numArtists-1 {
+			s += ", "
+		}
+	}
+
+	return s
+}

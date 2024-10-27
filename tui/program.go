@@ -16,43 +16,39 @@ const (
 	POLLING_RATE_STATE_SEC = time.Second * 5
 )
 
-// The struct that integrates every view
-// into a single cohesive program. Handles
-// updates for views and controls which views
-// are to be displayed.
+// Handles updates for views and controls
+// which views are to be displayed.
 type Program struct {
-	CurrentView string
+	currentView string
 
 	// Tracks player state and current progress,
 	// displaying information in a media player.
-	Player *views.Player
+	playerView views.Player
 
 	// Displays the user's playlists in a list
 	// format, allowing the user to select one
 	// to transfer playback to.
-	Playlist *views.Playlist
+	playlistView views.Playlist
 
-	// Allows the user to search for tracks,
-	// albums, etc., depending on the selection.
-	// SearchType *SearchTypeView
+	// search for albums, tracks, etc. and transfers
+	// playback to desired.
+	search views.Search
 
-	// SearchQuery *SearchQueryView
-	Device *views.Device
-
-	Search views.Search
-
-	Help views.Help
+	// HELP
+	help views.Help
 
 	// The programs's current terminal size, this
 	// is updated consistantly.
-	Terminal comp.Terminal
+	terminal comp.Terminal
 
 	// Stuff necessary to access the spotify api.
 	session *auth.Session
-	player  *player.Player
+
+	// Plays stuff.
+	player *player.Player
 
 	// Configuration options.
-	Config *config.Config
+	config *config.Config
 }
 
 type tickMsg struct{}
@@ -64,9 +60,9 @@ func New(
 	p := &Program{
 		session:     auth,
 		player:      player,
-		Config:      config,
-		CurrentView: views.PLAYER_VIEW,
-		Help:        views.NewHelpView(),
+		config:      config,
+		currentView: views.PLAYER_VIEW,
+		help:        views.NewHelpView(),
 	}
 
 	// A nil state here could be due to an inactive device.
@@ -75,12 +71,11 @@ func New(
 		player.Resume(auth, false)
 	}
 
-	p.Terminal.Width, p.Terminal.Height = comp.GetTerminalSize()
+	p.terminal.Width, p.terminal.Height = comp.GetTerminalSize()
 
-	p.Player = views.NewPlayerView(auth, player, config)
-	p.Playlist = views.NewPlaylistView(auth, p.Terminal, config)
-	p.Device = &views.Device{Session: p.session}
-	p.Search = views.NewSearch(p.session, p.Config)
+	p.playerView = views.NewPlayerView(auth, player, config)
+	p.playlistView = views.NewPlaylistView(auth, p.terminal, config)
+	p.search = views.NewSearch(p.session, p.config)
 
 	return p
 }
@@ -95,7 +90,7 @@ func (program *Program) Run() error {
 }
 
 func (p *Program) Init() tea.Cmd {
-	p.Player.UpdateStateLoop(p.session, p.Config)
+	p.playerView.UpdateStateLoop(p.session, p.config)
 
 	return tea.Tick(UPDATE_RATE_SEC, func(time.Time) tea.Msg {
 		return tickMsg{}

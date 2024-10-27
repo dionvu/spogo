@@ -42,19 +42,19 @@ const (
 
 // Handles updates associate with the current selected view.
 func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	p.Terminal.UpdateSize()
+	p.terminal.UpdateSize()
 
-	if !p.Terminal.IsValid() {
-		p.CurrentView = views.TERMINAL_WARNING_VIEW
+	if !p.terminal.IsValid() {
+		p.currentView = views.TERMINAL_WARNING_VIEW
 	}
 
-	if p.CurrentView == views.TERMINAL_WARNING_VIEW && p.Terminal.IsValid() {
-		p.CurrentView = views.PLAYER_VIEW
+	if p.currentView == views.TERMINAL_WARNING_VIEW && p.terminal.IsValid() {
+		p.currentView = views.PLAYER_VIEW
 	}
 
 	var cmd tea.Cmd
-	if p.CurrentView == views.HELP_VIEW {
-		p.Help, cmd = p.Help.Update(msg)
+	if p.currentView == views.HELP_VIEW {
+		p.help, cmd = p.help.Update(msg)
 		return p, cmd
 	}
 
@@ -63,9 +63,9 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// If state is unaccessible, likely due to user closing
 		// their playerback device, and attempt reconnect to closed device.
 		if p.PlayerState() == nil {
-			p.Player.StatusBar.Update(p.PlayerState())
+			p.playerView.UpdateStatusBar(p.PlayerState())
 
-			if p.Player.State != nil && p.Player.State.IsPlaying {
+			if p.playerView.State != nil && p.playerView.State.IsPlaying {
 				p.player.Resume(p.session, false)
 			} else {
 				p.player.Resume(p.session, true)
@@ -76,7 +76,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			})
 		}
 
-		p.Player.EnsureProgressSynced()
+		p.playerView.EnsureProgressSynced()
 
 		return p, tea.Tick(UPDATE_RATE_SEC, func(time.Time) tea.Msg {
 			return tickMsg{}
@@ -86,36 +86,36 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Prevents search query from activating any commands, enless esc or enter.
 		key := msg.String()
 
-		if p.CurrentView != views.SEARCH_VIEW_QUERY &&
+		if p.currentView != views.SEARCH_VIEW_QUERY &&
 			(key == KEY_SEARCH_VIEW || key == KEY_SEARCH_VIEW_ALT) {
-			p.Search.Input.Text.Focus()
-			p.CurrentView = views.SEARCH_VIEW_QUERY
+			p.search.Input.Text.Focus()
+			p.currentView = views.SEARCH_VIEW_QUERY
 			return p, nil
 		}
 
-		if p.CurrentView == views.SEARCH_VIEW_QUERY && !IsImportantKey(key) {
+		if p.currentView == views.SEARCH_VIEW_QUERY && !IsImportantKey(key) {
 			var cmd tea.Cmd
-			p.Search.Input, cmd = p.Search.Input.Update(msg)
+			p.search.Input, cmd = p.search.Input.Update(msg)
 			return p, cmd
 		}
 
-		if p.CurrentView == views.SEARCH_VIEW_TYPE && !IsImportantKey(key) {
+		if p.currentView == views.SEARCH_VIEW_TYPE && !IsImportantKey(key) {
 			var cmd tea.Cmd
-			p.Search.TypeList, cmd = p.Search.TypeList.Update(msg)
+			p.search.TypeList, cmd = p.search.TypeList.Update(msg)
 			return p, cmd
 		}
 
 		if (key == KEY_SEARCH_VIEW || key == KEY_SEARCH_VIEW_ALT) &&
-			p.CurrentView != views.SEARCH_VIEW_QUERY {
-			p.CurrentView = views.SEARCH_VIEW_QUERY
+			p.currentView != views.SEARCH_VIEW_QUERY {
+			p.currentView = views.SEARCH_VIEW_QUERY
 			return p, nil
 		}
 
 		switch msg.String() {
 		case KEY_ESC:
-			switch p.CurrentView {
+			switch p.currentView {
 			case views.SEARCH_VIEW_QUERY:
-				p.CurrentView = views.PLAYER_VIEW
+				p.currentView = views.PLAYER_VIEW
 			default:
 			}
 
@@ -123,13 +123,13 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return p, tea.Quit
 
 		case KEY_PLAY_PAUSE:
-			err := p.Player.PlayPause()
+			err := p.playerView.PlayPause()
 			if errors.IsReauthenticationErr(err) {
-				p.CurrentView = views.REAUTH_VIEW
+				p.currentView = views.REAUTH_VIEW
 			}
 
 		case KEY_FZF_DEVICES:
-			p.CurrentView = views.DEVICE_FZF_VIEW
+			p.currentView = views.DEVICE_FZF_VIEW
 
 		case KEY_VOLUME_DOWN_BIG:
 			// Spotify doesn't have a volume control for mobile devices.
@@ -145,11 +145,11 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					break
 				}
 
-				err := p.Player.Player.SetVolume(p.session, newVol)
+				err := p.player.SetVolume(p.session, newVol)
 				if errors.IsReauthenticationErr(err) {
-					p.CurrentView = views.REAUTH_VIEW
+					p.currentView = views.REAUTH_VIEW
 				}
-				p.Player.State.Device.VolumePercent = newVol
+				p.playerView.State.Device.VolumePercent = newVol
 			}
 
 		case KEY_VOLUME_UP_BIG:
@@ -165,11 +165,11 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					break
 				}
 
-				err := p.Player.Player.SetVolume(p.session, newVol)
+				err := p.player.SetVolume(p.session, newVol)
 				if errors.IsReauthenticationErr(err) {
-					p.CurrentView = views.REAUTH_VIEW
+					p.currentView = views.REAUTH_VIEW
 				}
-				p.Player.State.Device.VolumePercent = newVol
+				p.playerView.State.Device.VolumePercent = newVol
 			}
 
 		case KEY_VOLUME_DOWN_SMALL:
@@ -185,11 +185,11 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					break
 				}
 
-				err := p.Player.Player.SetVolume(p.session, newVol)
+				err := p.player.SetVolume(p.session, newVol)
 				if errors.IsReauthenticationErr(err) {
-					p.CurrentView = views.REAUTH_VIEW
+					p.currentView = views.REAUTH_VIEW
 				}
-				p.Player.State.Device.VolumePercent = newVol
+				p.playerView.State.Device.VolumePercent = newVol
 			}
 
 		case KEY_VOLUME_UP_SMALL:
@@ -205,74 +205,97 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					break
 				}
 
-				err := p.Player.Player.SetVolume(p.session, newVol)
+				err := p.player.SetVolume(p.session, newVol)
 				if errors.IsReauthenticationErr(err) {
-					p.CurrentView = views.REAUTH_VIEW
+					p.currentView = views.REAUTH_VIEW
 				}
-				p.Player.State.Device.VolumePercent = newVol
+				p.playerView.State.Device.VolumePercent = newVol
 			}
 
 		case KEY_PLAYER_VIEW, KEY_PLAYER_VIEW_ALT:
-			p.CurrentView = views.PLAYER_VIEW
+			p.currentView = views.PLAYER_VIEW
 
 		case KEY_PLAYLIST_VIEW, KEY_PLAYLIST_VIEW_ALT:
-			p.CurrentView = views.PLAYLIST_VIEW
+			p.currentView = views.PLAYLIST_VIEW
 
 		case KEY_SEARCH_VIEW, KEY_SEARCH_VIEW_ALT:
 			// Requires handling priority, logic is at the top.
 
 		case KEY_HELP_VIEW, KEY_HELP_VIEW_ALT:
-			p.CurrentView = views.HELP_VIEW
+			p.currentView = views.HELP_VIEW
 
 		case KEY_ENTER:
-			switch p.CurrentView {
+			switch p.currentView {
 			case views.PLAYLIST_VIEW:
-				pl := p.Playlist.GetSelectedPlaylist()
+				pl := p.playlistView.GetSelectedPlaylist()
 				p.player.Play(pl.Uri, "", p.session)
 
-				p.Player.UpdateStateSync()
+				p.playerView.UpdateStateSync()
 
 			case views.SEARCH_VIEW_QUERY:
-				p.Search.Input = p.Search.Input.HideCursor()
-				p.CurrentView = views.SEARCH_VIEW_TYPE
+				if p.search.Input.Text.Value() != "" {
+					p.search.Input = p.search.Input.HideCursor()
+					p.currentView = views.SEARCH_VIEW_TYPE
+				}
 
 			case views.SEARCH_VIEW_TYPE:
-				p.Search.Results = p.Search.Results.Refresh(p.Search.Input.Query(), p.Search.SelectedType(), p.session)
-				p.CurrentView = views.SEARCH_VIEW_RESULTS
+				p.search.Results = p.search.Results.Refresh(p.search.Input.Query(), p.search.SelectedType(), p.session)
+				p.currentView = views.SEARCH_VIEW_RESULTS
 
 			case views.SEARCH_VIEW_RESULTS:
-				switch p.Search.SelectedType() {
+
+				switch p.search.SelectedType() {
 				case views.TRACK:
-					err := p.player.Play(p.Search.Results.SelectedTrack().Album.Uri, p.Search.Results.SelectedTrack().Uri, p.session)
-					if errors.IsReauthenticationErr(err) {
-						p.CurrentView = views.REAUTH_VIEW
+					if p.search.Results.SelectedTrack() == nil {
+						return p, nil
 					}
-					p.Player.UpdateStateSync()
+
+					err := p.player.Play(p.search.Results.SelectedTrack().Album.Uri, p.search.Results.SelectedTrack().Uri, p.session)
+					if errors.IsReauthenticationErr(err) {
+						p.currentView = views.REAUTH_VIEW
+					}
+
+					p.playerView.UpdateStateSync()
+
 				case views.ALBUM:
-					err := p.player.Play(p.Search.Results.SelectedAlbum().Uri, "", p.session)
-					if errors.IsReauthenticationErr(err) {
-						p.CurrentView = views.REAUTH_VIEW
+					if p.search.Results.SelectedAlbum() == nil {
+						return p, nil
 					}
-					p.Player.UpdateStateSync()
+
+					err := p.player.Play(p.search.Results.SelectedAlbum().Uri, "", p.session)
+					if errors.IsReauthenticationErr(err) {
+						p.currentView = views.REAUTH_VIEW
+					}
+
+					p.playerView.UpdateStateSync()
 
 				case views.PLAYLIST:
-					err := p.player.Play(p.Search.Results.SelectedPlaylist().Uri, "", p.session)
-					if errors.IsReauthenticationErr(err) {
-						p.CurrentView = views.REAUTH_VIEW
+					if p.search.Results.SelectedPlaylist() == nil {
+						return p, nil
 					}
-					p.Player.UpdateStateSync()
+
+					err := p.player.Play(p.search.Results.SelectedPlaylist().Uri, "", p.session)
+					if errors.IsReauthenticationErr(err) {
+						p.currentView = views.REAUTH_VIEW
+					}
+
+					p.playerView.UpdateStateSync()
+
+				default:
+					return p, nil
 				}
+
 			}
 
 		case KEY_VISUAL_REFRESH:
 			// Refreshes the terminal fixing any visual glitches. This doesn't yet force any
 			// updates to, for example, listed playlist devices.
 			go func() {
-				view := p.CurrentView
+				view := p.currentView
 
-				p.CurrentView = views.REFRESH_VIEW
+				p.currentView = views.REFRESH_VIEW
 				time.Sleep(UPDATE_RATE_SEC)
-				p.CurrentView = view
+				p.currentView = view
 
 				cmd := exec.Command("clear")
 				cmd.Stdout = os.Stdout
@@ -280,12 +303,12 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}()
 
 		case KEY_FZF_PLAYLIST_TRACKS:
-			if p.CurrentView == views.PLAYLIST_VIEW {
-				p.CurrentView = views.PLAYLIST_TRACK_VIEW
+			if p.currentView == views.PLAYLIST_VIEW {
+				p.currentView = views.PLAYLIST_TRACK_VIEW
 			}
 
 		case KEY_FZF_ALBUM_TRACKS:
-			p.CurrentView = views.ALBUM_TRACK_VIEW
+			p.currentView = views.ALBUM_TRACK_VIEW
 
 		case KEY_TOGGLE_SHUFFLING:
 			// Enables or disables shuffling on current album or playlist.
@@ -300,14 +323,14 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "off":
 				err := p.player.Repeat(true, p.session)
 				if errors.IsReauthenticationErr(err) {
-					p.CurrentView = views.REAUTH_VIEW
+					p.currentView = views.REAUTH_VIEW
 				}
 
 				p.PlayerState().RepeatState = "context"
 			default:
 				err := p.player.Repeat(false, p.session)
 				if errors.IsReauthenticationErr(err) {
-					p.CurrentView = views.REAUTH_VIEW
+					p.currentView = views.REAUTH_VIEW
 				}
 
 				p.PlayerState().RepeatState = "off"
@@ -317,18 +340,18 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmd tea.Cmd
 
 		// Handles updates from the playlist list.
-		if p.CurrentView == views.PLAYLIST_VIEW {
-			p.Playlist.PlaylistList, cmd = p.Playlist.PlaylistList.Update(msg)
+		if p.currentView == views.PLAYLIST_VIEW {
+			p.playlistView.PlaylistList, cmd = p.playlistView.PlaylistList.Update(msg)
 			return p, cmd
 		}
 
-		if p.CurrentView == views.SEARCH_VIEW_QUERY {
-			p.Search.Input, cmd = p.Search.Input.Update(msg)
+		if p.currentView == views.SEARCH_VIEW_QUERY {
+			p.search.Input, cmd = p.search.Input.Update(msg)
 			return p, cmd
 		}
 
-		if p.CurrentView == views.SEARCH_VIEW_RESULTS {
-			p.Search.Results, cmd = p.Search.Results.Update(msg)
+		if p.currentView == views.SEARCH_VIEW_RESULTS {
+			p.search.Results, cmd = p.search.Results.Update(msg)
 			return p, cmd
 		}
 	}
@@ -338,7 +361,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // Returns the player state from the model's player view.
 func (p *Program) PlayerState() *player.State {
-	return p.Player.State
+	return p.playerView.State
 }
 
 // Returns is a keys that should always go through,

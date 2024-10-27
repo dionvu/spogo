@@ -144,9 +144,8 @@ func (v Content) PadLinesLeft(count int) Content {
 	return Content(strings.Join(lines, "\n"))
 }
 
-// Appends a i to the front of each line of
-// the string for the and repeats count amount
-// of times.
+// Appends the line number to the beginning
+// of each line.
 func (v Content) DebugHeight() Content {
 	s := string(v)
 

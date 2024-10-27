@@ -21,16 +21,19 @@ import (
 const (
 	MAX_RESULT_WIDTH      = 48
 	LEFT_WIDTH            = 21
-	TEXT_INPUT_CHAR_LIMIT = 156
 	SEARCH_RESULT_LIMIT   = 42
-	TOP_MARGIN_SEARCH     = 8
 	MAX_RESULT_ITEM_WIDTH = MAX_RESULT_WIDTH - 5
-	SEARCH_VIEW_WIDTH     = LEFT_WIDTH + MAX_RESULT_WIDTH
+
+	RESULT_DETAILS_OFFSET  = 28
+	MAX_RESULT_DETAILS_LEN = 76
+	TEXT_INPUT_CHAR_LIMIT  = 156
 
 	TRACK    = "track"
 	ALBUM    = "album"
 	EPISODE  = "episode"
 	PLAYLIST = "playlist"
+
+	NL = '\n'
 )
 
 var SEARCH_TYPES = []string{TRACK, ALBUM, PLAYLIST}
@@ -86,24 +89,29 @@ func (s Search) SelectedType() string {
 // the type selection, and the list of results.
 func (s Search) View(term comp.Terminal, currentView string) string {
 	queryAndTypeContainer := comp.NewDefaultTable()
-	mainContainer := comp.NewDefaultTable()
+	mainContainerTable := comp.NewDefaultTable()
 
 	s.TypeList = s.TypeList.UpdateSelected(currentView)
 
 	queryAndTypeContainer.AppendRows([]table.Row{
-		{
-			s.Input.Content().PadLinesLeft(2),
-		},
-		{
-			s.TypeList.View(),
-		},
+		{s.Input.Content().PadLinesLeft(2)},
+		{s.TypeList.View()},
 	})
 
-	queryAndType := comp.Content(queryAndTypeContainer.Render())
+	mainContainerTable.AppendRow(table.Row{
+		comp.Content(queryAndTypeContainer.Render()),
+		s.Results.Content(),
+	})
+
+	mainContainer := comp.Content(mainContainerTable.Render())
 
 	details := func() comp.Content {
 		switch s.Results.CurrentType {
 		case TRACK:
+			if s.Results.SelectedTrack() == nil {
+				return comp.Content("").Append(NL, 2)
+			}
+
 			mins, secs := MsToMinutesAndSeconds(s.Results.SelectedTrack().DurationMs)
 			return comp.Join(
 				[]string{
@@ -112,13 +120,21 @@ func (s Search) View(term comp.Terminal, currentView string) string {
 				}, "\n\n")
 
 		case ALBUM:
+			if s.Results.SelectedAlbum() == nil {
+				return comp.Content("").Append(NL, 2)
+			}
+
 			return comp.Join(
 				[]string{
-					color.HiGreenString("Artist:  ") + s.Results.SelectedAlbum().Artists[0].Name,
+					color.HiGreenString("Artist:  ") + s.Results.SelectedAlbum().ArtistsString(),
 					color.HiGreenString("Tracks:  ") + fmt.Sprint(s.Results.SelectedAlbum().TotalTracks),
 				}, "\n\n")
 
 		case PLAYLIST:
+			if s.Results.SelectedPlaylist() == nil {
+				return comp.Content("").Append(NL, 2)
+			}
+
 			return comp.Join(
 				[]string{
 					color.HiGreenString("Owner:   ") + s.Results.SelectedPlaylist().Owner.DisplayName,
@@ -126,39 +142,24 @@ func (s Search) View(term comp.Terminal, currentView string) string {
 				}, "\n\n")
 
 		default:
-			return "\n\n\n"
+			return comp.Content("").Append(NL, 3)
 		}
-	}()
+	}().PadLinesLeft(RESULT_DETAILS_OFFSET).AdjustFit(MAX_RESULT_DETAILS_LEN)
 
-	details = details.PadLinesLeft(28).AdjustFit(76)
+	if term.HeightIsSmall() || term.WidthIsSmall() {
+	}
 
-	// if term.HeightIsSmall() || term.WidthIsSmall() {
-	// 	mainContainer.AppendRow(table.Row{
-	// 		// Offset to match playlist list's position.
-	// 		queryAndType.PadLinesLeft(3),
-	// 		s.Results.Content(),
-	// 	})
-	//
-	// 	return comp.Join([]comp.Content{
-	// 		comp.InvisibleBarV(TOP_MARGIN_SEARCH),
-	// 		comp.Content(mainContainer.Render()),
-	// 		"",
-	// 		details.Append('\n', 1),
-	// 		comp.InvisibleBar(SEARCH_VIEW_WIDTH).Append('\n', 1),
-	// 	}).CenterVertical(term).CenterHorizontal(term).String()
-	// }
+	content := comp.Join([]comp.Content{
+		comp.InvisibleBar(GLOBAL_VIEW_WIDTH).Append(NL, 1),
+		mainContainer.Prepend(NL, 1),
+		details.PadLinesLeft(4),
+	}).Append(NL, 1).String()
 
-	mainContainer.AppendRow(table.Row{
-		queryAndType,
-		s.Results.Content(),
-	})
-
-	c := comp.Join([]comp.Content{
-		"\n" + comp.Content(mainContainer.Render()),
-		"\n" + details.PadLinesLeft(4),
-	}).String()
-
-	return comp.Content(Box.String("[ Spogo 󰝚 ] "+ViewStatus{CurrentView: SEARCH_VIEW_RESULTS}.Content(s.Config).String(), comp.InvisibleBar(80).String()+"\n"+c+"\n")).CenterHorizontal(term).CenterVertical(term).String()
+	return comp.Content(
+		Box.String(
+			ViewStatus{CurrentView: SEARCH_VIEW_RESULTS}.Content(s.Config).String(),
+			content),
+	).CenterHorizontal(term).CenterVertical(term).String()
 }
 
 type Results struct {

@@ -61,13 +61,10 @@ func (vs ViewStatus) Content(cfg *config.Config) comp.Content {
 		Selected: lg.NewStyle(),
 	}
 
-	if !cfg.ControlBar.Enabled {
-		return ""
-	}
-
 	switch vs.CurrentView {
 	case PLAYER_VIEW:
 		return comp.Join([]string{
+			"[ Spogo 󰝚 ] ",
 			style.Selected.Render("[ "),
 			style.Selected.Render("F1 Player"),
 			style.Normal.Render(" | F2 Playlists | F3 Search | F4 Help ]"),
@@ -75,6 +72,7 @@ func (vs ViewStatus) Content(cfg *config.Config) comp.Content {
 
 	case PLAYLIST_VIEW:
 		return comp.Join([]string{
+			"[ Spogo 󰝚 ] ",
 			style.Normal.Render("[ F1 Player | "),
 			style.Selected.Render("F2 Playlists"),
 			style.Normal.Render(" | F3 Search | F4 Help ]"),
@@ -82,12 +80,14 @@ func (vs ViewStatus) Content(cfg *config.Config) comp.Content {
 
 	case HELP_VIEW:
 		return comp.Join([]string{
+			"[ Spogo 󰝚 ] ",
 			style.Normal.Render("[ F1 Player | F2 Playlists | F3 Search "),
 			style.Selected.Render("| F4 Help ]"),
 		}, "")
 
 	case SEARCH_VIEW_QUERY, SEARCH_VIEW_TYPE, SEARCH_VIEW_RESULTS:
 		return comp.Join([]string{
+			"[ Spogo 󰝚 ] ",
 			style.Normal.Render("[ F1 Player | F2 Playlists | "),
 			style.Selected.Render("F3 Search"),
 			style.Normal.Render(" | F4 Help ]"),

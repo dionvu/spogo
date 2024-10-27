@@ -59,10 +59,10 @@ type Playlist struct {
 
 // Creates the new playlist view by fetching the user's spotify playlists, determining
 // their images to be displayed. Appending all playlists to a bubbletea list.
-func NewPlaylistView(s *auth.Session, initialTerm comp.Terminal, cfg *config.Config) *Playlist {
+func NewPlaylistView(s *auth.Session, initialTerm comp.Terminal, cfg *config.Config) Playlist {
 	playlistListItems := []list.Item{}
 
-	pv := &Playlist{
+	pv := Playlist{
 		Images:       []comp.Image{},
 		PlaylistInfo: &PlaylistInfo{},
 		ViewStatus:   &ViewStatus{},
@@ -112,42 +112,44 @@ func (pv *Playlist) SelectedImage() *comp.Image {
 }
 
 // Updates the content and renders the view as a string.
-func (pv *Playlist) View(playerView *Player, term comp.Terminal) string {
-	mainContainerTable := comp.NewDefaultTable()
-	leftContainerTable := comp.NewDefaultTable()
-
+func (pv *Playlist) View(playerView Player, term comp.Terminal) string {
 	pv.PlaylistInfo.Update(pv.GetSelectedPlaylist())
 
-	leftContainerTable.AppendRow(table.Row{
-		"\n" + pv.PlaylistList.Content(),
-	})
+	innerContainer := func() comp.Content {
+		t := comp.NewDefaultTable()
 
-	leftContainer := comp.Content(leftContainerTable.Render())
+		t.AppendRow(table.Row{
+			pv.PlaylistList.Content().Prepend(NL, 1),
+		})
 
-	mainContainerTable.AppendRow(table.Row{
-		pv.SelectedImage().AsciiSmall(pv.Config).Content(),
-		leftContainer.PadLinesLeft(3),
-	})
+		return comp.Content(t.Render())
+	}()
 
-	mainContainer := comp.Content(mainContainerTable.Render())
+	mainContainer := func() comp.Content {
+		t := comp.NewDefaultTable()
 
-	return func() comp.Content {
-		// if term.WidthIsSmall() || term.HeightIsSmall() {
-		// 	return comp.Join([]comp.Content{
-		// 		mainContainer.Append('\n', 1).CenterHorizontal(term, -2),
-		// 		pv.PlaylistInfo.Content(term).Append('\n', 1).CenterHorizontal(term),
-		// 	})
-		// }
+		t.AppendRow(table.Row{
+			pv.SelectedImage().AsciiSmall(pv.Config).Content(),
+			innerContainer.PadLinesLeft(3),
+		})
+
+		return comp.Content(t.Render())
+	}()
+
+	content := func() comp.Content {
+		if term.WidthIsSmall() || term.HeightIsSmall() {
+		}
 
 		return comp.Content(Box.String(
-			"[ Spogo 󰝚 ] "+ViewStatus{CurrentView: PLAYLIST_VIEW}.Content(pv.Config).String(),
-			comp.InvisibleBar(80).String()+"\n"+
+			ViewStatus{CurrentView: PLAYLIST_VIEW}.Content(pv.Config).String(),
+			comp.InvisibleBar(GLOBAL_VIEW_WIDTH).Append(NL, 1).String()+
 				comp.Join([]comp.Content{
-					"\n" + mainContainer,
-					"\n" + pv.PlaylistInfo.Content(term).PadLinesLeft(2) + "\n",
-				}).String())) +
-			"\n"
-	}().CenterVertical(term, 1).CenterHorizontal(term).String()
+					mainContainer.Prepend(NL, 1).Append(NL, 1).PadLinesLeft(3),
+					pv.PlaylistInfo.Content(term).PadLinesLeft(4).Append(NL, 1),
+				}).String()))
+	}()
+
+	return content.CenterVertical(term).CenterHorizontal(term).String()
 }
 
 // The detailed infomation about a playlist to

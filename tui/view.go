@@ -14,84 +14,89 @@ import (
 )
 
 func (p *Program) View() string {
-	switch p.CurrentView {
+	switch p.currentView {
 	case views.PLAYER_VIEW:
-		if p.Player.State != nil && p.Player.State.CurrentPlayingType == views.EPISODE {
+		if p.playerView.State != nil && p.playerView.State.CurrentPlayingType == views.EPISODE {
 			return comp.Content("Does not support podcasts, but support is coming soon!").
-				CenterVertical(p.Terminal).CenterHorizontal(p.Terminal).String()
+				CenterVertical(p.terminal).CenterHorizontal(p.terminal).String()
 		}
 
-		return p.Player.View(p.Terminal)
+		return p.playerView.View(p.terminal)
 
 	case views.PLAYLIST_VIEW:
-		return p.Playlist.View(p.Player, p.Terminal)
+		return p.playlistView.View(p.playerView, p.terminal)
 
 	case views.HELP_VIEW:
-		return p.Help.View()
+		return p.help.View()
 
 	case views.REAUTH_VIEW:
-		err := p.session.Reauth(p.Config)
+		err := p.session.Reauth(p.config)
 		if err != nil {
 			log.Fatal("ERR: Failed to reauthenticate: ", err)
 			errors.Log(err)
 		}
-		p.CurrentView = views.PLAYER_VIEW
+
+		p.currentView = views.PLAYER_VIEW
+
+		if p.playerView.State != nil && p.playerView.State.IsPlaying {
+			p.player.Resume(p.session, true)
+		}
 
 		return "reauthenticating..."
 
 	case views.DEVICE_FZF_VIEW:
 		devices, err := player.GetDevices(p.session)
 		if errors.IsReauthenticationErr(err) {
-			p.CurrentView = views.REAUTH_VIEW
+			p.currentView = views.REAUTH_VIEW
 		}
 
 		idx, err := FzfDevices(devices)
 		if err == nil {
-			p.player.SetDevice(&(*devices)[idx], p.Config)
+			p.player.SetDevice(&(*devices)[idx], p.config)
 
-			if p.Player.State != nil && p.Player.State.IsPlaying {
+			if p.playerView.State != nil && p.playerView.State.IsPlaying {
 				p.player.Resume(p.session, true)
 			} else {
 				p.player.Resume(p.session, false)
 			}
 		}
 
-		p.CurrentView = views.PLAYER_VIEW
+		p.currentView = views.PLAYER_VIEW
 
 	case views.PLAYLIST_TRACK_VIEW:
-		playlist := p.Playlist.GetSelectedPlaylist()
+		playlist := p.playlistView.GetSelectedPlaylist()
 
 		if playlist == nil {
-			p.CurrentView = views.PLAYLIST_VIEW
+			p.currentView = views.PLAYLIST_VIEW
 			return EMPTY
 		}
 
 		tracks, err := spotify.PlaylistTracks(p.session, playlist.ID)
 		if tracks == nil || err != nil || len(*tracks) < 1 {
-			p.CurrentView = views.PLAYLIST_VIEW
+			p.currentView = views.PLAYLIST_VIEW
 			return EMPTY
 		}
 
-		p.CurrentView = views.PLAYER_VIEW
+		p.currentView = views.PLAYER_VIEW
 
 		idx, err := FzfPlaylistTracks(tracks)
 
 		if err == nil {
-			p.CurrentView = views.PLAYER_VIEW
-			p.player.Play(p.Playlist.GetSelectedPlaylist().Uri, (*tracks)[idx].Uri, p.session)
+			p.currentView = views.PLAYER_VIEW
+			p.player.Play(p.playlistView.GetSelectedPlaylist().Uri, (*tracks)[idx].Uri, p.session)
 		} else {
-			p.CurrentView = views.PLAYLIST_VIEW
+			p.currentView = views.PLAYLIST_VIEW
 		}
 
 		return EMPTY
 
 	case views.ALBUM_TRACK_VIEW:
-		if p.Player.State == nil || p.Player.State.Track == nil {
-			p.CurrentView = views.PLAYER_VIEW
+		if p.playerView.State == nil || p.playerView.State.Track == nil {
+			p.currentView = views.PLAYER_VIEW
 			return EMPTY
 		}
 
-		album := &p.Player.State.Track.Album
+		album := &p.playerView.State.Track.Album
 
 		tracks, _ := spotify.AlbumTracks(p.session, album.ID)
 
@@ -101,7 +106,7 @@ func (p *Program) View() string {
 		if err == nil {
 			err := p.player.Play(album.Uri, (*tracks)[idx].Uri, p.session)
 			if errors.IsReauthenticationErr(err) {
-				p.CurrentView = views.REAUTH_VIEW
+				p.currentView = views.REAUTH_VIEW
 			}
 
 			go func() {
@@ -110,11 +115,11 @@ func (p *Program) View() string {
 				time.Sleep(time.Second)
 
 				// Syncs state to new song.
-				p.Player.UpdateStateSync()
+				p.playerView.UpdateStateSync()
 			}()
 		}
 
-		p.CurrentView = views.PLAYER_VIEW
+		p.currentView = views.PLAYER_VIEW
 
 		return EMPTY
 
@@ -122,21 +127,10 @@ func (p *Program) View() string {
 		return "Refreshing..."
 
 	case views.TERMINAL_WARNING_VIEW:
-		return p.Terminal.WarningString()
+		return p.terminal.WarningString()
 
 	case views.SEARCH_VIEW_QUERY, views.SEARCH_VIEW_TYPE, views.SEARCH_VIEW_RESULTS:
-		return p.Search.View(p.Terminal, p.CurrentView)
-
-	case views.DEVICE_VIEW:
-		if p.Player.State == nil {
-			return p.Device.View(p.Terminal, nil, p.Config)
-		}
-
-		if p.player.Device() == nil {
-			return p.Device.View(p.Terminal, nil, p.Config)
-		}
-
-		return p.Device.View(p.Terminal, p.player.Device(), p.Config)
+		return p.search.View(p.terminal, p.currentView)
 	}
 
 	return EMPTY

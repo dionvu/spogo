@@ -18,3 +18,16 @@ type AlbumTrack struct {
 	DurationMs int      `json:"duration_ms"`
 	ID         string   `json:"id"`
 }
+
+func (t Track) ArtistsString() string {
+	artists := ""
+
+	for i := 0; i < len(t.Artists); i++ {
+		artists += t.Artists[i].Name
+		if i != len(t.Artists)-1 {
+			artists += ", "
+		}
+	}
+
+	return artists
+}
