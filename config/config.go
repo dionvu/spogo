@@ -29,34 +29,59 @@ type Config struct {
 	path      string
 	cachePath string
 	Spotify   Credentials `yaml:"spotify"`
-	Player    struct {
+
+	Player struct {
 		StatusBar struct {
-			Style struct {
-				NowPlaying struct {
-					Bold       bool   `yaml:"bold"`
-					Foreground string `yaml:"fg"`
-					Background string `yaml:"bg"`
-				} `yaml:"now_playing"`
+			NowPlaying struct {
+				Bold       bool   `yaml:"bold"`
+				Foreground string `yaml:"fg"`
+				Background string `yaml:"bg"`
+			} `yaml:"now_playing"`
 
-				Paused struct {
-					Bold       bool   `yaml:"bold"`
-					Foreground string `yaml:"fg"`
-					Background string `yaml:"bg"`
-				} `yaml:"paused"`
+			Paused struct {
+				Bold       bool   `yaml:"bold"`
+				Foreground string `yaml:"fg"`
+				Background string `yaml:"bg"`
+			} `yaml:"paused"`
 
-				NoPlayer struct {
-					Bold       bool   `yaml:"bold"`
-					Foreground string `yaml:"fg"`
-					Background string `yaml:"bg"`
-				} `yaml:"no_player"`
-			} `yaml:"style"`
+			NoPlayer struct {
+				Bold       bool   `yaml:"bold"`
+				Foreground string `yaml:"fg"`
+				Background string `yaml:"bg"`
+			} `yaml:"no_player"`
 		} `yaml:"status_bar"`
+
+		Labels struct {
+			Color string `yaml:"color"`
+		} `yaml:"labels"`
+
+		ProgressBar struct {
+			Completed struct {
+				Color string `yaml:"color"`
+			} `yaml:"completed"`
+		} `yaml:"progress_bar"`
+
+		Text struct {
+			Color string `yaml:"color"`
+		} `yaml:"text"`
 	} `yaml:"player"`
+
+	General struct {
+		Box struct {
+			Color string `yaml:"color"`
+		} `yaml:"box"`
+
+		ViewStatus struct {
+			Color string `yaml:"color"`
+		} `yaml:"view_status"`
+	} `yaml:"general"`
+
 	Ascii struct {
 		Threshold int  `yaml:"threshold"`
 		Grayscale bool `yaml:"grayscale"`
 		Enabled   bool `yaml:"enabled"`
 	} `yaml:"ascii"`
+
 	ControlBar struct {
 		Enabled bool `yaml:"enabled"`
 	} `yaml:"control_bar"`

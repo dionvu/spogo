@@ -12,12 +12,12 @@ import (
 )
 
 const (
-	MIN_TERMINAL_HEIGHT = 16
-	MIN_TERMINAL_WIDTH  = 42
-
-	MAX_TERMINAL_HEIGHT_SMALL  = 24
-	MAX_TERMINAL_WIDTH_SMALL   = 75
-	MIN_TERMINAL_HEIGHT_NORMAL = 40
+	MIN_TERMINAL_HEIGHT            = 22
+	MIN_TERMINAL_WIDTH             = 42
+	MAX_TERMINAL_HEIGHT_VERY_SMALL = 22
+	MAX_TERMINAL_HEIGHT_SMALL      = 30
+	MAX_TERMINAL_WIDTH_SMALL       = 85
+	MIN_TERMINAL_HEIGHT_NORMAL     = 40
 )
 
 type Terminal struct {
@@ -65,7 +65,11 @@ func (t Terminal) IsValid() bool {
 // If the terminal height is in within minimum dimensions
 // to be considered small.
 func (t Terminal) HeightIsSmall() bool {
-	return t.Height <= MAX_TERMINAL_HEIGHT_SMALL
+	return MAX_TERMINAL_HEIGHT_VERY_SMALL < t.Height && t.Height <= MAX_TERMINAL_HEIGHT_SMALL
+}
+
+func (t Terminal) HeightIsVerySmall() bool {
+	return MAX_TERMINAL_HEIGHT_VERY_SMALL >= t.Height
 }
 
 // If the terminal height is in within minimum dimensions

@@ -3,17 +3,38 @@ spotify:
   client_secret: "YOUR_CLIENT_SECRET" # Replace with your spotify client secret
 
 player:
-  style:
-    status_bar:
-      now_playing:
-        bold: true
-        fg: "#282828"
-        bg: "#98971a"
-      paused:
-        bold: true
-        fg: "#282828"
-        bg: "#d79921"
-      no_player:
-        bold: true
-        fg: "#282828"
-        bg: "#cc241d"
+  status_bar:
+    now_playing:
+      bold: true
+      fg: "#282828"
+      # Note: Bubbletea renders background colors brighter than the actual color.
+      # Hence why a color like "#b8bb26" needs to be choosen to match "#98971a".
+      bg: "#98971a" # Green
+    paused:
+      bold: true
+      fg: "#282828"
+      bg: "#79740e" # Green Dim
+
+  labels:
+      color: "#b8bb26" # Green bright
+
+  progress_bar:
+    completed:
+      color: "#98971a" # Green
+
+  text:
+    # color: "#1d2021" # Black
+    color: "#fbf1c7" # Cream
+
+General:
+  box:
+    color: "#98971a" # Green
+  view_status:
+    color: "#98971a" # Green
+
+ascii:
+  enabled: true
+  # Value provided must be between 0 and 255. My recommended 
+  # is around 20. Darker images may need a lower threshold value.
+  threshold: 20
+  grayscale: false
