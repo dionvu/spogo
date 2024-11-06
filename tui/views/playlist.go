@@ -140,16 +140,21 @@ func (pv *Playlist) View(playerView Player, term comp.Terminal) string {
 		if term.WidthIsSmall() || term.HeightIsSmall() {
 		}
 
-		return comp.Content(Box.String(
-			ViewStatus{CurrentView: PLAYLIST_VIEW}.Content(pv.Config).String(),
-			comp.InvisibleBar(GLOBAL_VIEW_WIDTH).Append(NL, 1).String()+
-				comp.Join([]comp.Content{
-					mainContainer.Prepend(NL, 1).Append(NL, 1).PadLinesLeft(3),
-					pv.PlaylistInfo.Content(term).PadLinesLeft(4).Append(NL, 1),
-				}).String()))
+		// return comp.Content(Box.String(
+		// 	ViewStatus{CurrentView: PLAYLIST_VIEW}.Content(pv.Config).String(),
+		// 	comp.InvisibleBar(GLOBAL_VIEW_WIDTH).Append(NL, 1).String()+
+		// 		comp.Join([]comp.Content{
+		// 			mainContainer.Prepend(NL, 1).Append(NL, 1).PadLinesLeft(3),
+		// 			pv.PlaylistInfo.Content(term).PadLinesLeft(4).Append(NL, 1),
+		// 		}).String()))
+
+		return comp.Join([]comp.Content{
+			mainContainer.Prepend(NL, 1).Append(NL, 1).PadLinesLeft(3),
+			pv.PlaylistInfo.Content(term).PadLinesLeft(4).Append(NL, 1),
+		})
 	}()
 
-	return content.CenterVertical(term).CenterHorizontal(term).String()
+	return content.CenterHorizontalLeft(term).CenterVertical(term, 1).String()
 }
 
 // The detailed infomation about a playlist to

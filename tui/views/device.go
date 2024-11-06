@@ -64,33 +64,33 @@ func (vs ViewStatus) Content(cfg *config.Config) comp.Content {
 	switch vs.CurrentView {
 	case PLAYER_VIEW:
 		return comp.Join([]string{
-			"[ Spogo 󰝚 ] ",
+			// "[ Spogo 󰝚 ] ",
 			style.Selected.Render("[ "),
-			style.Selected.Render("F1 Player"),
-			style.Normal.Render(" | F2 Playlists | F3 Search | F4 Help ]"),
+			style.Selected.Render("Player"),
+			style.Normal.Render(" - Playlists - Search - F4 Help ]"),
 		}, "")
 
 	case PLAYLIST_VIEW:
 		return comp.Join([]string{
-			"[ Spogo 󰝚 ] ",
-			style.Normal.Render("[ F1 Player | "),
-			style.Selected.Render("F2 Playlists"),
-			style.Normal.Render(" | F3 Search | F4 Help ]"),
+			// "[ Spogo 󰝚 ] ",
+			style.Normal.Render("[ Player - "),
+			style.Selected.Render("Playlists"),
+			style.Normal.Render(" - Search - F4 Help ]"),
 		}, "")
 
 	case HELP_VIEW:
 		return comp.Join([]string{
-			"[ Spogo 󰝚 ] ",
-			style.Normal.Render("[ F1 Player | F2 Playlists | F3 Search "),
-			style.Selected.Render("| F4 Help ]"),
+			// "[ Spogo 󰝚 ] ",
+			style.Normal.Render("[ Player - Playlists - Search "),
+			style.Selected.Render("- F4 Help ]"),
 		}, "")
 
 	case SEARCH_VIEW_QUERY, SEARCH_VIEW_TYPE, SEARCH_VIEW_RESULTS:
 		return comp.Join([]string{
-			"[ Spogo 󰝚 ] ",
-			style.Normal.Render("[ F1 Player | F2 Playlists | "),
-			style.Selected.Render("F3 Search"),
-			style.Normal.Render(" | F4 Help ]"),
+			// "[ Spogo 󰝚 ] ",
+			style.Normal.Render("[ Player - Playlists - "),
+			style.Selected.Render("Search"),
+			style.Normal.Render(" - F4 Help ]"),
 		}, "")
 
 	default:

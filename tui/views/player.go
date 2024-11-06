@@ -46,7 +46,7 @@ const (
 	DISABLED                 = "off"
 )
 
-var Box = box.New(box.Config{Px: 3, Py: 1, Type: "Round", Color: "HiGreen", TitlePos: "Bottom"})
+var Box = box.New(box.Config{Px: 3, Py: 1, Type: "Hidden", Color: "HiGreen", TitlePos: "Bottom"})
 
 // The view struct that displays player state
 // details, the current track's album art.
@@ -268,14 +268,16 @@ func (pv *Player) View(term comp.Terminal) string {
 					return comp.Content(t.Render())
 				}()
 
-				return comp.Content(Box.String(
-					ViewStatus{CurrentView: PLAYER_VIEW}.Content(pv.config).String(),
-					comp.InvisibleBar(GLOBAL_VIEW_WIDTH).Append('\n', 1).String()+mainContainer.Append(NL, 1).String(),
-				))
+				// return comp.Content(Box.String(
+				// ViewStatus{CurrentView: PLAYER_VIEW}.Content(pv.config).String(),
+				// 	comp.InvisibleBar(GLOBAL_VIEW_WIDTH).Append('\n', 1).String()+mainContainer.Append(NL, 1).String(),
+				// ))
+
+				return comp.Content(comp.InvisibleBar(GLOBAL_VIEW_WIDTH).Append('\n', 1).String() + mainContainer.Append(NL, 1).String())
 			}
 		}()
 
-		return content.CenterHorizontal(term).CenterVertical(term).String()
+		return content.CenterHorizontal(term, -1).CenterVertical(term).String()
 	}
 
 	if term.HeightIsSmall() || term.HeightIsVerySmall() {
@@ -371,19 +373,20 @@ func (pd *PlayerDetails) Content(track *spotify.Track, progressMs int, state *pl
 			return " "
 		}
 		// return ENABLED
-		return "X"
+		return "x"
 	}()
 
 	shuffle := func() string {
 		if pd.ShuffleState {
 			// return ENABLED
-			return "X"
+			return "x"
 		}
 		// return DISABLED
 		return " "
 	}()
 
-	timer := fmt.Sprintf("%sm:%ss / %sm:%ss", pd.ProgressMin, pd.ProgressSec, pd.DurationMin, pd.DurationSec)
+	timerDur := fmt.Sprintf("%sm:%ss", pd.DurationMin, pd.DurationSec)
+	timerProg := fmt.Sprintf("%sm:%ss", pd.ProgressMin, pd.ProgressSec)
 
 	options := fmt.Sprintf("Sfl [%v]  Rep [%v]  Vol [%s%%]", shuffle, repeat, pd.VolumePercent)
 
@@ -393,7 +396,7 @@ func (pd *PlayerDetails) Content(track *spotify.Track, progressMs int, state *pl
 		comp.Content(pd.Style.Labels.Render("Album:   ") + pd.Album).AdjustFit(maxChar),
 		comp.Content(pd.Style.Labels.Render("Option:  ") + options).AdjustFit(maxChar),
 		// AdjustFit works weird on this so it requires more room
-		comp.Content(pd.progressBar(20, float64(state.ProgressMs)/float64(state.Track.DurationMs)*100) + " " + timer).AdjustFit(maxChar + 10),
+		comp.Content(pd.progressBar(18, float64(state.ProgressMs)/float64(state.Track.DurationMs)*100) + " " + timerProg + " - " + timerDur).AdjustFit(maxChar + 10),
 	}, "\n\n")
 }
 
@@ -422,7 +425,8 @@ func (pd *PlayerDetails) Update(progressMs int, state *player.State) {
 }
 
 func (pd PlayerDetails) progressBar(width int, percentage float64) string {
-	completedSegments := int((percentage / 100) * float64(width))
+	// Calculate completed segments and ensure it's set to width if percentage is 100
+	completedSegments := int(math.Floor(((percentage / 100) * float64(width))))
 
 	// Style for completed and remaining segments
 	remainingStyle := lg.NewStyle().Foreground(lg.Color("8")).Foreground(lg.Color("0"))

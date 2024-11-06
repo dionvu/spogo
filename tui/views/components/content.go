@@ -105,6 +105,26 @@ func (v Content) CenterHorizontal(t Terminal, offset ...int) Content {
 	return Join(lines, "\n")
 }
 
+func (v Content) CenterHorizontalLeft(t Terminal, offset ...int) Content {
+	lines := v.Split('\n')
+
+	padding := 9999
+
+	for _, line := range lines {
+		padding = min(t.Width/2-lg.Width(string(line))/2, padding)
+	}
+
+	for i, line := range lines {
+		if len(offset) > 0 {
+			lines[i] = line.PadLinesLeft(padding + offset[0])
+		} else {
+			lines[i] = line.PadLinesLeft(padding)
+		}
+	}
+
+	return Join(lines, "\n")
+}
+
 // The content as a string.
 func (a Content) String() string {
 	return string(a)

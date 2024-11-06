@@ -20,11 +20,11 @@ import (
 
 const (
 	MAX_RESULT_WIDTH      = 48
-	LEFT_WIDTH            = 21
+	LEFT_WIDTH            = 14
 	SEARCH_RESULT_LIMIT   = 42
 	MAX_RESULT_ITEM_WIDTH = MAX_RESULT_WIDTH - 5
 
-	RESULT_DETAILS_OFFSET  = 28
+	RESULT_DETAILS_OFFSET  = 21
 	MAX_RESULT_DETAILS_LEN = 76
 	TEXT_INPUT_CHAR_LIMIT  = 156
 
@@ -153,13 +153,15 @@ func (s Search) View(term comp.Terminal, currentView string) string {
 		comp.InvisibleBar(GLOBAL_VIEW_WIDTH).Append(NL, 1),
 		mainContainer.Prepend(NL, 1),
 		details.PadLinesLeft(4),
-	}).Append(NL, 1).String()
+	}).Append(NL, 1)
 
-	return comp.Content(
-		Box.String(
-			ViewStatus{CurrentView: SEARCH_VIEW_RESULTS}.Content(s.Config).String(),
-			content),
-	).CenterHorizontal(term).CenterVertical(term).String()
+	// return comp.Content(
+	// 	Box.String(
+	// 		ViewStatus{CurrentView: SEARCH_VIEW_RESULTS}.Content(s.Config).String(),
+	// 		content),
+	// ).CenterHorizontal(term).CenterVertical(term).String()
+
+	return content.CenterHorizontalLeft(term, 5).CenterVertical(term, 1).String()
 }
 
 type Results struct {
@@ -308,8 +310,8 @@ func (stl SearchTypeList) Selected() list.Item {
 
 func NewSearchTypeList(items []list.Item) SearchTypeList {
 	lm := SearchTypeList{
-		list: comp.NewCustomList(items, "Select a search type:",
-			comp.DEFAULT_WIDTH+4, comp.LIST_HEIGHT_SMALL-1),
+		list: comp.NewCustomList(items, "Select type:",
+			comp.DEFAULT_WIDTH-5, comp.LIST_HEIGHT_SMALL-1),
 	}
 
 	return lm
@@ -318,7 +320,7 @@ func NewSearchTypeList(items []list.Item) SearchTypeList {
 // Highlights the title of the list if the user is currently making a selection.
 func (stl SearchTypeList) UpdateSelected(currentView string) SearchTypeList {
 	stl.list.Title = func() string {
-		title := "Select a search type:"
+		title := stl.list.Title
 		if currentView == SEARCH_VIEW_TYPE {
 			return lg.NewStyle().Underline(true).Render(title)
 		}
@@ -357,7 +359,7 @@ type SearchQuery struct {
 
 func NewSearchQuery() SearchQuery {
 	ti := textinput.New()
-	ti.Placeholder = "What's on your mind?"
+	ti.Placeholder = "wat on ur mind"
 	ti.Focus()
 	ti.CharLimit = TEXT_INPUT_CHAR_LIMIT
 	ti.Width = LEFT_WIDTH - 1

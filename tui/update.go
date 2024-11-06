@@ -18,7 +18,7 @@ const (
 	KEY_QUIT_ALT             = "ctrl+c"
 	KEY_VISUAL_REFRESH       = "ctrl+r"
 	KEY_PLAYER_VIEW          = "f1"
-	KEY_PLAYER_VIEW_ALT      = "ctrl+v"
+	KEY_PLAYER_VIEW_ALT      = "ctrl+o"
 	KEY_PLAY_PAUSE           = " "
 	KEY_TOGGLE_SHUFFLING     = "s"
 	KEY_TOGGLE_REPEAT        = "r"
@@ -36,6 +36,10 @@ const (
 	KEY_VOLUME_UP_SMALL      = "}"
 	KEY_FZF_DEVICES          = "ctrl+d"
 	KEY_FZF_ALBUM_TRACKS     = "ctrl+a"
+	KEY_NEXT_TRACK           = ">"
+	KEY_PREV_TRACK           = "<"
+	KEY_FORWARD              = "."
+	KEY_BACKWARD             = ","
 	VOLUME_INCREMENT_PERCENT = 5
 	EMPTY                    = ""
 )
@@ -130,6 +134,59 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case KEY_FZF_DEVICES:
 			p.currentView = views.DEVICE_FZF_VIEW
+
+		case KEY_PREV_TRACK:
+			if p.currentView == views.PLAYER_VIEW {
+				p.player.SkipPrev(p.session)
+			}
+
+			time.Sleep(time.Second / 100)
+
+			p.playerView.UpdateStateSync()
+
+		case KEY_NEXT_TRACK:
+			if p.currentView == views.PLAYER_VIEW {
+				p.player.SkipNext(p.session)
+			}
+
+			time.Sleep(time.Second / 100)
+
+			p.playerView.UpdateStateSync()
+
+		case KEY_FORWARD:
+			if p.currentView == views.PLAYER_VIEW && p.playerView.State != nil &&
+				p.playerView.State.Track != nil {
+				pos := p.playerView.State.ProgressMs + 10000
+				if pos > p.playerView.State.Track.DurationMs {
+					pos = p.playerView.State.Track.DurationMs
+				} else if pos < 0 {
+					pos = 0
+				}
+
+				p.player.Seek(pos, p.session)
+			}
+
+			time.Sleep(time.Second / 100)
+
+			p.playerView.UpdateStateSync()
+
+		case KEY_BACKWARD:
+
+			if p.currentView == views.PLAYER_VIEW && p.playerView.State != nil &&
+				p.playerView.State.Track != nil {
+				pos := p.playerView.State.ProgressMs - 10000
+				if pos > p.playerView.State.Track.DurationMs {
+					pos = p.playerView.State.Track.DurationMs
+				} else if pos < 0 {
+					pos = 0
+				}
+
+				p.player.Seek(pos, p.session)
+			}
+
+			time.Sleep(time.Second / 100)
+
+			p.playerView.UpdateStateSync()
 
 		case KEY_VOLUME_DOWN_BIG:
 			// Spotify doesn't have a volume control for mobile devices.
