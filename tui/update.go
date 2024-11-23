@@ -42,6 +42,9 @@ const (
 	KEY_BACKWARD             = ","
 	VOLUME_INCREMENT_PERCENT = 5
 	EMPTY                    = ""
+
+	ENABLED  = "on"
+	DISABLED = "off"
 )
 
 // Handles updates associate with the current selected view.
@@ -140,7 +143,9 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				p.player.SkipPrev(p.session)
 			}
 
-			time.Sleep(time.Second / 100)
+			const STATE_DELAY_INTERVAL = time.Second / 100
+
+			time.Sleep(STATE_DELAY_INTERVAL)
 
 			p.playerView.UpdateStateSync()
 
@@ -278,8 +283,8 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case KEY_SEARCH_VIEW, KEY_SEARCH_VIEW_ALT:
 			// Requires handling priority, logic is at the top.
 
-		case KEY_HELP_VIEW, KEY_HELP_VIEW_ALT:
-			p.currentView = views.HELP_VIEW
+		// case KEY_HELP_VIEW, KEY_HELP_VIEW_ALT:
+		// 	p.currentView = views.HELP_VIEW
 
 		case KEY_ENTER:
 			switch p.currentView {
@@ -290,7 +295,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				p.playerView.UpdateStateSync()
 
 			case views.SEARCH_VIEW_QUERY:
-				if p.search.Input.Text.Value() != "" {
+				if p.search.Input.Text.Value() != EMPTY {
 					p.search.Input = p.search.Input.HideCursor()
 					p.currentView = views.SEARCH_VIEW_TYPE
 				}
@@ -319,7 +324,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						return p, nil
 					}
 
-					err := p.player.Play(p.search.Results.SelectedAlbum().Uri, "", p.session)
+					err := p.player.Play(p.search.Results.SelectedAlbum().Uri, EMPTY, p.session)
 					if errors.IsReauthenticationErr(err) {
 						p.currentView = views.REAUTH_VIEW
 					}
@@ -331,7 +336,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						return p, nil
 					}
 
-					err := p.player.Play(p.search.Results.SelectedPlaylist().Uri, "", p.session)
+					err := p.player.Play(p.search.Results.SelectedPlaylist().Uri, EMPTY, p.session)
 					if errors.IsReauthenticationErr(err) {
 						p.currentView = views.REAUTH_VIEW
 					}
@@ -377,7 +382,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case KEY_TOGGLE_REPEAT:
 			switch p.PlayerState().RepeatState {
-			case "off":
+			case DISABLED:
 				err := p.player.Repeat(true, p.session)
 				if errors.IsReauthenticationErr(err) {
 					p.currentView = views.REAUTH_VIEW
@@ -390,7 +395,7 @@ func (p *Program) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					p.currentView = views.REAUTH_VIEW
 				}
 
-				p.PlayerState().RepeatState = "off"
+				p.PlayerState().RepeatState = DISABLED
 			}
 		}
 

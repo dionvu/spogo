@@ -13,6 +13,8 @@ import (
 	"github.com/ktr0731/go-fuzzyfinder"
 )
 
+const MSG_NO_CONTENT = "Content is unavailable :("
+
 func (p *Program) View() string {
 	switch p.currentView {
 	case views.PLAYER_VIEW:
@@ -142,7 +144,7 @@ func FzfAlbumTracks(albumTracks *[]spotify.AlbumTrack) (int, error) {
 	idx, err := fuzzyfinder.Find(
 		tracks,
 		func(i int) string {
-			if tracks[i].Name == "" {
+			if tracks[i].Name == EMPTY {
 				return "Unavailable"
 			}
 
@@ -153,8 +155,8 @@ func FzfAlbumTracks(albumTracks *[]spotify.AlbumTrack) (int, error) {
 				return EMPTY
 			}
 
-			if tracks[i].Name == "" {
-				return "Content is unavailable :("
+			if tracks[i].Name == EMPTY {
+				return MSG_NO_CONTENT
 			}
 
 			mins, secs := views.MsToMinutesAndSeconds(tracks[i].DurationMs)
@@ -184,8 +186,8 @@ func FzfDevices(devices *[]player.Device) (int, error) {
 				return EMPTY
 			}
 
-			if tracks[i].Name == "" {
-				return "Unavailable"
+			if tracks[i].Name == EMPTY {
+				return MSG_NO_CONTENT
 			}
 
 			return fmt.Sprintf("Name: %s\nType: %s\nVol: %v%%",
@@ -211,7 +213,7 @@ func FzfPlaylistTracks(t *[]spotify.Track) (int, error) {
 		tracks,
 		func(i int) string {
 			if tracks[i].Name == "" {
-				return "Unavailable"
+				return MSG_NO_CONTENT
 			}
 
 			return tracks[i].Name + " - " + tracks[i].Artists[0].Name
@@ -223,8 +225,8 @@ func FzfPlaylistTracks(t *[]spotify.Track) (int, error) {
 
 			mins, secs := views.MsToMinutesAndSeconds(tracks[i].DurationMs)
 
-			if tracks[i].Name == "" {
-				return "Content is unavailable :("
+			if tracks[i].Name == EMPTY {
+				return MSG_NO_CONTENT
 			}
 
 			return fmt.Sprintf("Track: %s \nArtist: %s\nAlbum: %s\nDuration: %sm:%ss", //\n\n%s",

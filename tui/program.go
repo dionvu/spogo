@@ -29,25 +29,15 @@ type Program struct {
 	// format, allowing the user to select one
 	// to transfer playback to.
 	playlistView views.Playlist
+	search       views.Search
+	help         views.Help
 
-	// search for albums, tracks, etc. and transfers
-	// playback to desired.
-	search views.Search
-
-	// HELP
-	help views.Help
-
-	// The programs's current terminal size, this
-	// is updated consistantly.
 	terminal comp.Terminal
 
-	// Stuff necessary to access the spotify api.
 	session *auth.Session
 
-	// Plays stuff.
 	player *player.Player
 
-	// Configuration options.
 	config *config.Config
 }
 
@@ -65,8 +55,6 @@ func New(
 		help:        views.NewHelpView(),
 	}
 
-	// A nil state here could be due to an inactive device.
-	// Transfers playback to inactive player.
 	if initialState, _ := player.State(auth); initialState == nil {
 		player.Resume(auth, false)
 	}

@@ -161,7 +161,7 @@ func (s Search) View(term comp.Terminal, currentView string) string {
 	// 		content),
 	// ).CenterHorizontal(term).CenterVertical(term).String()
 
-	return content.CenterHorizontalLeft(term, 5).CenterVertical(term, 1).String()
+	return content.CenterHorizontalLeft(term, 10).CenterVertical(term, 1).String()
 }
 
 type Results struct {

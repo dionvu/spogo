@@ -91,7 +91,6 @@ func getNewTokens(s *Session, c *config.Config) error {
 			fmt.Printf("%v %v\n", color.RedString("Error:"), err)
 		}
 
-		// Awaits the authentication code from handlers.
 		return <-ch
 	}()
 
@@ -120,7 +119,7 @@ func getNewTokens(s *Session, c *config.Config) error {
 
 	b, err := io.ReadAll(res.Body)
 	if err != nil {
-		err = errors.FileRead.Wrap(err, "failed to read response body")
+		err = errors.HTTP.Wrap(err, "failed to read response body")
 		errors.Log(err)
 		return err
 	}

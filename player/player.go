@@ -177,10 +177,10 @@ func (p *Player) Resume(s *auth.Session, play bool) error {
 		return err
 	}
 
-	data := map[string]interface{}{}
-
-	data["device_ids"] = []string{p.device.ID}
-	data["play"] = play
+	data := map[string]interface{}{
+		"device_ids": []string{p.device.ID},
+		"play":       play,
+	}
 
 	j, err := json.Marshal(data)
 	if err != nil {
